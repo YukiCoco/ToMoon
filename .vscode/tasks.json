@@ -1,0 +1,105 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        // OTHER
+        {
+            "label": "checkforsettings",
+            "type": "shell",
+            "group": "none",
+            "detail": "Check that settings.json has been created",
+            "command": "bash -c ${workspaceFolder}/.vscode/config.sh",
+            "problemMatcher": []
+        },
+        // BUILD
+        {
+            "label": "pnpmsetup",
+            "type": "shell",
+            "group": "build",
+            "detail": "Setup pnpm",
+            "command": "pnpm i",
+            "problemMatcher": []
+        },
+        {
+            "label": "updatefrontendlib",
+            "type": "shell",
+            "group": "build",
+            "detail": "Update deck-frontend-lib",
+            "command": "pnpm update decky-frontend-lib --latest",
+            "problemMatcher": []
+        },
+        {
+            "label": "build",
+            "type": "npm",
+            "group": "build",
+            "detail": "rollup -c",
+            "script": "build",
+            "path": "",
+            "problemMatcher": []
+        },
+        {
+            "label": "buildall",
+            "group": "build",
+            "detail": "Build decky-plugin-template",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "pnpmsetup",
+                "build"
+            ],
+            "problemMatcher": []
+        },
+        // DEPLOY
+        {
+            "label": "createfolders",
+            "detail": "Create plugins folder in expected directory",
+            "type": "shell",
+            "group": "none",
+            "dependsOn": [
+                "checkforsettings"
+            ],
+            "command": "ssh deck@${config:deckip} -p ${config:deckport} ${config:deckkey} 'mkdir -p ${config:deckdir}/homebrew/pluginloader && mkdir -p ${config:deckdir}/homebrew/plugins'",
+            "problemMatcher": []
+        },
+        {
+            "label": "deploy",
+            "detail": "Deploy dev plugin to deck",
+            "type": "shell",
+            "group": "none",
+            "dependsOn": [
+                "createfolders",
+                "chmodfolders"
+            ],
+            "command": "rsync -azp --delete --chmod=D0755,F0755 --rsh='ssh -p ${config:deckport} ${config:deckkey}' --exclude='.git/' --exclude='.github/' --exclude='.vscode/' --exclude='node_modules/' --exclude='src/' --exclude='*.log' --exclude='.gitignore' . deck@${config:deckip}:${config:deckdir}/homebrew/plugins/${workspaceFolderBasename}",
+            "problemMatcher": []
+        },
+        {
+            "label": "chmodfolders",
+            "detail": "chmods folders to prevent perms issues",
+            "type": "shell",
+            "group": "none",
+            "command": "ssh deck@${config:deckip} -p ${config:deckport} ${config:deckkey} 'echo '${config:deckpass}' | sudo -S chmod -R ug+rw ${config:deckdir}/homebrew/'",
+            "problemMatcher": []
+        },
+        {
+            "label": "deployall",
+            "dependsOrder": "sequence",
+            "group": "none",
+            "dependsOn": [
+                "deploy",
+                "chmodfolders"
+            ],
+            "problemMatcher": []
+        },
+        // ALL-IN-ONE
+        {
+            "label": "allinone",
+            "detail": "Build and deploy",
+            "dependsOrder": "sequence",
+            "group": "test",
+            "dependsOn": [
+                "buildall",
+                "deployall"
+            ],
+            "problemMatcher": []
+        }
+    ]
+}
