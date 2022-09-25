@@ -1,7 +1,7 @@
 {
-  "name": "decky-plugin-template",
+  "name": "clash-deck",
   "version": "0.0.1",
-  "description": "A template to quickly create decky plugins from scratch, based on TypeScript and webpack",
+  "description": "Enable clash in SteamOS.",
   "scripts": {
     "build": "shx rm -rf dist && rollup -c",
     "watch": "rollup -c -w",
@@ -18,8 +18,8 @@
     "steam-deck",
     "deck"
   ],
-  "author": "Jonas Dellinger <jonas@dellinger.dev>",
-  "license": "BSD-3-Clause",
+  "author": "Sayo Kurisu <me@kurisu.moe>",
+  "license": "GPL-3.0",
   "bugs": {
     "url": "https://github.com/SteamDeckHomebrew/decky-plugin-template/issues"
   },
@@ -40,7 +40,8 @@
   },
   "dependencies": {
     "decky-frontend-lib": "^3.0.0",
-    "react-icons": "^4.4.0"
+    "react-icons": "^4.4.0",
+    "usdpl-front": "file:./src/usdpl"
   },
   "pnpm": {
     "peerDependencyRules": {

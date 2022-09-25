@@ -44,3 +44,5 @@ yalc.lock
 # Ignore output folder
 
 backend/out
+
+bin

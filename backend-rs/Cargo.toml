@@ -1,0 +1,15 @@
+[package]
+name = "clashdeck-rs"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+usdpl-back = { version = "0.5.3", features = ["blocking"]}#, path = "../usdpl/usdpl-back"}
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# logging
+log = "0.4"
+simplelog = "0.12"

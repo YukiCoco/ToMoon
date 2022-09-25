@@ -15,10 +15,12 @@ specifiers:
   shx: ^0.3.4
   tslib: ^2.4.0
   typescript: ^4.7.4
+  usdpl-front: file:./src/usdpl
 
 dependencies:
   decky-frontend-lib: 3.0.0
   react-icons: 4.4.0
+  usdpl-front: file:src/usdpl
 
 devDependencies:
   '@rollup/plugin-commonjs': 21.1.0_rollup@2.77.1
@@ -924,3 +926,9 @@ packages:
   /wrappy/1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
     dev: true
+
+  file:src/usdpl:
+    resolution: {directory: src/usdpl, type: directory}
+    name: usdpl-front
+    version: 0.7.0
+    dev: false

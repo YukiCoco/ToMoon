@@ -1,10 +1,10 @@
 {
-  "name": "Example Plugin",
-  "author": "John Doe",
-  "flags": ["debug", "_root"],
+  "name": "Clash Deck",
+  "author": "Sayo Kurisu",
+  "flags": ["debug", "root"],
   "publish": {
-    "tags": ["template", "root", "dnu"],
-    "description": "Decky example plugin.",
+    "tags": ["root", "network"],
+    "description": "Enable clash in SteamOS.",
     "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
   }
 }
