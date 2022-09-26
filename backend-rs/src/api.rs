@@ -1,4 +1,4 @@
-use std::{thread, process::Command};
+use std::{process::Command, thread};
 
 use crate::settings;
 
@@ -31,22 +31,44 @@ pub fn get_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
 pub fn set_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
     let runtime_settings = runtime.settings_clone();
     let runtime_state = runtime.state_clone();
+    let clash = runtime.clash_state_clone();
     move |params| {
         if let Some(Primitive::Bool(enabled)) = params.get(0) {
-                let mut settings = match runtime_settings.write() {
+            let mut settings = match runtime_settings.write() {
                 Ok(x) => x,
                 Err(e) => {
                     log::error!("set_enable failed to acquire settings write lock: {}", e);
                     return vec![];
                 }
             };
+            log::info!("set clash status to {}", enabled);
             if settings.enable != *enabled {
+                let mut clash = match clash.write() {
+                    Ok(x) => x,
+                    Err(e) => {
+                        log::error!("set_enable failed to acquire state write lock: {}", e);
+                        return vec![];
+                    }
+                };
+                // Enable Clash
+                if *enabled {
+                    match clash.run() {
+                        Ok(_) => (),
+                        Err(e) => {
+                            log::error!("Run clash error: {}", e);
+                        }
+                    }
+                } else {
+                    // Disable Clash
+                    // TODO: 关闭错误处理
+                    clash.stop();
+                }
                 settings.enable = *enabled;
                 let mut state = match runtime_state.write() {
-                Ok(x) => x,
-                Err(e) => {
-                    log::error!("set_enable failed to acquire state write lock: {}", e);
-                    return vec![];
+                    Ok(x) => x,
+                    Err(e) => {
+                        log::error!("set_enable failed to acquire state write lock: {}", e);
+                        return vec![];
                     }
                 };
                 state.dirty = true;

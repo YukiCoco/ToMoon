@@ -1,5 +1,4 @@
 #!/bin/bash
 
 cross build --release
-mkdir ../bin
-cp ./target/release/clashdeck-rs ../bin/backend
+cp ./target/x86_64-unknown-linux-gnu/release/clashdeck-rs ../bin/backend

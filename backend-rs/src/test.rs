@@ -1,5 +1,7 @@
 mod tests {
+
     use crate::control;
+    use std::{thread, time::Duration};
 
     #[test]
     fn it_works() {
@@ -9,9 +11,12 @@ mod tests {
     #[test]
     fn run_clash()
     {
-        let clash = control::clash::default();
-        let mut clash = clash.run().unwrap();
-        clash.kill().unwrap();
-        
+        let mut clash = control::Clash::default();
+        println!("{}",std::env::current_dir().unwrap().to_str().unwrap());
+        clash.run().unwrap();
+        thread::sleep(Duration::from_secs(5));
+        println!("disable clash");
+        clash.stop();
+        thread::sleep(Duration::from_secs(10));
     }
 }

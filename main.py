@@ -13,6 +13,8 @@ class Plugin:
 
     async def _main(self):
         # startup
+        # 切换到工作目录
+        os.chdir(PARENT_DIR)
         self.backend_proc = subprocess.Popen([PARENT_DIR + "/bin/backend"])
         while True:
             await asyncio.sleep(1)

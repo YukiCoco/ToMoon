@@ -16,6 +16,7 @@ fn main() -> Result<(),()>  {
     ).unwrap();
 
     log::info!("Starting back-end ({} v{})", api::NAME, api::VERSION);
+    log::info!("{}",std::env::current_dir().unwrap().to_str().unwrap());
     println!("Starting back-end ({} v{})", api::NAME, api::VERSION);
 
     let runtime = control::ControlRuntime::new();
