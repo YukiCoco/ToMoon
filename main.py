@@ -1,4 +1,3 @@
-import logging
 import pathlib
 import subprocess
 import asyncio
@@ -6,19 +5,6 @@ import os
 
 HOME_DIR = str(pathlib.Path(os.getcwd()).parent.parent.resolve())
 PARENT_DIR = str(pathlib.Path(__file__).parent.resolve())
-
-LOG_LOCATION = "/tmp/clashdeck.py.log"
-
-
-logging.basicConfig(
-    filename=LOG_LOCATION,
-    format='%(asctime)s %(levelname)s %(message)s',
-    filemode='w',
-    force=True)
-
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-logging.info(f"ClashDeck is running")
 
 
 class Plugin:

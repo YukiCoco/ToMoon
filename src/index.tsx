@@ -13,11 +13,12 @@ import { FaCat } from "react-icons/fa";
 
 import * as backend from "./backend";
 
-const [enabledGlobal, setEnableInternal] = useState<boolean>(false);
+let enabledGlobal = false;
 
-let setEnable = (enable: boolean) => {
-  setEnableInternal(enable)
-}
+// init USDPL WASM and connection to back-end
+(async function () {
+  await backend.initBackend();
+})();
 
 const Content: VFC<{ serverAPI: ServerAPI }> = ({}) => {
 
@@ -29,7 +30,9 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({}) => {
           description="Run Clash in background"
           checked={enabledGlobal}
           onChange={(value: boolean) => {
-            backend.resolve(backend.setEnabled(value), setEnable);
+            backend.resolve(backend.setEnabled(value), (v : boolean) => {
+              enabledGlobal = v;
+            });
           }}
         />
       </PanelSectionRow>
@@ -44,41 +47,6 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({}) => {
           Open Dashboard
         </ButtonItem>
       </PanelSectionRow>
-      {/* <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={(e) =>
-            showContextMenu(
-              <Menu label="Menu" cancelText="CAAAANCEL" onCancel={() => {}}>
-                <MenuItem onSelected={() => {}}>Item #1</MenuItem>
-                <MenuItem onSelected={() => {}}>Item #2</MenuItem>
-                <MenuItem onSelected={() => {}}>Item #3</MenuItem>
-              </Menu>,
-              e.currentTarget ?? window
-            )
-          }
-        >
-          Server says yolo
-        </ButtonItem>
-      </PanelSectionRow>
-
-      <PanelSectionRow>
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <img src={logo} />
-        </div>
-      </PanelSectionRow>
-
-      <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={() => {
-            Router.CloseSideMenus();
-            Router.Navigate("/decky-plugin-test");
-          }}
-        >
-          Router
-        </ButtonItem>
-      </PanelSectionRow> */}
     </PanelSection>
   );
 };
