@@ -1,3 +1,4 @@
+use std::process::Command;
 use std::sync::{RwLock, Arc};
 
 use std::thread;
@@ -79,4 +80,35 @@ impl ControlRuntime {
 
 fn settings_path<P: AsRef<std::path::Path>>(home: P) -> std::path::PathBuf {
     home.as_ref().join(".config/clashdeck/clashdeck.json")
+}
+
+fn get_current_working_dir() -> std::io::Result<std::path::PathBuf> {
+    std::env::current_dir()
+}
+
+pub struct clash {
+    path : std::path::PathBuf,
+    config : std::path::PathBuf
+}
+
+impl Default for clash {
+    fn default() -> Self {
+        Self { path: get_current_working_dir().unwrap(), config: get_current_working_dir().unwrap().join("config.yaml") }
+    }
+}
+
+impl clash {
+    pub fn run(&self) {
+        let clash = Command::new(self.path.clone())
+        .arg("-f")
+        .arg(self.config.clone())
+        .spawn();
+        let clash = match clash {
+            Ok(x) => x,
+            Err(e) => {
+                log::error!("run flash failed: {}", e);
+                return;
+            }
+        };
+    }
 }

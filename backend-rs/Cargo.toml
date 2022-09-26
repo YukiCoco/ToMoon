@@ -1,5 +1,5 @@
 [package]
-name = "clashdeck-rs"
+name = "clashdeck"
 version = "0.1.0"
 edition = "2021"
 
