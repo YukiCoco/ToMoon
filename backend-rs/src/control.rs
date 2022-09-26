@@ -1,4 +1,6 @@
-use std::process::Command;
+use std::fmt::Display;
+use std::io::ErrorKind;
+use std::process::{Command, Child};
 use std::sync::{RwLock, Arc};
 
 use std::thread;
@@ -88,27 +90,67 @@ fn get_current_working_dir() -> std::io::Result<std::path::PathBuf> {
 
 pub struct clash {
     path : std::path::PathBuf,
-    config : std::path::PathBuf
+    config : std::path::PathBuf,
+    instence: Child
+}
+
+#[derive(Debug)]
+pub enum ClashErrorKind {
+    CoreNotFound,
+    ConfigFormatError,
+    ConfigNotFound,
+    Default
+}
+
+
+#[derive(Debug)]
+pub struct ClashError {
+    Message : String,
+    ErrorKind : ClashErrorKind
+}
+
+impl Display for ClashError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Error Kind: {:?}, Error Message: {})", self.ErrorKind, self.Message)
+    }
+}
+
+impl std::error::Error for ClashError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        None
+    }
+}
+
+impl ClashError {
+    fn new() -> Self {
+        Self { Message: "".to_string(), ErrorKind: ClashErrorKind::Default }
+    }
 }
 
 impl Default for clash {
     fn default() -> Self {
-        Self { path: get_current_working_dir().unwrap(), config: get_current_working_dir().unwrap().join("config.yaml") }
+        Self { path: get_current_working_dir().unwrap(), config: get_current_working_dir().unwrap().join("config.yaml")}
     }
 }
 
 impl clash {
-    pub fn run(&self) {
+    pub fn run(&self) -> Result<Child, ClashError> {
         let clash = Command::new(self.path.clone())
         .arg("-f")
         .arg(self.config.clone())
         .spawn();
         let clash = match clash {
-            Ok(x) => x,
+            Ok(x) => Ok(x),
             Err(e) => {
                 log::error!("run flash failed: {}", e);
-                return;
+                //TODO: 开启 Clash 的错误处理
+                return Err(ClashError::new());
             }
         };
+        clash
+    }
+
+    pub fn stop() {
+
     }
 }

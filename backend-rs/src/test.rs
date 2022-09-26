@@ -10,6 +10,8 @@ mod tests {
     fn run_clash()
     {
         let clash = control::clash::default();
-        clash.run();
+        let mut clash = clash.run().unwrap();
+        clash.kill().unwrap();
+        
     }
 }
