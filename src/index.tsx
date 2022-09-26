@@ -23,7 +23,7 @@ let enabledGlobal = false;
 const Content: VFC<{ serverAPI: ServerAPI }> = ({}) => {
 
   return (
-    <PanelSection title="Panel Section">
+    <PanelSection>
       <PanelSectionRow>
         <ToggleField
           label="Enable Clash"
@@ -40,7 +40,18 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({}) => {
         <ButtonItem
           layout="below"
           onClick={() => {
-            //do something here
+            Router.CloseSideMenus()
+            Router.Navigate("/clash-config")
+          }}
+        >
+         Manage Subscriptions
+        </ButtonItem>
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <ButtonItem
+          layout="below"
+          onClick={() => {
+            Router.CloseSideMenus()
             Router.NavigateToExternalWeb("http://clash.razord.top")
           }}
         >
@@ -51,28 +62,28 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({}) => {
   );
 };
 
-// const DeckyPluginRouterTest: VFC = () => {
-//   return (
-//     <div style={{ marginTop: "50px", color: "white" }}>
-//       Hello World!
-//       <DialogButton onClick={() => Router.NavigateToStore()}>
-//         Go to Store
-//       </DialogButton>
-//     </div>
-//   );
-// };
+const DeckyPluginRouterTest: VFC = () => {
+  return (
+    <div style={{ marginTop: "50px", color: "white" }}>
+      Hello World!
+      {/* <DialogButton onClick={() => Router.NavigateToStore()}>
+        Go to Store
+      </DialogButton> */}
+    </div>
+  );
+};
 
 export default definePlugin((serverApi: ServerAPI) => {
-  // serverApi.routerHook.addRoute("/decky-plugin-test", DeckyPluginRouterTest, {
-  //   exact: true,
-  // });
+  serverApi.routerHook.addRoute("/clash-config", DeckyPluginRouterTest, {
+    exact: true,
+  });
 
   return {
     title: <div className={staticClasses.Title}>Clash Deck</div>,
     content: <Content serverAPI={serverApi} />,
     icon: <FaCat />,
     onDismount() {
-      //serverApi.routerHook.removeRoute("/decky-plugin-test");
+      serverApi.routerHook.removeRoute("/clash-config");
     },
   };
 });
