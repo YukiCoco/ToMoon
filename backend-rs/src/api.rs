@@ -9,10 +9,6 @@ use usdpl_back::core::serdes::Primitive;
 pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 pub const NAME: &'static str = env!("CARGO_PKG_NAME");
 
-pub fn test(_: Vec<Primitive>) -> Vec<Primitive> {
-    vec!["Hello, World!".into()]
-}
-
 pub fn get_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
     let runtime_settings = runtime.settings_clone();
     move |_| {
@@ -24,6 +20,7 @@ pub fn get_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
             }
         };
         log::debug!("get_enable() success");
+        log::info!("get clash status with {}", lock.enable);
         vec![lock.enable.into()]
     }
 }

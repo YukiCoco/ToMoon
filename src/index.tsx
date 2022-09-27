@@ -14,50 +14,75 @@ import { FaCat } from "react-icons/fa";
 import * as backend from "./backend";
 
 let enabledGlobal = false;
+let usdplReady = false;
 
-// init USDPL WASM and connection to back-end
-(async function () {
-  await backend.initBackend();
-})();
-
-const Content: VFC<{ serverAPI: ServerAPI }> = ({}) => {
+const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
+  if (!usdplReady) {
+    return (
+      <PanelSection>
+        Init...
+      </PanelSection>
+    )
+  }
+  const [clashState, setClashState] = useState(enabledGlobal);
+  backend.resolve(backend.getEnabled(), setClashState);
+  console.log("status :" + clashState);
 
   return (
     <PanelSection>
-      <PanelSectionRow>
-        <ToggleField
-          label="Enable Clash"
-          description="Run Clash in background"
-          checked={enabledGlobal}
-          onChange={(value: boolean) => {
-            backend.resolve(backend.setEnabled(value), (v : boolean) => {
-              enabledGlobal = v;
+      <PanelSection title="Service">
+        <PanelSectionRow>
+          <ToggleField
+            label="Enable Clash"
+            description="Run Clash in background"
+            checked={clashState}
+            onChange={(value: boolean) => {
+              backend.resolve(backend.setEnabled(value), (v: boolean) => {
+                enabledGlobal = v;
+              });
+            }}
+          />
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <ButtonItem
+            layout="below"
+            onClick={() => {
+              Router.CloseSideMenus()
+              Router.Navigate("/clash-config")
+            }}
+          >
+            Manage Subscriptions
+          </ButtonItem>
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <ButtonItem
+            layout="below"
+            onClick={() => {
+              Router.CloseSideMenus()
+              Router.NavigateToExternalWeb("http://127.0.0.1:9090/ui")
+            }}
+          >
+            Open Dashboard
+          </ButtonItem>
+        </PanelSectionRow>
+      </PanelSection>
+
+      <PanelSection title="Debug">
+        <PanelSectionRow>
+          {/* {clashState ? "on" : "off"} */}
+          {/* <ButtonItem
+          layout="below"
+          onClick={() => {
+            //test
+            //var status = false;
+            backend.resolve(backend.getEnabled(), (v: boolean) => {
             });
           }}
-        />
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={() => {
-            Router.CloseSideMenus()
-            Router.Navigate("/clash-config")
-          }}
         >
-         Manage Subscriptions
-        </ButtonItem>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={() => {
-            Router.CloseSideMenus()
-            Router.NavigateToExternalWeb("http://127.0.0.1:9090/ui")
-          }}
-        >
-          Open Dashboard
-        </ButtonItem>
-      </PanelSectionRow>
+          TEST BTN
+        </ButtonItem> */}
+        </PanelSectionRow>
+      </PanelSection>
     </PanelSection>
   );
 };
@@ -74,6 +99,16 @@ const DeckyPluginRouterTest: VFC = () => {
 };
 
 export default definePlugin((serverApi: ServerAPI) => {
+  // init USDPL WASM and connection to back-end
+  (async function () {
+    await backend.initBackend();
+    usdplReady = true;
+    backend.resolve(backend.getEnabled(), (v: boolean) => {
+      enabledGlobal = v;
+    });
+  })();
+
+
   serverApi.routerHook.addRoute("/clash-config", DeckyPluginRouterTest, {
     exact: true,
   });
