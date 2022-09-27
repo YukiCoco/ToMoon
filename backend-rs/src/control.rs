@@ -138,9 +138,23 @@ impl Default for Clash {
 
 impl Clash {
     pub fn run(&mut self) -> Result<(), ClashError> {
+        // 修改配置文件为推荐配置
+        self.change_config();
+
+        // 修改系统 DNS 为只读
+        fs::copy("/etc/resolv.conf", "./resolv.conf.bk").unwrap();
+        fs::write("/etc/resolv.conf", "nameserver 127.0.0.1").unwrap();
+        Command::new("chattr")
+        .arg("+i")
+        .arg("/etc/resolv.conf")
+        .spawn()
+        .unwrap()
+        .wait().unwrap();
+
+        let run_config = get_current_working_dir().unwrap().join("bin/core/running_config.yaml");
         let clash = Command::new(self.path.clone())
         .arg("-f")
-        .arg(self.config.clone())
+        .arg(run_config)
         .spawn();
         let clash: Result<Child, ClashError> = match clash {
             Ok(x) => Ok(x),
@@ -161,6 +175,15 @@ impl Clash {
                 //TODO: 错误处理
                 x.kill().unwrap();
                 x.wait().unwrap();
+
+                // 复原 DNS
+                Command::new("chattr")
+                .arg("-i")
+                .arg("/etc/resolv.conf")
+                .spawn()
+                .unwrap()
+                .wait().unwrap();
+                fs::copy("./resolv.conf.bk", "/etc/resolv.conf").unwrap();
             },
             None => {
                 //Not launch Clash yet...
@@ -168,7 +191,7 @@ impl Clash {
         };
     }
 
-    fn change_config(&self) {
+    pub fn change_config(&self) {
         let path = self.config.clone();
         let config = fs::read_to_string(path).unwrap();
         let mut yaml: serde_yaml::Value = serde_yaml::from_str(config.as_str()).unwrap();
@@ -193,7 +216,7 @@ impl Clash {
                 *x = Value::String(String::from(webui_dir.to_str().unwrap()));
             },
             None => {
-                yaml.insert(Value::String(String::from("external-controller")), Value::String(String::from(webui_dir.to_str().unwrap())));
+                yaml.insert(Value::String(String::from("external-ui")), Value::String(String::from(webui_dir.to_str().unwrap())));
             }
         }
 
@@ -260,8 +283,9 @@ impl Clash {
             }
         }
 
-        
+        let run_config = get_current_working_dir().unwrap().join("bin/core/running_config.yaml");
+
         let yaml_str = serde_yaml::to_string(&yaml).unwrap();
-        fs::write("./bin/config.new.yaml", yaml_str).unwrap();
+        fs::write(run_config, yaml_str).unwrap();
     }
 }
