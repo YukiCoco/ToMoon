@@ -52,7 +52,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({}) => {
           layout="below"
           onClick={() => {
             Router.CloseSideMenus()
-            Router.NavigateToExternalWeb("http://clash.razord.top")
+            Router.NavigateToExternalWeb("http://127.0.0.1:9090/ui")
           }}
         >
           Open Dashboard
