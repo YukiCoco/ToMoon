@@ -25,5 +25,6 @@ fn main() -> Result<(),()>  {
     Instance::new(PORT)
     .register("set_clash_status", api::set_clash_status(&runtime))
     .register("get_clash_status", api::get_clash_status(&runtime))
+    .register("reset_network", api::reset_network())
     .run_blocking()
 }

@@ -21,6 +21,14 @@ mod tests {
     }
 
     #[test]
+    fn test_yaml()
+    {
+        println!("{}", std::env::current_dir().unwrap().to_str().unwrap());
+        let mut clash = control::Clash::default();
+        clash.change_config();
+    }
+
+    #[test]
     fn run_yaml() {
         let path = "./bin/config.yaml";
         let config = fs::read_to_string(path).unwrap();

@@ -1,4 +1,4 @@
-use std::{process::Command, thread};
+use std::{process::Command, thread, fs};
 
 use crate::settings;
 
@@ -75,5 +75,26 @@ pub fn set_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
         } else {
             Vec::new()
         }
+    }
+}
+
+pub fn reset_network()  -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
+    |_| {
+        // 复原 DNS
+        Command::new("chattr")
+        .arg("-i")
+        .arg("/etc/resolv.conf")
+        .spawn()
+        .unwrap()
+        .wait().unwrap();
+        match fs::copy("./resolv.conf.bk", "/etc/resolv.conf") {
+            Ok(_) => (),
+            Err(e) => {
+                 log::error!("reset_network() error: {}",e);
+                 return vec![];
+            }
+        }
+        log::info!("Successfully reset network");
+        return vec![];
     }
 }
