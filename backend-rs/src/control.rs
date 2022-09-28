@@ -1,18 +1,19 @@
 use std::fmt::Display;
-use std::process::{Command, Child};
-use std::sync::{RwLock, Arc};
+use std::process::{Child, Command};
+use std::sync::{Arc, RwLock};
 
-use std::{thread, option, fs};
-use std::time::{Duration};
+use std::time::Duration;
+use std::{fs, thread};
 
 use serde_yaml::{Mapping, Value};
 
+use super::helper;
 use super::settings::{Settings, State};
 
 pub struct ControlRuntime {
     settings: Arc<RwLock<Settings>>,
     state: Arc<RwLock<State>>,
-    clash_state: Arc<RwLock<Clash>>
+    clash_state: Arc<RwLock<Clash>>,
 }
 
 impl ControlRuntime {
@@ -22,12 +23,15 @@ impl ControlRuntime {
         //TODO: Clash 路径
         let clash = Clash::default();
         Self {
-            settings: Arc::new(RwLock::new(super::settings::Settings::open(settings_p).unwrap_or_default().into())),
+            settings: Arc::new(RwLock::new(
+                super::settings::Settings::open(settings_p)
+                    .unwrap_or_default()
+                    .into(),
+            )),
             state: Arc::new(RwLock::new(new_state)),
             clash_state: Arc::new(RwLock::new(clash)),
         }
     }
-    
 
     pub(crate) fn settings_clone(&self) -> Arc<RwLock<Settings>> {
         self.settings.clone()
@@ -41,7 +45,7 @@ impl ControlRuntime {
         self.clash_state.clone()
     }
 
-    pub fn run(&self) -> thread::JoinHandle<()>{
+    pub fn run(&self) -> thread::JoinHandle<()> {
         let runtime_settings = self.settings_clone();
         let runtime_state = self.state_clone();
 
@@ -50,7 +54,8 @@ impl ControlRuntime {
             let sleep_duration = Duration::from_millis(1000);
             loop {
                 //let start_time = Instant::now();
-                { // save to file
+                {
+                    // save to file
                     let state = match runtime_state.read() {
                         Ok(x) => x,
                         Err(e) => {
@@ -69,7 +74,11 @@ impl ControlRuntime {
                         };
                         let settings_json: Settings = settings.clone().into();
                         if let Err(e) = settings_json.save(settings_path(&state.home)) {
-                            log::error!("SettingsJson.save({}) error: {}", settings_path(&state.home).display(), e);
+                            log::error!(
+                                "SettingsJson.save({}) error: {}",
+                                settings_path(&state.home).display(),
+                                e
+                            );
                         }
                         //Self::on_set_enable(&settings, &state);
                         drop(state);
@@ -98,9 +107,9 @@ fn get_current_working_dir() -> std::io::Result<std::path::PathBuf> {
 }
 
 pub struct Clash {
-    path : std::path::PathBuf,
-    config : std::path::PathBuf,
-    instence: Option<Child>
+    path: std::path::PathBuf,
+    config: std::path::PathBuf,
+    instence: Option<Child>,
 }
 
 #[derive(Debug)]
@@ -108,31 +117,44 @@ pub enum ClashErrorKind {
     CoreNotFound,
     ConfigFormatError,
     ConfigNotFound,
-    Default
+    NetworkError,
+    Default,
 }
-
 
 #[derive(Debug)]
 pub struct ClashError {
-    Message : String,
-    ErrorKind : ClashErrorKind
+    Message: String,
+    ErrorKind: ClashErrorKind,
 }
 
 impl Display for ClashError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Error Kind: {:?}, Error Message: {})", self.ErrorKind, self.Message)
+        write!(
+            f,
+            "Error Kind: {:?}, Error Message: {})",
+            self.ErrorKind, self.Message
+        )
     }
 }
 
 impl ClashError {
     fn new() -> Self {
-        Self { Message: "".to_string(), ErrorKind: ClashErrorKind::Default }
+        Self {
+            Message: "".to_string(),
+            ErrorKind: ClashErrorKind::Default,
+        }
     }
 }
 
 impl Default for Clash {
     fn default() -> Self {
-        Self { path: get_current_working_dir().unwrap().join("bin/core/clash"), config: get_current_working_dir().unwrap().join("bin/core/config.yaml"), instence: None}
+        Self {
+            path: get_current_working_dir().unwrap().join("bin/core/clash"),
+            config: get_current_working_dir()
+                .unwrap()
+                .join("bin/core/config.yaml"),
+            instence: None,
+        }
     }
 }
 
@@ -140,22 +162,27 @@ impl Clash {
     pub fn run(&mut self) -> Result<(), ClashError> {
         // 修改配置文件为推荐配置
         self.change_config();
+        //log::info!("Pre-setting network");
+        match helper::set_system_network() {
+            Ok(_) => {
+                log::info!("Successfully set network status");
+            }
+            Err(e) => {
+                log::error!("Error occurred while setting system network: {}", e);
+                return Err(ClashError {
+                    Message: e.to_string(),
+                    ErrorKind: ClashErrorKind::NetworkError,
+                });
+            }
+        }
 
-        // 修改系统 DNS 为只读
-        fs::copy("/etc/resolv.conf", "./resolv.conf.bk").unwrap();
-        fs::write("/etc/resolv.conf", "nameserver 127.0.0.1").unwrap();
-        Command::new("chattr")
-        .arg("+i")
-        .arg("/etc/resolv.conf")
-        .spawn()
-        .unwrap()
-        .wait().unwrap();
-
-        let run_config = get_current_working_dir().unwrap().join("bin/core/running_config.yaml");
+        let run_config = get_current_working_dir()
+            .unwrap()
+            .join("bin/core/running_config.yaml");
         let clash = Command::new(self.path.clone())
-        .arg("-f")
-        .arg(run_config)
-        .spawn();
+            .arg("-f")
+            .arg(run_config)
+            .spawn();
         let clash: Result<Child, ClashError> = match clash {
             Ok(x) => Ok(x),
             Err(e) => {
@@ -171,20 +198,21 @@ impl Clash {
     pub fn stop(&mut self) {
         let instance = self.instence.as_mut();
         match instance {
-            Some(mut x) => {
+            Some(x) => {
                 //TODO: 错误处理
                 x.kill().unwrap();
                 x.wait().unwrap();
 
                 // 复原 DNS
                 Command::new("chattr")
-                .arg("-i")
-                .arg("/etc/resolv.conf")
-                .spawn()
-                .unwrap()
-                .wait().unwrap();
+                    .arg("-i")
+                    .arg("/etc/resolv.conf")
+                    .spawn()
+                    .unwrap()
+                    .wait()
+                    .unwrap();
                 fs::copy("./resolv.conf.bk", "/etc/resolv.conf").unwrap();
-            },
+            }
             None => {
                 //Not launch Clash yet...
             }
@@ -202,9 +230,12 @@ impl Clash {
         match yaml.get_mut("external-controller") {
             Some(x) => {
                 *x = Value::String(String::from("127.0.0.1:9090"));
-            },
+            }
             None => {
-                yaml.insert(Value::String(String::from("external-controller")), Value::String(String::from("127.0.0.1:9090")));
+                yaml.insert(
+                    Value::String(String::from("external-controller")),
+                    Value::String(String::from("127.0.0.1:9090")),
+                );
             }
         }
 
@@ -214,9 +245,12 @@ impl Clash {
             Some(x) => {
                 //TODO: 修改 Web UI 的路径
                 *x = Value::String(String::from(webui_dir.to_str().unwrap()));
-            },
+            }
             None => {
-                yaml.insert(Value::String(String::from("external-ui")), Value::String(String::from(webui_dir.to_str().unwrap())));
+                yaml.insert(
+                    Value::String(String::from("external-ui")),
+                    Value::String(String::from(webui_dir.to_str().unwrap())),
+                );
             }
         }
 
@@ -228,7 +262,6 @@ impl Clash {
         auto-route: true
         auto-detect-interface: true
         ";
-
 
         //部分配置来自 https://www.xkww3n.cyou/2022/02/08/use-clash-dns-anti-dns-hijacking/
         let dns_config = "
@@ -256,6 +289,11 @@ impl Clash {
                 - 240.0.0.0/4
         ";
 
+        let profile_config = "
+        store-selected: true
+        store-fake-ip: false
+        ";
+
         let insert_config = |yaml: &mut Mapping, config: &str, key: &str| {
             let inner_config: Value = serde_yaml::from_str(config).unwrap();
             yaml.insert(Value::String(String::from(key)), inner_config);
@@ -266,7 +304,7 @@ impl Clash {
             Some(_) => {
                 yaml.remove("tun").unwrap();
                 insert_config(yaml, tun_config, "tun");
-            },
+            }
             None => {
                 insert_config(yaml, tun_config, "tun");
             }
@@ -283,7 +321,21 @@ impl Clash {
             }
         }
 
-        let run_config = get_current_working_dir().unwrap().join("bin/core/running_config.yaml");
+        // 保存上次的配置
+        match yaml.get("profile") {
+            Some(_) => {
+                //删除 DNS 配置
+                yaml.remove("profile").unwrap();
+                insert_config(yaml, profile_config, "profile");
+            }
+            None => {
+                insert_config(yaml, profile_config, "profile");
+            }
+        }
+
+        let run_config = get_current_working_dir()
+            .unwrap()
+            .join("bin/core/running_config.yaml");
 
         let yaml_str = serde_yaml::to_string(&yaml).unwrap();
         fs::write(run_config, yaml_str).unwrap();

@@ -2,6 +2,7 @@ mod api;
 mod settings;
 mod control;
 mod test;
+mod helper;
 
 use simplelog::{WriteLogger, LevelFilter};
 use usdpl_back::Instance;
@@ -15,7 +16,7 @@ fn main() -> Result<(),()>  {
         std::fs::File::create("/tmp/clashdeck.log").unwrap()
     ).unwrap();
 
-    log::info!("Starting back-end ({} v{})", api::NAME, api::VERSION);
+    log::info!("Starting back-end ({} v{} build.12353)", api::NAME, api::VERSION);
     log::info!("{}",std::env::current_dir().unwrap().to_str().unwrap());
     println!("Starting back-end ({} v{})", api::NAME, api::VERSION);
 

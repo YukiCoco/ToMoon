@@ -1,13 +1,19 @@
 mod tests {
 
-    use crate::control;
+    use crate::{control, helper};
+    use regex::Regex;
     use serde_yaml::{Mapping, Number, Value};
-    use std::{fs, thread, time::Duration};
+    use std::{fs, process::Command, thread, time::Duration};
+
+    use sysinfo::{Pid, ProcessExt, System, SystemExt};
 
     #[test]
     fn it_works() {
         assert_eq!(2 + 3, 4);
     }
+
+    #[test]
+    fn read_dns() {}
 
     #[test]
     fn run_clash() {
@@ -21,8 +27,32 @@ mod tests {
     }
 
     #[test]
-    fn test_yaml()
-    {
+    fn test_network() {
+        helper::set_system_network().unwrap();
+    }
+
+    #[test]
+    fn find_process() {
+        let mut sys = System::new_all();
+
+        // First we update all information of our `System` struct.
+        sys.refresh_all();
+        // if let Some(process) = sys.process(Pid::from(28656)) {
+        //     println!("process : {}", process.name());
+        // } else {
+        //     println!("Not found");
+        // }
+
+        for (pid, process) in sys.processes() {
+            if process.name() == "systemd-resolve"
+            {
+                println!("[{}] {} {:?}", pid, process.name(), process.disk_usage());
+            }
+        }
+    }
+
+    #[test]
+    fn test_yaml() {
         println!("{}", std::env::current_dir().unwrap().to_str().unwrap());
         let mut clash = control::Clash::default();
         clash.change_config();
@@ -40,19 +70,29 @@ mod tests {
         match yaml.get_mut("external-controller") {
             Some(x) => {
                 *x = Value::String(String::from("127.0.0.1:9090"));
-            },
+            }
             None => {
-                yaml.insert(Value::String(String::from("external-controller")), Value::String(String::from("127.0.0.1:9090")));
+                yaml.insert(
+                    Value::String(String::from("external-controller")),
+                    Value::String(String::from("127.0.0.1:9090")),
+                );
             }
         }
 
         match yaml.get_mut("external-ui") {
             Some(x) => {
                 //TODO: 修改 Web UI 的路径
-                *x = Value::String(String::from("/home/deck/homebrew/plugins/clashdeck3/bin/core/web"));
-            },
+                *x = Value::String(String::from(
+                    "/home/deck/homebrew/plugins/clashdeck3/bin/core/web",
+                ));
+            }
             None => {
-                yaml.insert(Value::String(String::from("external-controller")), Value::String(String::from("/home/deck/homebrew/plugins/clashdeck3/bin/core/web")));
+                yaml.insert(
+                    Value::String(String::from("external-controller")),
+                    Value::String(String::from(
+                        "/home/deck/homebrew/plugins/clashdeck3/bin/core/web",
+                    )),
+                );
             }
         }
 
@@ -64,7 +104,6 @@ mod tests {
         auto-route: true
         auto-detect-interface: true
         ";
-
 
         //部分配置来自 https://www.xkww3n.cyou/2022/02/08/use-clash-dns-anti-dns-hijacking/
         let dns_config = "
@@ -102,7 +141,7 @@ mod tests {
             Some(_) => {
                 yaml.remove("tun").unwrap();
                 insert_config(yaml, tun_config, "tun");
-            },
+            }
             None => {
                 insert_config(yaml, tun_config, "tun");
             }
@@ -119,7 +158,6 @@ mod tests {
             }
         }
 
-        
         let yaml_str = serde_yaml::to_string(&yaml).unwrap();
         fs::write("./bin/config.new.yaml", yaml_str).unwrap();
     }

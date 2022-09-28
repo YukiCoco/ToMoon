@@ -1,6 +1,4 @@
-use std::{process::Command, thread, fs};
-
-use crate::settings;
+use crate::helper;
 
 use super::control::ControlRuntime;
 
@@ -80,17 +78,10 @@ pub fn set_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
 
 pub fn reset_network()  -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
     |_| {
-        // 复原 DNS
-        Command::new("chattr")
-        .arg("-i")
-        .arg("/etc/resolv.conf")
-        .spawn()
-        .unwrap()
-        .wait().unwrap();
-        match fs::copy("./resolv.conf.bk", "/etc/resolv.conf") {
+        match helper::reset_system_network() {
             Ok(_) => (),
             Err(e) => {
-                 log::error!("reset_network() error: {}",e);
+                 log::error!("Error occured while reset_network() : {}",e);
                  return vec![];
             }
         }
