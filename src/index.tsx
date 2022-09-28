@@ -6,12 +6,27 @@ import {
   Router,
   ServerAPI,
   staticClasses,
-  ToggleField
+  ToggleField,
+  SidebarNavigation,
+  DropdownOption,
+  Dropdown,
+  DropdownItem
 } from "decky-frontend-lib";
-import { VFC, useState } from "react";
+import { VFC, useState, useMemo } from "react";
 import { FaCat } from "react-icons/fa";
 
+import {
+  Subscriptions
+} from "./pages";
+
 import * as backend from "./backend";
+
+import { mt8Style } from "./style"
+
+// import {
+//   mt8Style
+// } from "./style";
+
 
 let enabledGlobal = false;
 let usdplReady = false;
@@ -28,21 +43,54 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   backend.resolve(backend.getEnabled(), setClashState);
   console.log("status :" + clashState);
 
+  const options = useMemo(
+    (): DropdownOption[] => [
+      {
+        data: 1,
+        label: "One",
+      },
+      {
+        data: 2,
+        label: "Two",
+      },
+      {
+        data: 3,
+        label: "Three",
+      },
+    ],
+    []
+  );
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+
   return (
     <PanelSection>
       <PanelSection title="Service">
         <PanelSectionRow>
-          <ToggleField
-            label="Enable Clash"
-            description="Run Clash in background"
-            checked={clashState}
-            onChange={(value: boolean) => {
-              backend.resolve(backend.setEnabled(value), (v: boolean) => {
-                enabledGlobal = v;
-              });
+          <div>
+            <ToggleField
+              label="Enable Clash"
+              description="Run Clash in background"
+              checked={clashState}
+              onChange={(value: boolean) => {
+                backend.resolve(backend.setEnabled(value), (v: boolean) => {
+                  enabledGlobal = v;
+                });
+              }}
+            />
+          </div>
+          <Dropdown
+            strDefaultLabel="Select a Subscription"
+            rgOptions={options}
+            selectedOption={selectedOption}
+            onChange={async (_) => {
+
             }}
           />
         </PanelSectionRow>
+        {/* <PanelSectionRow>
+          
+        </PanelSectionRow> */}
+
         <PanelSectionRow>
           <ButtonItem
             layout="below"
@@ -69,6 +117,19 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
 
       <PanelSection title="Debug">
         <PanelSectionRow>
+          <ButtonItem
+            layout="below"
+            onClick={() => {
+              backend.resolve(backend.resetNetwork(), () => {
+                Router.CloseSideMenus();
+                console.log("reset network");
+              });
+            }}
+          >
+            Reset Network
+          </ButtonItem>
+        </PanelSectionRow>
+        <PanelSectionRow>
           {/* {clashState ? "on" : "off"} */}
           {/* <ButtonItem
           layout="below"
@@ -89,12 +150,17 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
 
 const DeckyPluginRouterTest: VFC = () => {
   return (
-    <div style={{ marginTop: "50px", color: "white" }}>
-      Hello World!
-      {/* <DialogButton onClick={() => Router.NavigateToStore()}>
-        Go to Store
-      </DialogButton> */}
-    </div>
+    <SidebarNavigation
+      title="Clash Deck"
+      showTitle
+      pages={[
+        {
+          title: "Subscriptions",
+          content: <Subscriptions />,
+          route: "/clash-config/subscriptions"
+        }
+      ]}
+    />
   );
 };
 

@@ -39,3 +39,7 @@ export async function setEnabled(value: boolean): Promise<boolean> {
 export async function getEnabled(): Promise<boolean> {
     return (await call_backend("get_clash_status", []))[0];
 }
+
+export async function resetNetwork(): Promise<any[]> {
+    return (await call_backend("reset_network", []));
+}
