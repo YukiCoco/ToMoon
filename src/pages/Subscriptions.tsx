@@ -3,8 +3,11 @@ import { useReducer, useState, VFC } from "react";
 import { cleanPadding } from "../style";
 import { SubList } from "./components/SubList";
 
+import * as backend from "../backend";
+
 export const Subscriptions: VFC = () => {
     const [text, setText] = useState("");
+    const [downloadTips, setDownloadTips] = useState("");
     const [subscriptions, updateSubscriptions] = useState([
         {
             id: 0,
@@ -18,6 +21,30 @@ export const Subscriptions: VFC = () => {
         }
     ]);
     const [_, forceUpdate] = useReducer(x => x + 1, 0);
+
+    let checkStatusHandler: any;
+    const refreshDownloadStatus = () => {
+        backend.resolve(backend.getDownloadStatus(), (v: any) => {
+            let response = v.toString();
+            switch (response) {
+                case "Error":
+                    setDownloadTips("Download Error");
+                    break;
+                case "Failed":
+                    setDownloadTips("Download Failed");
+                    break;
+                case "Success":
+                    setDownloadTips("Download Succeeded");
+                    break;
+                default:
+                    break;
+            }
+            if (response != "Downloading") {
+                clearInterval(checkStatusHandler);
+                console.log("Download successfully");
+            }
+        });
+    }
     return (
         <div>
             <style>
@@ -36,13 +63,19 @@ export const Subscriptions: VFC = () => {
                         label="Subscription Link"
                         value={text}
                         onChange={(e) => setText(e?.target.value)}
+                        description={downloadTips}
                     />
                 </div>
-                <ButtonItem layout="below" onClick={() => { }}>
+                <ButtonItem layout="below" onClick={() => {
+                    backend.resolve(backend.downloadSub(text), () => {
+                        console.log("download sub: " + text);
+                    });
+                    checkStatusHandler = setInterval(refreshDownloadStatus, 500);
+                }}>
                     Download
                 </ButtonItem>
                 <ButtonItem layout="below" onClick={() => {
-                 }}>
+                }}>
                     Update All
                 </ButtonItem>
             </PanelSectionRow>

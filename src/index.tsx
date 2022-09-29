@@ -10,7 +10,6 @@ import {
   SidebarNavigation,
   DropdownOption,
   Dropdown,
-  DropdownItem
 } from "decky-frontend-lib";
 import { VFC, useState, useMemo } from "react";
 import { FaCat } from "react-icons/fa";
@@ -20,13 +19,6 @@ import {
 } from "./pages";
 
 import * as backend from "./backend";
-
-import { mt8Style } from "./style"
-
-// import {
-//   mt8Style
-// } from "./style";
-
 
 let enabledGlobal = false;
 let usdplReady = false;

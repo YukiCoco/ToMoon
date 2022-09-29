@@ -43,3 +43,11 @@ export async function getEnabled(): Promise<boolean> {
 export async function resetNetwork(): Promise<any[]> {
     return (await call_backend("reset_network", []));
 }
+
+export async function downloadSub(value: String): Promise<any[]> {
+    return (await call_backend("download_sub", [value]))[0];
+}
+
+export async function getDownloadStatus(): Promise<String> {
+    return (await call_backend("get_download_status", []))[0];
+}
