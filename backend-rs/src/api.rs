@@ -1,7 +1,10 @@
-use crate::helper;
+use std::{fs, string, thread};
+
+use crate::{control::DownloadStatus, helper, settings::Subscription};
 
 use super::control::ControlRuntime;
 
+use rand::{distributions::Alphanumeric, Rng};
 use usdpl_back::core::serdes::Primitive;
 
 pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -76,16 +79,151 @@ pub fn set_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
     }
 }
 
-pub fn reset_network()  -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
+pub fn reset_network() -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
     |_| {
         match helper::reset_system_network() {
             Ok(_) => (),
             Err(e) => {
-                 log::error!("Error occured while reset_network() : {}",e);
-                 return vec![];
+                log::error!("Error occured while reset_network() : {}", e);
+                return vec![];
             }
         }
         log::info!("Successfully reset network");
+        return vec![];
+    }
+}
+
+pub fn download_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
+    let download_status = runtime.downlaod_status_clone();
+    let runtime_state = runtime.state_clone();
+    let runtime_setting = runtime.settings_clone();
+    move |params| {
+        if let Some(Primitive::String(url)) = params.get(0) {
+            match download_status.write() {
+                Ok(mut x) => {
+                    let path = match runtime_state.read() {
+                        Ok(x) => x.home.as_path().join(".config/clashdeck/subs/"),
+                        Err(e) => {
+                            log::error!("download_sub() faild to acquire state read {}", e);
+                            return vec![];
+                        }
+                    };
+                    *x = DownloadStatus::Downloading;
+                    //新线程复制准备
+                    let url = url.clone();
+                    let download_status = download_status.clone();
+                    let runtime_setting = runtime_setting.clone();
+                    //开始下载
+                    thread::spawn(move || {
+                        let update_status = |status: DownloadStatus| {
+                            //修改下载状态
+                            match download_status.write() {
+                                Ok(mut x) => {
+                                    *x = status;
+                                }
+                                Err(e) => {
+                                    log::error!(
+                                        "download_sub() faild to acquire download_status write {}",
+                                        e
+                                    );
+                                }
+                            }
+                        };
+                        match minreq::get(url.clone()).with_timeout(10).send() {
+                            Ok(x) => {
+                                let response = x.as_str().unwrap();
+                                let yaml = match serde_yaml::from_str::<serde_yaml::Value>(response)
+                                {
+                                    Ok(x) => x,
+                                    Err(e) => {
+                                        log::error!("The downlaoded sub is not a legal profile.");
+                                        log::error!("Error Message:{}", e);
+                                        update_status(DownloadStatus::Error);
+                                        return;
+                                    }
+                                };
+
+                                if let Some(x) = yaml.as_mapping() {
+                                    if !x.contains_key("rules") {
+                                        log::error!("Cannt found rules, the downlaoded sub is not a legal profile.");
+                                        update_status(DownloadStatus::Error);
+                                        return;
+                                    }
+                                } else {
+                                    log::error!("Cannt mapping yaml, The downlaoded sub is not a legal profile.");
+                                    update_status(DownloadStatus::Error);
+                                    return;
+                                }
+
+                                let s: String = rand::thread_rng()
+                                    .sample_iter(&Alphanumeric)
+                                    .take(5)
+                                    .map(char::from)
+                                    .collect();
+                                let path = path.join(s + ".yaml");
+                                //保存订阅
+                                if let Some(parent) = path.parent() {
+                                    if let Err(e) = std::fs::create_dir_all(parent) {
+                                        log::error!("Failed while creating sub dir.");
+                                        log::error!("Error Message:{}", e);
+                                        update_status(DownloadStatus::Error);
+                                        return;
+                                    }
+                                }
+                                let path = path.to_str().unwrap();
+                                if let Err(e) = fs::write(path, response) {
+                                    log::error!("Failed while saving sub.");
+                                    log::error!("Error Message:{}", e);
+                                }
+                                //下载成功
+                                //修改下载状态
+                                log::info!("Download profile successfully.");
+                                update_status(DownloadStatus::Success);
+                                //存入设置
+                                match runtime_setting.write() {
+                                    Ok(mut x) => {
+                                        x.subscriptions
+                                            .push(Subscription::new(path.to_string(), url));
+                                    }
+                                    Err(e) => {
+                                        log::error!(
+                                        "download_sub() faild to acquire runtime_setting write {}",
+                                        e
+                                    );
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                log::error!("Failed while downloading sub.");
+                                log::error!("Error Message:{}", e);
+                                update_status(DownloadStatus::Failed);
+                            }
+                        };
+                    });
+                }
+                Err(_) => {
+                    log::error!("download_sub() faild to acquire state write");
+                    return vec![];
+                }
+            }
+        } else {
+        }
+        return vec![];
+    }
+}
+
+pub fn get_download_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
+    let downlaod_status = runtime.downlaod_status_clone();
+    move |_| {
+        match downlaod_status.read() {
+            Ok(x) => {
+                let status = x.to_string();
+                return vec![status.into()];
+            }
+            Err(e) => {
+                log::error!("Error occured while get_download_status()");
+            }
+        }
         return vec![];
     }
 }

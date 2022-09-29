@@ -14,7 +14,29 @@ pub struct ControlRuntime {
     settings: Arc<RwLock<Settings>>,
     state: Arc<RwLock<State>>,
     clash_state: Arc<RwLock<Clash>>,
+    downlaod_status: Arc<RwLock<DownloadStatus>>
 }
+
+#[derive(Debug)]
+pub enum DownloadStatus {
+    Downloading,
+    Failed,
+    Success,
+    Error,
+    None
+}
+
+impl std::fmt::Display for DownloadStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+        // or, alternatively:
+        // fmt::Debug::fmt(self, f)
+    }
+}
+
+// pub struct DownloadStatus {
+    
+// }
 
 impl ControlRuntime {
     pub fn new() -> Self {
@@ -22,6 +44,7 @@ impl ControlRuntime {
         let settings_p = settings_path(&new_state.home);
         //TODO: Clash 路径
         let clash = Clash::default();
+        let download_status = DownloadStatus::None;
         Self {
             settings: Arc::new(RwLock::new(
                 super::settings::Settings::open(settings_p)
@@ -30,6 +53,7 @@ impl ControlRuntime {
             )),
             state: Arc::new(RwLock::new(new_state)),
             clash_state: Arc::new(RwLock::new(clash)),
+            downlaod_status: Arc::new(RwLock::new(download_status)),
         }
     }
 
@@ -43,6 +67,10 @@ impl ControlRuntime {
 
     pub fn clash_state_clone(&self) -> Arc<RwLock<Clash>> {
         self.clash_state.clone()
+    }
+
+    pub fn downlaod_status_clone(&self) -> Arc<RwLock<DownloadStatus>> {
+        self.downlaod_status.clone()
     }
 
     pub fn run(&self) -> thread::JoinHandle<()> {

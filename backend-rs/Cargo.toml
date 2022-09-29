@@ -9,14 +9,12 @@ edition = "2021"
 usdpl-back = { version = "0.7.0", features = ["blocking"]}
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-
 # logging
 log = "0.4"
 simplelog = "0.12"
-
 # yaml
 serde_yaml = "0.9"
-
 regex = "1.6"
-
 sysinfo = "0.26"
+minreq = { version = "2.6", features = ["https"]}
+rand = "0.8"

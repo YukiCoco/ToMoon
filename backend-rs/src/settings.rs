@@ -5,7 +5,13 @@ use std::{path::PathBuf, fmt::Display};
 pub struct Settings {
     pub enable : bool,
     pub tun_mode : bool,
-    pub subscriptions : Vec<String>
+    pub subscriptions : Vec<Subscription>
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Subscription {
+    pub path : String,
+    pub url : String
 }
 
 #[derive(Debug)]
@@ -20,6 +26,13 @@ impl Display for JsonError {
             Self::Serde(e) => (e as &dyn Display).fmt(f),
             Self::Io(e) => (e as &dyn Display).fmt(f),
         }
+    }
+}
+
+impl Subscription {
+    pub fn new(path: String, url: String) -> Self
+    {
+        Self { path: path, url: url }
     }
 }
 

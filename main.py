@@ -15,6 +15,6 @@ class Plugin:
         # startup
         # 切换到工作目录
         os.chdir(PARENT_DIR)
-        self.backend_proc = subprocess.Popen([PARENT_DIR + "/bin/backend"])
+        self.backend_proc = subprocess.Popen([PARENT_DIR + "/bin/clashdeck"])
         while True:
             await asyncio.sleep(1)
