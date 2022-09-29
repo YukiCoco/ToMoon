@@ -22,6 +22,7 @@ import * as backend from "./backend";
 
 let enabledGlobal = false;
 let usdplReady = false;
+let subs: any[];
 
 const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   if (!usdplReady) {
@@ -33,6 +34,22 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   }
   const [clashState, setClashState] = useState(enabledGlobal);
   backend.resolve(backend.getEnabled(), setClashState);
+  backend.resolve(backend.getSubList(), (v: String) => {
+    let x: Array<any> = JSON.parse(v.toString());
+    let re = new RegExp("(?<=subs\/).+\.yaml$");
+    let i = 0;
+    subs = x.map(x => {
+      let name = re.exec(x.path);
+      return {
+        id: i++,
+        name: name![0],
+        url: x.url
+      }
+    });
+    console.log("Subs ready");
+    console.log(subs);
+    //console.log(sub);
+  });
   console.log("status :" + clashState);
 
   const options = useMemo(
@@ -148,7 +165,7 @@ const DeckyPluginRouterTest: VFC = () => {
       pages={[
         {
           title: "Subscriptions",
-          content: <Subscriptions />,
+          content: <Subscriptions Subscriptions={subs} />,
           route: "/clash-config/subscriptions"
         }
       ]}
@@ -163,6 +180,22 @@ export default definePlugin((serverApi: ServerAPI) => {
     usdplReady = true;
     backend.resolve(backend.getEnabled(), (v: boolean) => {
       enabledGlobal = v;
+    });
+    backend.resolve(backend.getSubList(), (v: String) => {
+      let x: Array<any> = JSON.parse(v.toString());
+      let re = new RegExp("(?<=subs\/).+\.yaml$");
+      let i = 0;
+      subs = x.map(x => {
+        let name = re.exec(x.path);
+        return {
+          id: i++,
+          name: name![0],
+          url: x.url
+        }
+      });
+      console.log("Subs ready");
+      console.log(subs);
+      //console.log(sub);
     });
   })();
 

@@ -51,3 +51,11 @@ export async function downloadSub(value: String): Promise<any[]> {
 export async function getDownloadStatus(): Promise<String> {
     return (await call_backend("get_download_status", []))[0];
 }
+
+export async function getSubList(): Promise<String> {
+    return (await call_backend("get_sub_list", []))[0];
+}
+
+export async function deleteSub(value: Number): Promise<any> {
+    return (await call_backend("delete_sub", [value]))[0];
+}

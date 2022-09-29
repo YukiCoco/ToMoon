@@ -5,28 +5,26 @@ import { SubList } from "./components/SubList";
 
 import * as backend from "../backend";
 
-export const Subscriptions: VFC = () => {
+interface SubProp {
+    Subscriptions: Array<any>,
+}
+
+export const Subscriptions: VFC<SubProp> = ({ Subscriptions }) => {
     const [text, setText] = useState("");
     const [downloadTips, setDownloadTips] = useState("");
-    const [subscriptions, updateSubscriptions] = useState([
-        {
-            id: 0,
-            name: "红杏出墙.yaml",
-            url: "http://xxx.com"
-        },
-        {
-            id: 1,
-            name: "红杏出墙2.yaml",
-            url: "http://aaa.com"
-        }
-    ]);
+    const [subscriptions, updateSubscriptions] = useState(Subscriptions);
+    const [downlaodBtnDisable, setDownlaodBtnDisable] = useState(false);
     const [_, forceUpdate] = useReducer(x => x + 1, 0);
 
     let checkStatusHandler: any;
+
     const refreshDownloadStatus = () => {
         backend.resolve(backend.getDownloadStatus(), (v: any) => {
             let response = v.toString();
             switch (response) {
+                case "Downloading":
+                    setDownloadTips("Downloading... Please wait");
+                    break;
                 case "Error":
                     setDownloadTips("Download Error");
                     break;
@@ -35,16 +33,38 @@ export const Subscriptions: VFC = () => {
                     break;
                 case "Success":
                     setDownloadTips("Download Succeeded");
-                    break;
-                default:
+                    // 刷新 Subs
+                    refreshSubs();
                     break;
             }
             if (response != "Downloading") {
                 clearInterval(checkStatusHandler);
-                console.log("Download successfully");
+                setDownlaodBtnDisable(false);
             }
         });
     }
+
+    const refreshSubs = () => {
+        backend.resolve(backend.getSubList(), (v: String) => {
+            let x: Array<any> = JSON.parse(v.toString());
+            let re = new RegExp("(?<=subs\/).+\.yaml$");
+            let i = 0;
+            let subs = x.map(x => {
+                let name = re.exec(x.path);
+                return {
+                    id: i++,
+                    name: name![0],
+                    url: x.url
+                }
+            });
+            console.log("Subs refresh");
+            updateSubscriptions(subs);
+            //console.log(sub);
+        });
+    }
+
+    console.log("load Subs page");
+
     return (
         <div>
             <style>
@@ -66,7 +86,8 @@ export const Subscriptions: VFC = () => {
                         description={downloadTips}
                     />
                 </div>
-                <ButtonItem layout="below" onClick={() => {
+                <ButtonItem layout="below" disabled={downlaodBtnDisable} onClick={() => {
+                    setDownlaodBtnDisable(true);
                     backend.resolve(backend.downloadSub(text), () => {
                         console.log("download sub: " + text);
                     });

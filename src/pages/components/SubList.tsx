@@ -1,6 +1,6 @@
-import { PanelSectionRow, TextField, ButtonItem } from "decky-frontend-lib";
+import { ButtonItem } from "decky-frontend-lib";
 import { VFC } from "react";
-
+import * as backend from "../../backend";
 interface appProp {
     Subscriptions: Array<any>,
     UpdateSub: any,
@@ -18,11 +18,12 @@ export const SubList: VFC<appProp> = ({ Subscriptions, UpdateSub, Refresh }) => 
                             <ButtonItem label={x.name} description={x.url} onClick={
                                 () => {
                                     //删除订阅
-                                    UpdateSub((source:Array<any>) => {
+                                    UpdateSub((source: Array<any>) => {
                                         let i = source.indexOf(x)
                                         source.splice(i, 1)
                                         return source
                                     });
+                                    backend.resolve(backend.deleteSub(x.id), () => { });
                                     Refresh()
                                 }
                             }>Delete</ButtonItem>
