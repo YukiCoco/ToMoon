@@ -31,7 +31,7 @@ export const About: VFC = () => {
             <h2
                 style={{ fontWeight: "bold", fontSize: "1.5em", marginBottom: "0px" }}
             >
-                Developers
+                Developer
             </h2>
             <PanelSectionRow>
                 <ButtonItem

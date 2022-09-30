@@ -15,7 +15,7 @@ pub struct ControlRuntime {
     state: Arc<RwLock<State>>,
     clash_state: Arc<RwLock<Clash>>,
     downlaod_status: Arc<RwLock<DownloadStatus>>,
-    update_status: Arc<RwLock<DownloadStatus>>
+    update_status: Arc<RwLock<DownloadStatus>>,
 }
 
 #[derive(Debug)]
@@ -56,7 +56,7 @@ impl ControlRuntime {
             state: Arc::new(RwLock::new(new_state)),
             clash_state: Arc::new(RwLock::new(clash)),
             downlaod_status: Arc::new(RwLock::new(download_status)),
-            update_status: Arc::new(RwLock::new(update_status))
+            update_status: Arc::new(RwLock::new(update_status)),
         }
     }
 
@@ -83,6 +83,22 @@ impl ControlRuntime {
     pub fn run(&self) -> thread::JoinHandle<()> {
         let runtime_settings = self.settings_clone();
         let runtime_state = self.state_clone();
+
+        //health check
+        //当程序上次异常退出时的处理
+        if let Ok(mut v) = runtime_settings.write() {
+            if !helper::is_clash_running() && v.enable {
+                v.enable = false;
+                drop(v);
+                //刷新网卡
+                match helper::reset_system_network() {
+                    Ok(_) => {},
+                    Err(e) => {
+                        log::error!("runtime failed to acquire settings write lock: {}", e);
+                    }
+                }
+            }
+        }
 
         //save config
         thread::spawn(move || {

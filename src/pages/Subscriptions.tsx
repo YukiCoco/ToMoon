@@ -26,7 +26,7 @@ export const Subscriptions: VFC<SubProp> = ({ Subscriptions }) => {
             let response = v.toString();
             switch (response) {
                 case "Downloading":
-                    setDownloadTips("Downloading... Please wait");
+                    setDownloadTips("Downloading...");
                     break;
                 case "Error":
                     setDownloadTips("Download Error");

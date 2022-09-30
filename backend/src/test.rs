@@ -13,7 +13,9 @@ mod tests {
     }
 
     #[test]
-    fn read_dns() {}
+    fn read_dns() {
+        assert_eq!(helper::is_clash_running(),true);
+    }
 
     #[test]
     fn run_clash() {

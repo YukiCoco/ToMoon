@@ -141,3 +141,15 @@ pub fn check_yaml(str: String) -> bool {
         return false;
     }
 }
+
+pub fn is_clash_running() -> bool {
+    //关闭 systemd-resolved
+    let mut sys = System::new_all();
+    sys.refresh_all();
+    for (_, process) in sys.processes() {
+        if process.name() == "clash" {
+            return true;
+        }
+    };
+    return false;
+}

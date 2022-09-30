@@ -144,6 +144,7 @@ pub fn download_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<
                                 let response = x.as_str().unwrap();
                                 if !helper::check_yaml(String::from(response)) {
                                     log::error!("The downlaoded sub is not a legal profile.");
+                                    update_status(DownloadStatus::Error);
                                     return;
                                 }
                                 let s: String = rand::thread_rng()
@@ -179,6 +180,7 @@ pub fn download_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<
                                             Ok(x) => x,
                                             Err(e) => {
                                                 log::error!("set_enable failed to acquire state write lock: {}", e);
+                                                update_status(DownloadStatus::Error);
                                                 return;
                                             }
                                         };
@@ -189,6 +191,7 @@ pub fn download_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<
                                         "download_sub() faild to acquire runtime_setting write {}",
                                         e
                                     );
+                                    update_status(DownloadStatus::Error);
                                     }
                                 }
                             }
