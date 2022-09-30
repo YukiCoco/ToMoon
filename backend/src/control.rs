@@ -194,7 +194,8 @@ impl Default for Clash {
 }
 
 impl Clash {
-    pub fn run(&mut self) -> Result<(), ClashError> {
+    pub fn run(&mut self, config_path: &String) -> Result<(), ClashError> {
+        self.update_config_path(config_path);
         // 修改配置文件为推荐配置
         match self.change_config() {
             Ok(_) => (),

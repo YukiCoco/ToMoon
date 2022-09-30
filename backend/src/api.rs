@@ -48,9 +48,18 @@ pub fn set_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
                         return vec![];
                     }
                 };
+                // 有些时候第一次没有选择订阅
+                if settings.current_sub == "" {
+                    log::info!("no profile provided, try to use first profile.");
+                    if let Some(sub) = settings.subscriptions.get(0) {
+                        settings.current_sub = sub.path.clone();
+                    } else {
+                        log::error!("no profile provided.");
+                    }
+                }
                 // Enable Clash
                 if *enabled {
-                    match clash.run() {
+                    match clash.run(&settings.current_sub) {
                         Ok(_) => (),
                         Err(e) => {
                             log::error!("Run clash error: {}", e);
@@ -258,11 +267,17 @@ pub fn delete_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Pr
                             Ok(_) => {}
                             Err(e) => {
                                 log::error!("delete file error: {}", e);
+                                return vec![];
                             }
                         }
                     }
-                    log::info!("delete {:?}", x.subscriptions.get(*id as usize).unwrap());
-                    x.subscriptions.remove(*id as usize);
+                    if let Some(item) = x.subscriptions.get(*id as usize) {
+                        if x.current_sub == item.path {
+                            x.current_sub = "".to_string();
+                        }
+                        x.subscriptions.remove(*id as usize);
+                    }
+                    //log::info!("delete {:?}", x.subscriptions.get(*id as usize).unwrap());
                     drop(x);
                     let mut state = match runtime_state.write() {
                         Ok(x) => x,
@@ -283,7 +298,7 @@ pub fn delete_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Pr
 }
 
 pub fn set_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
-    let runtime_clash = runtime.clash_state_clone();
+    //let runtime_clash = runtime.clash_state_clone();
     let runtime_state = runtime.state_clone();
     let runtime_setting = runtime.settings_clone();
     move |params: Vec<Primitive>| {
@@ -308,16 +323,16 @@ pub fn set_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Primi
                     return vec![];
                 }
             };
-            //更新到当前内存中
-            match runtime_clash.write() {
-                Ok(mut x) => {
-                    x.update_config_path(path);
-                    log::info!("set profile path to {}", path);
-                }
-                Err(e) => {
-                    log::error!("set_sub() failed to acquire clash write lock: {}", e);
-                }
-            }
+            // //更新到当前内存中
+            // match runtime_clash.write() {
+            //     Ok(mut x) => {
+            //         x.update_config_path(path);
+            //         log::info!("set profile path to {}", path);
+            //     }
+            //     Err(e) => {
+            //         log::error!("set_sub() failed to acquire clash write lock: {}", e);
+            //     }
+            // }
         }
         return vec![];
     }

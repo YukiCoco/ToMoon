@@ -11,8 +11,8 @@ import {
   DropdownOption,
   Dropdown,
 } from "decky-frontend-lib";
-import { VFC, useState, useMemo } from "react";
-import { FaCat } from "react-icons/fa";
+import { VFC, useState } from "react";
+import { GiEgyptianBird } from "react-icons/gi";
 
 import {
   Subscriptions
@@ -41,6 +41,24 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   let [options, setOptions] = useState<DropdownOption[]>([]);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [optionDropdownDisabled, setOptionDropdownDisabled] = useState(enabledGlobal);
+  const [isSelectionDisabled, setIsSelectionDisabled] = useState(false);
+
+  backend.resolve(backend.getSubList(), (v: String) => {
+    let x: Array<any> = JSON.parse(v.toString());
+    let re = new RegExp("(?<=subs\/).+\.yaml$");
+    let i = 0;
+    subs = x.map(x => {
+      let name = re.exec(x.path);
+      return {
+        id: i++,
+        name: name![0],
+        url: x.url
+      }
+    });
+    console.log("Subs ready");
+    setIsSelectionDisabled(i == 0);
+    //console.log(sub);
+  });
 
   return (
     <PanelSection>
@@ -57,6 +75,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
                 });
                 setOptionDropdownDisabled(value);
               }}
+              disabled={isSelectionDisabled}
             />
           </div>
           <Dropdown
@@ -84,7 +103,9 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
               });
             }}
             onChange={(x) => {
-              backend.resolve(backend.setSub(x.data), () => { });
+              backend.resolve(backend.setSub(x.data), () => {
+                setIsSelectionDisabled(false);
+               });
             }}
           />
         </PanelSectionRow>
@@ -173,22 +194,22 @@ export default definePlugin((serverApi: ServerAPI) => {
     backend.resolve(backend.getEnabled(), (v: boolean) => {
       enabledGlobal = v;
     });
-    backend.resolve(backend.getSubList(), (v: String) => {
-      let x: Array<any> = JSON.parse(v.toString());
-      let re = new RegExp("(?<=subs\/).+\.yaml$");
-      let i = 0;
-      subs = x.map(x => {
-        let name = re.exec(x.path);
-        return {
-          id: i++,
-          name: name![0],
-          url: x.url
-        }
-      });
-      console.log("Subs ready");
-      console.log(subs);
-      //console.log(sub);
-    });
+    // backend.resolve(backend.getSubList(), (v: String) => {
+    //   let x: Array<any> = JSON.parse(v.toString());
+    //   let re = new RegExp("(?<=subs\/).+\.yaml$");
+    //   let i = 0;
+    //   subs = x.map(x => {
+    //     let name = re.exec(x.path);
+    //     return {
+    //       id: i++,
+    //       name: name![0],
+    //       url: x.url
+    //     }
+    //   });
+    //   console.log("Subs ready");
+    //   console.log(subs);
+    //   //console.log(sub);
+    // });
   })();
 
 
@@ -199,7 +220,7 @@ export default definePlugin((serverApi: ServerAPI) => {
   return {
     title: <div className={staticClasses.Title}>To Moon</div>,
     content: <Content serverAPI={serverApi} />,
-    icon: <FaCat />,
+    icon: <GiEgyptianBird />,
     onDismount() {
       serverApi.routerHook.removeRoute("/tomoon-config");
     },
