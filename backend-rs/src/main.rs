@@ -40,5 +40,7 @@ fn main() -> Result<(), ()> {
         .register("reset_network", api::reset_network())
         .register("download_sub", api::download_sub(&runtime))
         .register("get_download_status", api::get_download_status(&runtime))
+        .register("get_sub_list", api::get_sub_list(&runtime))
+        .register("delete_sub", api::delete_sub(&runtime))
         .run_blocking()
 }

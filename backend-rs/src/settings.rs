@@ -8,7 +8,7 @@ pub struct Settings {
     pub subscriptions : Vec<Subscription>
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Subscription {
     pub path : String,
     pub url : String

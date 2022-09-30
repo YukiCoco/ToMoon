@@ -113,6 +113,7 @@ pub fn download_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<
                     let url = url.clone();
                     let download_status = download_status.clone();
                     let runtime_setting = runtime_setting.clone();
+                    let runtime_state = runtime_state.clone();
                     //开始下载
                     thread::spawn(move || {
                         let update_status = |status: DownloadStatus| {
@@ -184,6 +185,14 @@ pub fn download_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<
                                     Ok(mut x) => {
                                         x.subscriptions
                                             .push(Subscription::new(path.to_string(), url));
+                                        let mut state = match runtime_state.write() {
+                                            Ok(x) => x,
+                                            Err(e) => {
+                                                log::error!("set_enable failed to acquire state write lock: {}", e);
+                                                return;
+                                            }
+                                        };
+                                        state.dirty = true;
                                     }
                                     Err(e) => {
                                         log::error!(
@@ -222,6 +231,73 @@ pub fn get_download_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) 
             }
             Err(e) => {
                 log::error!("Error occured while get_download_status()");
+            }
+        }
+        return vec![];
+    }
+}
+
+pub fn get_sub_list(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
+    let runtime_setting = runtime.settings_clone();
+    move |_| {
+        match runtime_setting.read() {
+            Ok(x) => {
+                match serde_json::to_string(&x.subscriptions) {
+                    Ok(x) => {
+                        //返回 json 编码的订阅
+                        return vec![x.into()];
+                    }
+                    Err(e) => {
+                        log::error!("Error while serializing data structures");
+                        log::error!("Error message: {}", e);
+                        return vec![];
+                    }
+                };
+            }
+            Err(e) => {
+                log::error!(
+                    "download_sub() faild to acquire runtime_setting write {}",
+                    e
+                );
+            }
+        }
+        return vec![];
+    }
+}
+
+pub fn delete_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
+    let runtime_setting = runtime.settings_clone();
+    let runtime_state = runtime.state_clone();
+    move |params| {
+        if let Some(Primitive::F64(id)) = params.get(0) {
+            match runtime_setting.write() {
+                Ok(mut x) => {
+                    if let Some(item) = x.subscriptions.get(*id as usize) {
+                        match fs::remove_file(item.path.as_str()) {
+                            Ok(_) => {},
+                            Err(e) => {
+                                log::error!("delete file error: {}", e);
+                            }
+                        }
+                    }
+                    log::info!("delete {:?}", x.subscriptions.get(*id as usize).unwrap());
+                    x.subscriptions.remove(*id as usize);
+                    drop(x);
+                    let mut state = match runtime_state.write() {
+                        Ok(x) => x,
+                        Err(e) => {
+                            log::error!("set_enable failed to acquire state write lock: {}", e);
+                            return vec![];
+                        }
+                    };
+                    state.dirty = true;
+                }
+                Err(e) => {
+                    log::error!(
+                        "delete_sub() faild to acquire runtime_setting write {}",
+                        e
+                    );
+                }
             }
         }
         return vec![];

@@ -14,7 +14,7 @@ pub struct ControlRuntime {
     settings: Arc<RwLock<Settings>>,
     state: Arc<RwLock<State>>,
     clash_state: Arc<RwLock<Clash>>,
-    downlaod_status: Arc<RwLock<DownloadStatus>>
+    downlaod_status: Arc<RwLock<DownloadStatus>>,
 }
 
 #[derive(Debug)]
@@ -23,7 +23,7 @@ pub enum DownloadStatus {
     Failed,
     Success,
     Error,
-    None
+    None,
 }
 
 impl std::fmt::Display for DownloadStatus {
@@ -35,7 +35,7 @@ impl std::fmt::Display for DownloadStatus {
 }
 
 // pub struct DownloadStatus {
-    
+
 // }
 
 impl ControlRuntime {
@@ -245,6 +245,10 @@ impl Clash {
                 //Not launch Clash yet...
             }
         };
+    }
+
+    pub fn update_config_path(&mut self, path: String) {
+        self.config = std::path::PathBuf::from(path)
     }
 
     pub fn change_config(&self) {
