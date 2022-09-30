@@ -24,7 +24,7 @@ fn main() -> Result<(), ()> {
     .unwrap();
 
     log::info!(
-        "Starting back-end ({} v{} build.12353)",
+        "Starting back-end ({} v{})",
         api::NAME,
         api::VERSION
     );

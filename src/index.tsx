@@ -15,7 +15,8 @@ import { VFC, useState } from "react";
 import { GiEgyptianBird } from "react-icons/gi";
 
 import {
-  Subscriptions
+  Subscriptions,
+  About
 } from "./pages";
 
 import * as backend from "./backend";
@@ -105,7 +106,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
             onChange={(x) => {
               backend.resolve(backend.setSub(x.data), () => {
                 setIsSelectionDisabled(false);
-               });
+              });
             }}
           />
         </PanelSectionRow>
@@ -137,7 +138,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
         </PanelSectionRow>
       </PanelSection>
 
-      <PanelSection title="Debug">
+      <PanelSection title="Tools">
         <PanelSectionRow>
           <ButtonItem
             layout="below"
@@ -180,6 +181,11 @@ const DeckyPluginRouterTest: VFC = () => {
           title: "Subscriptions",
           content: <Subscriptions Subscriptions={subs} />,
           route: "/tomoon-config/subscriptions"
+        },
+        {
+          title: "About",
+          content: <About />,
+          route: "/tomoon-config/about"
         }
       ]}
     />
@@ -213,9 +219,7 @@ export default definePlugin((serverApi: ServerAPI) => {
   })();
 
 
-  serverApi.routerHook.addRoute("/tomoon-config", DeckyPluginRouterTest, {
-    exact: true,
-  });
+  serverApi.routerHook.addRoute("/tomoon-config", DeckyPluginRouterTest);
 
   return {
     title: <div className={staticClasses.Title}>To Moon</div>,

@@ -95,7 +95,7 @@ export const Subscriptions: VFC<SubProp> = ({ Subscriptions }) => {
     console.log("load Subs page");
 
     return (
-        <div>
+        <>
             <style>
                 {`
                     #subscription-download-textfiled {
@@ -150,6 +150,6 @@ export const Subscriptions: VFC<SubProp> = ({ Subscriptions }) => {
                 } */}
                 <SubList Subscriptions={subscriptions} UpdateSub={updateSubscriptions} Refresh={forceUpdate}></SubList>
             </PanelSectionRow>
-        </div >
+        </>
     );
 };
