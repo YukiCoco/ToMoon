@@ -24,7 +24,9 @@ let enabledGlobal = false;
 let usdplReady = false;
 let subs: any[];
 
+
 const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
+
   if (!usdplReady) {
     return (
       <PanelSection>
@@ -34,42 +36,11 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   }
   const [clashState, setClashState] = useState(enabledGlobal);
   backend.resolve(backend.getEnabled(), setClashState);
-  backend.resolve(backend.getSubList(), (v: String) => {
-    let x: Array<any> = JSON.parse(v.toString());
-    let re = new RegExp("(?<=subs\/).+\.yaml$");
-    let i = 0;
-    subs = x.map(x => {
-      let name = re.exec(x.path);
-      return {
-        id: i++,
-        name: name![0],
-        url: x.url
-      }
-    });
-    console.log("Subs ready");
-    console.log(subs);
-    //console.log(sub);
-  });
+  //setInterval(refreshSubOptions, 2000);
   console.log("status :" + clashState);
-
-  const options = useMemo(
-    (): DropdownOption[] => [
-      {
-        data: 1,
-        label: "One",
-      },
-      {
-        data: 2,
-        label: "Two",
-      },
-      {
-        data: 3,
-        label: "Three",
-      },
-    ],
-    []
-  );
+  let [options, setOptions] = useState<DropdownOption[]>([]);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [optionDropdownDisabled, setOptionDropdownDisabled] = useState(enabledGlobal);
 
   return (
     <PanelSection>
@@ -84,15 +55,36 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
                 backend.resolve(backend.setEnabled(value), (v: boolean) => {
                   enabledGlobal = v;
                 });
+                setOptionDropdownDisabled(value);
               }}
             />
           </div>
           <Dropdown
+            disabled={optionDropdownDisabled}
             strDefaultLabel="Select a Subscription"
             rgOptions={options}
             selectedOption={selectedOption}
-            onChange={async (_) => {
-
+            onMenuWillOpen={() => {
+              //console.log("Getting subs");
+              //setOptions(getOptions());
+              backend.resolve(backend.getSubList(), (v: String) => {
+                let x: Array<any> = JSON.parse(v.toString());
+                let re = new RegExp("(?<=subs\/).+\.yaml$");
+                let items = x.map(x => {
+                  let name = re.exec(x.path);
+                  return {
+                    label: name![0],
+                    data: x.path
+                  }
+                });
+                setOptions(items)
+                console.log("refresh subOptions");
+                console.log(items);
+                //console.log(sub);
+              });
+            }}
+            onChange={(x) => {
+              backend.resolve(backend.setSub(x.data), () => { });
             }}
           />
         </PanelSectionRow>

@@ -274,7 +274,7 @@ pub fn delete_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Pr
                 Ok(mut x) => {
                     if let Some(item) = x.subscriptions.get(*id as usize) {
                         match fs::remove_file(item.path.as_str()) {
-                            Ok(_) => {},
+                            Ok(_) => {}
                             Err(e) => {
                                 log::error!("delete file error: {}", e);
                             }
@@ -293,10 +293,48 @@ pub fn delete_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Pr
                     state.dirty = true;
                 }
                 Err(e) => {
-                    log::error!(
-                        "delete_sub() faild to acquire runtime_setting write {}",
-                        e
-                    );
+                    log::error!("delete_sub() faild to acquire runtime_setting write {}", e);
+                }
+            }
+        }
+        return vec![];
+    }
+}
+
+pub fn set_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
+    let runtime_clash = runtime.clash_state_clone();
+    let runtime_state = runtime.state_clone();
+    let runtime_setting = runtime.settings_clone();
+    move |params: Vec<Primitive>| {
+        if let Some(Primitive::String(path)) = params.get(0) {
+            //更新到配置文件中
+            match runtime_setting.write() {
+                Ok(mut x) => {
+                    x.current_sub = (*path).clone();
+                    let mut state = match runtime_state.write() {
+                        Ok(x) => x,
+                        Err(e) => {
+                            log::error!("set_sub failed to acquire state write lock: {}", e);
+                            return vec![];
+                        }
+                    };
+                    state.dirty = true;
+                    drop(x);
+                    drop(state);
+                }
+                Err(e) => {
+                    log::error!("get_enable failed to acquire settings read lock: {}", e);
+                    return vec![];
+                }
+            };
+            //更新到当前内存中
+            match runtime_clash.write() {
+                Ok(mut x) => {
+                    x.update_config_path(path);
+                    log::info!("set profile path to {}", path);
+                }
+                Err(e) => {
+                    log::error!("set_sub() failed to acquire clash write lock: {}", e);
                 }
             }
         }

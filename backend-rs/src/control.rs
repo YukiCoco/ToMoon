@@ -203,7 +203,6 @@ impl Clash {
                 });
             }
         }
-
         let run_config = get_current_working_dir()
             .unwrap()
             .join("bin/core/running_config.yaml");
@@ -247,8 +246,8 @@ impl Clash {
         };
     }
 
-    pub fn update_config_path(&mut self, path: String) {
-        self.config = std::path::PathBuf::from(path)
+    pub fn update_config_path(&mut self, path: &String) {
+        self.config = std::path::PathBuf::from((*path).clone());
     }
 
     pub fn change_config(&self) {

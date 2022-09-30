@@ -19,7 +19,7 @@ mod tests {
     fn run_clash() {
         let mut clash = control::Clash::default();
         println!("{}", std::env::current_dir().unwrap().to_str().unwrap());
-        clash.run().unwrap();
+        //clash.run().unwrap();
         thread::sleep(Duration::from_secs(5));
         println!("disable clash");
         clash.stop();

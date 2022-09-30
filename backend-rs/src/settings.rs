@@ -1,10 +1,13 @@
 use serde::{Deserialize, Serialize};
 use std::{path::PathBuf, fmt::Display};
 
+use crate::helper;
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Settings {
     pub enable : bool,
     pub tun_mode : bool,
+    pub current_sub: String,
     pub subscriptions : Vec<Subscription>
 }
 
@@ -87,9 +90,11 @@ impl Settings {
 
 impl Default for Settings {
     fn default() -> Self {
+        let default_profile = helper::get_current_working_dir().unwrap().join("bin/core/config.yaml");
         Self {
             enable: false,
             tun_mode: true,
+            current_sub: default_profile.to_string_lossy().to_string(),
             subscriptions: Vec::new()
         }
     }

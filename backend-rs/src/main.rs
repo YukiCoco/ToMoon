@@ -42,5 +42,6 @@ fn main() -> Result<(), ()> {
         .register("get_download_status", api::get_download_status(&runtime))
         .register("get_sub_list", api::get_sub_list(&runtime))
         .register("delete_sub", api::delete_sub(&runtime))
+        .register("set_sub", api::set_sub(&runtime))
         .run_blocking()
 }

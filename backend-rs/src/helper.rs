@@ -120,3 +120,7 @@ pub fn reset_system_network() -> Result<(), Box<dyn std::error::Error>> {
     log::info!("Successfully reset network");
     Ok(())
 }
+
+pub fn get_current_working_dir() -> std::io::Result<std::path::PathBuf> {
+    std::env::current_dir()
+}
