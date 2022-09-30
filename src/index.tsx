@@ -97,7 +97,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
             layout="below"
             onClick={() => {
               Router.CloseSideMenus()
-              Router.Navigate("/clash-config")
+              Router.Navigate("/tomoon-config")
             }}
           >
             Manage Subscriptions
@@ -152,13 +152,13 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
 const DeckyPluginRouterTest: VFC = () => {
   return (
     <SidebarNavigation
-      title="Clash Deck"
+      title="To Moon"
       showTitle
       pages={[
         {
           title: "Subscriptions",
           content: <Subscriptions Subscriptions={subs} />,
-          route: "/clash-config/subscriptions"
+          route: "/tomoon-config/subscriptions"
         }
       ]}
     />
@@ -192,16 +192,16 @@ export default definePlugin((serverApi: ServerAPI) => {
   })();
 
 
-  serverApi.routerHook.addRoute("/clash-config", DeckyPluginRouterTest, {
+  serverApi.routerHook.addRoute("/tomoon-config", DeckyPluginRouterTest, {
     exact: true,
   });
 
   return {
-    title: <div className={staticClasses.Title}>Clash Deck</div>,
+    title: <div className={staticClasses.Title}>To Moon</div>,
     content: <Content serverAPI={serverApi} />,
     icon: <FaCat />,
     onDismount() {
-      serverApi.routerHook.removeRoute("/clash-config");
+      serverApi.routerHook.removeRoute("/tomoon-config");
     },
   };
 });

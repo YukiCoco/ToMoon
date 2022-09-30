@@ -1,7 +1,7 @@
 {
-  "name": "clash-deck",
+  "name": "tomoon",
   "version": "0.0.1",
-  "description": "Enable clash in SteamOS.",
+  "description": "SteamOS Network Tools Box.",
   "scripts": {
     "build": "shx rm -rf dist && rollup -c",
     "watch": "rollup -c -w",

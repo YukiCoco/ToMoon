@@ -19,7 +19,7 @@ fn main() -> Result<(), ()> {
             LevelFilter::Info
         },
         Default::default(),
-        std::fs::File::create("/tmp/clashdeck.log").unwrap(),
+        std::fs::File::create("/tmp/tomoon.log").unwrap(),
     )
     .unwrap();
 
@@ -43,5 +43,7 @@ fn main() -> Result<(), ()> {
         .register("get_sub_list", api::get_sub_list(&runtime))
         .register("delete_sub", api::delete_sub(&runtime))
         .register("set_sub", api::set_sub(&runtime))
+        .register("update_subs", api::update_subs(&runtime))
+        .register("get_update_status", api::get_update_status(&runtime))
         .run_blocking()
 }

@@ -1,4 +1,4 @@
-use std::{fs, string, thread};
+use std::{fs, thread};
 
 use crate::{control::DownloadStatus, helper, settings::Subscription};
 
@@ -102,7 +102,7 @@ pub fn download_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<
             match download_status.write() {
                 Ok(mut x) => {
                     let path = match runtime_state.read() {
-                        Ok(x) => x.home.as_path().join(".config/clashdeck/subs/"),
+                        Ok(x) => x.home.as_path().join(".config/tomoon/subs/"),
                         Err(e) => {
                             log::error!("download_sub() faild to acquire state read {}", e);
                             return vec![];
@@ -133,29 +133,10 @@ pub fn download_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<
                         match minreq::get(url.clone()).with_timeout(10).send() {
                             Ok(x) => {
                                 let response = x.as_str().unwrap();
-                                let yaml = match serde_yaml::from_str::<serde_yaml::Value>(response)
-                                {
-                                    Ok(x) => x,
-                                    Err(e) => {
-                                        log::error!("The downlaoded sub is not a legal profile.");
-                                        log::error!("Error Message:{}", e);
-                                        update_status(DownloadStatus::Error);
-                                        return;
-                                    }
-                                };
-
-                                if let Some(x) = yaml.as_mapping() {
-                                    if !x.contains_key("rules") {
-                                        log::error!("Cannt found rules, the downlaoded sub is not a legal profile.");
-                                        update_status(DownloadStatus::Error);
-                                        return;
-                                    }
-                                } else {
-                                    log::error!("Cannt mapping yaml, The downlaoded sub is not a legal profile.");
-                                    update_status(DownloadStatus::Error);
+                                if !helper::check_yaml(String::from(response)) {
+                                    log::error!("The downlaoded sub is not a legal profile.");
                                     return;
                                 }
-
                                 let s: String = rand::thread_rng()
                                     .sample_iter(&Alphanumeric)
                                     .take(5)
@@ -222,14 +203,14 @@ pub fn download_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<
 }
 
 pub fn get_download_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
-    let downlaod_status = runtime.downlaod_status_clone();
+    let download_status = runtime.downlaod_status_clone();
     move |_| {
-        match downlaod_status.read() {
+        match download_status.read() {
             Ok(x) => {
                 let status = x.to_string();
                 return vec![status.into()];
             }
-            Err(e) => {
+            Err(_) => {
                 log::error!("Error occured while get_download_status()");
             }
         }
@@ -336,6 +317,81 @@ pub fn set_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Primi
                 Err(e) => {
                     log::error!("set_sub() failed to acquire clash write lock: {}", e);
                 }
+            }
+        }
+        return vec![];
+    }
+}
+
+pub fn update_subs(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
+    let runtime_update_status = runtime.update_status_clone();
+    let runtime_setting = runtime.settings_clone();
+    move |_| {
+        if let Ok(mut x) = runtime_update_status.write() {
+            *x = DownloadStatus::Downloading;
+            drop(x);
+            if let Ok(v) = runtime_setting.write() {
+                let subs = v.subscriptions.clone();
+                drop(v);
+                let runtime_update_status = runtime_update_status.clone();
+                thread::spawn(move || {
+                    for i in subs {
+                        thread::spawn(move || {
+                            if let Ok(response) = minreq::get(i.url).with_timeout(10).send() {
+                                let response = match response.as_str() {
+                                    Ok(x) => x,
+                                    Err(_) => {
+                                        log::error!("Error occurred while parsing response.");
+                                        return;
+                                    }
+                                };
+                                if !helper::check_yaml(response.to_string()) {
+                                    log::error!("The downlaoded sub is not a legal profile.");
+                                    return;
+                                }
+                                match fs::write(i.path.clone(), response) {
+                                    Ok(_) => {
+                                        log::info!("Subscription {} updated.", i.path);
+                                    }
+                                    Err(e) => {
+                                        log::error!(
+                                        "Error occurred while write to file in update_subs(). {}",
+                                        e
+                                    );
+                                        return;
+                                    }
+                                }
+                            } else {
+                                //下载失败
+                                log::error!("Error occurred while download subscription files");
+                            }
+                        });
+                    }
+                    //下载执行完毕
+                    if let Ok(mut x) = runtime_update_status.write() {
+                        *x = DownloadStatus::Success;
+                    } else {
+                        log::error!(
+                            "Error occurred while acquire runtime_update_status write lock."
+                        );
+                    }
+                });
+            }
+        }
+        return vec![];
+    }
+}
+
+pub fn get_update_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
+    let update_status = runtime.update_status_clone();
+    move |_| {
+        match update_status.read() {
+            Ok(x) => {
+                let status = x.to_string();
+                return vec![status.into()];
+            }
+            Err(_) => {
+                log::error!("Error occured while get_update_status()");
             }
         }
         return vec![];

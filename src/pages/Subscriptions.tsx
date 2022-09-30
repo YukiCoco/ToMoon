@@ -14,9 +14,12 @@ export const Subscriptions: VFC<SubProp> = ({ Subscriptions }) => {
     const [downloadTips, setDownloadTips] = useState("");
     const [subscriptions, updateSubscriptions] = useState(Subscriptions);
     const [downlaodBtnDisable, setDownlaodBtnDisable] = useState(false);
+    const [updateBtnDisable, setUpdateBtnDisable] = useState(false);
     const [_, forceUpdate] = useReducer(x => x + 1, 0);
+    const [updateTips, setUpdateTips] = useState("");
 
     let checkStatusHandler: any;
+    let checkUpdateStatusHandler: any;
 
     const refreshDownloadStatus = () => {
         backend.resolve(backend.getDownloadStatus(), (v: any) => {
@@ -40,6 +43,32 @@ export const Subscriptions: VFC<SubProp> = ({ Subscriptions }) => {
             if (response != "Downloading") {
                 clearInterval(checkStatusHandler);
                 setDownlaodBtnDisable(false);
+            }
+        });
+    }
+
+    const refreshUpdateStatus = () => {
+        backend.resolve(backend.getUpdateStatus(), (v: any) => {
+            let response = v.toString();
+            switch (response) {
+                case "Downloading":
+                    setDownloadTips("Downloading... Please wait");
+                    break;
+                case "Error":
+                    setDownloadTips("Update Error");
+                    break;
+                case "Failed":
+                    setDownloadTips("Update Failed");
+                    break;
+                case "Success":
+                    setDownloadTips("Update Succeeded");
+                    // 刷新 Subs
+                    refreshSubs();
+                    break;
+            }
+            if (response != "Downloading") {
+                clearInterval(checkUpdateStatusHandler);
+                setUpdateBtnDisable(false);
             }
         });
     }
@@ -95,8 +124,13 @@ export const Subscriptions: VFC<SubProp> = ({ Subscriptions }) => {
                 }}>
                     Download
                 </ButtonItem>
-                <ButtonItem layout="below" onClick={() => {
-                }}>
+                <ButtonItem layout="below" description={updateTips} onClick={() => {
+                    setUpdateBtnDisable(true);
+                    backend.resolve(backend.updateSubs(), () => {
+                        console.log("update subs.");
+                    });
+                    checkUpdateStatusHandler = setInterval(refreshUpdateStatus, 500);
+                }} disabled={updateBtnDisable}>
                     Update All
                 </ButtonItem>
             </PanelSectionRow>

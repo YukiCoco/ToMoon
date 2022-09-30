@@ -63,3 +63,11 @@ export async function deleteSub(value: Number): Promise<any> {
 export async function setSub(value: String): Promise<any> {
     return (await call_backend("set_sub", [value]))[0];
 }
+
+export async function updateSubs(): Promise<any> {
+    return (await call_backend("update_subs", []))[0];
+}
+
+export async function getUpdateStatus(): Promise<String> {
+    return (await call_backend("get_update_status", []))[0];
+}

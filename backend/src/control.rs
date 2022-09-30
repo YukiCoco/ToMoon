@@ -15,6 +15,7 @@ pub struct ControlRuntime {
     state: Arc<RwLock<State>>,
     clash_state: Arc<RwLock<Clash>>,
     downlaod_status: Arc<RwLock<DownloadStatus>>,
+    update_status: Arc<RwLock<DownloadStatus>>
 }
 
 #[derive(Debug)]
@@ -45,6 +46,7 @@ impl ControlRuntime {
         //TODO: Clash 路径
         let clash = Clash::default();
         let download_status = DownloadStatus::None;
+        let update_status = DownloadStatus::None;
         Self {
             settings: Arc::new(RwLock::new(
                 super::settings::Settings::open(settings_p)
@@ -54,6 +56,7 @@ impl ControlRuntime {
             state: Arc::new(RwLock::new(new_state)),
             clash_state: Arc::new(RwLock::new(clash)),
             downlaod_status: Arc::new(RwLock::new(download_status)),
+            update_status: Arc::new(RwLock::new(update_status))
         }
     }
 
@@ -71,6 +74,10 @@ impl ControlRuntime {
 
     pub fn downlaod_status_clone(&self) -> Arc<RwLock<DownloadStatus>> {
         self.downlaod_status.clone()
+    }
+
+    pub fn update_status_clone(&self) -> Arc<RwLock<DownloadStatus>> {
+        self.update_status.clone()
     }
 
     pub fn run(&self) -> thread::JoinHandle<()> {
@@ -127,7 +134,7 @@ impl ControlRuntime {
 }
 
 fn settings_path<P: AsRef<std::path::Path>>(home: P) -> std::path::PathBuf {
-    home.as_ref().join(".config/clashdeck/clashdeck.json")
+    home.as_ref().join(".config/tomoon/tomoon.json")
 }
 
 fn get_current_working_dir() -> std::io::Result<std::path::PathBuf> {

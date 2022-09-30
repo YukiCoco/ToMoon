@@ -83,14 +83,14 @@ mod tests {
             Some(x) => {
                 //TODO: 修改 Web UI 的路径
                 *x = Value::String(String::from(
-                    "/home/deck/homebrew/plugins/clashdeck3/bin/core/web",
+                    "/home/deck/homebrew/plugins/tomoon/bin/core/web",
                 ));
             }
             None => {
                 yaml.insert(
                     Value::String(String::from("external-controller")),
                     Value::String(String::from(
-                        "/home/deck/homebrew/plugins/clashdeck3/bin/core/web",
+                        "/home/deck/homebrew/plugins/tomoon/bin/core/web",
                     )),
                 );
             }
