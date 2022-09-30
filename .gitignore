@@ -46,3 +46,7 @@ yalc.lock
 backend/out
 
 bin
+
+build.*.sh
+
+.vscode

@@ -3,7 +3,7 @@ use std::process::{Child, Command};
 use std::sync::{Arc, RwLock};
 
 use std::time::Duration;
-use std::{fs, thread};
+use std::{error, fs, thread};
 
 use serde_yaml::{Mapping, Value};
 
@@ -189,7 +189,15 @@ impl Default for Clash {
 impl Clash {
     pub fn run(&mut self) -> Result<(), ClashError> {
         // 修改配置文件为推荐配置
-        self.change_config();
+        match self.change_config() {
+            Ok(_) => (),
+            Err(e) => {
+                return Err(ClashError {
+                    Message: e.to_string(),
+                    ErrorKind: ClashErrorKind::ConfigFormatError,
+                });
+            }
+        }
         //log::info!("Pre-setting network");
         match helper::set_system_network() {
             Ok(_) => {
@@ -250,10 +258,10 @@ impl Clash {
         self.config = std::path::PathBuf::from((*path).clone());
     }
 
-    pub fn change_config(&self) {
+    pub fn change_config(&self) -> Result<(), Box<dyn error::Error>> {
         let path = self.config.clone();
-        let config = fs::read_to_string(path).unwrap();
-        let mut yaml: serde_yaml::Value = serde_yaml::from_str(config.as_str()).unwrap();
+        let config = fs::read_to_string(path)?;
+        let mut yaml: serde_yaml::Value = serde_yaml::from_str(config.as_str())?;
         let yaml = yaml.as_mapping_mut().unwrap();
 
         //修改 WebUI
@@ -270,7 +278,17 @@ impl Clash {
             }
         }
 
-        let webui_dir = get_current_working_dir().unwrap().join("bin/core/web");
+        //修改 test.steampowered.com
+        //这个域名用于 Steam Deck 网络连接验证，可以直连
+        if let Some(x) = yaml.get_mut("rules") {
+            let rules = x.as_sequence_mut().unwrap();
+            rules.insert(
+                0,
+                Value::String(String::from("DOMAIN,test.steampowered.com,DIRECT")),
+            );
+        }
+
+        let webui_dir = get_current_working_dir()?.join("bin/core/web");
 
         match yaml.get_mut("external-ui") {
             Some(x) => {
@@ -364,11 +382,10 @@ impl Clash {
             }
         }
 
-        let run_config = get_current_working_dir()
-            .unwrap()
-            .join("bin/core/running_config.yaml");
+        let run_config = get_current_working_dir()?.join("bin/core/running_config.yaml");
 
-        let yaml_str = serde_yaml::to_string(&yaml).unwrap();
-        fs::write(run_config, yaml_str).unwrap();
+        let yaml_str = serde_yaml::to_string(&yaml)?;
+        fs::write(run_config, yaml_str)?;
+        Ok(())
     }
 }
