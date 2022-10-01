@@ -4,7 +4,7 @@
   "flags": ["debug", "root"],
   "publish": {
     "tags": ["root", "network"],
-    "description": "Enable clash in SteamOS.",
+    "description": "SteamOS Network Tools Box.",
     "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
   }
 }
