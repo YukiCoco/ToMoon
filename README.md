@@ -15,6 +15,7 @@
 6. 打开 Konsole，输入 `curl -L http://dl.ohmydeck.net | sh` 安装 Plugin Loader
 7. 切换回到 Gamming 游戏模式，按下右侧摇杆下的按钮，可以看到多了一个 Decky 插件面板
 8. 打开左上角设置，在 Mannul plugin install 中输入 `http://moon.ohmydeck.net`，点击 install
+9. 重启你的 Steam Deck
 
 ## 使用
 1. 打开 Manage Subscriptions，添加你服务商提供的 Clash 订阅链接并下载
