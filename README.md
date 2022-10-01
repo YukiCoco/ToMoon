@@ -1,6 +1,6 @@
 # ToMoon 
 ## 功能  
-1. 开箱即用的 Clash SteamOS 客户端，由 Rust 驱动
+1. 提供开箱即用的 Clash SteamOS 客户端，由 Rust 驱动
 2. 自动配置 DNS，基于分流规则及 DoH 模式绕过 DNS 污染
 3. 自动配置 FAKE-IP 模式，让游戏流量通过 TCP / UDP 加速
 4. 基于 [yacd](https://github.com/haishanh/yacd) 的策略管理仪表盘  
@@ -12,8 +12,8 @@
 4. 等待 Steam Deck 重启
 5. 按电源键切换到 Desktop 桌面模式
 6. 打开 Konsole，输入 `curl -L https://github.com/SteamDeckHomebrew/decky-loader/raw/main/dist/install_prerelease.sh | sh` 安装 Plugin Loader
-7. 切换回回到 Gamming 游戏模式，右侧 Quick Access 按钮打开可以看到多了 Decky 插件面板
-8. 打开 Decky 设置，在 Mannul plugin install 中输入 ToMoon 的下载链接，点击安装
+7. 切换回到 Gamming 游戏模式，右侧 Quick Access 按钮打开可以看到多了 Decky 插件面板
+8. 打开左上角设置，在 Mannul plugin install 中输入 [Release](https://github.com/YukiCoco/ToMoon/releases) 中的最新版 ToMoon-x.x.x.zip 的下载链接，点击安装
 
 ## 使用
 1. 打开 Manage Subscriptions，添加你服务商提供的 Clash 订阅链接并下载
@@ -27,7 +27,11 @@
 ![Dashboard](https://github.com/YukiCoco/StaticFilesCDN/blob/main/deck_dashboard2.jpg?raw=true)
 ![Subs](https://github.com/YukiCoco/StaticFilesCDN/blob/main/deck_subs.jpg?raw=true)
 
+## 支持
+加入我们的讨论社群，提交 Bug & Feature Request  
+[Telegram Group](https://t.me/steamdecktalk)  
+
 ## Reference
-[decky-loader](https://github.com/SteamDeckHomebrew/decky-loader)
-[PowerTools](https://github.com/NGnius/PowerTools/)
-[usdpl-rs](https://github.com/NGnius/usdpl-rs)
+[decky-loader](https://github.com/SteamDeckHomebrew/decky-loader)  
+[PowerTools](https://github.com/NGnius/PowerTools/)  
+[usdpl-rs](https://github.com/NGnius/usdpl-rs)  

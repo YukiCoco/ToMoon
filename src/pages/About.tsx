@@ -58,7 +58,7 @@ export const About: VFC = () => {
                     icon={<TbBrandTelegram style={{ display: "block" }} />}
                     label="@steamdecktalk"
                     onClick={() => {
-                        Router.NavigateToExternalWeb("https://t.me/steamdecktalk")
+                        Router.NavigateToExternalWeb("https://github.com/YukiCoco/StaticFilesCDN/blob/main/deck_tg_2.jpg?raw=true")
                     }}
                 >
                     Telegram Group
