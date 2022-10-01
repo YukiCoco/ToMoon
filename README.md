@@ -1,5 +1,6 @@
 # ToMoon 
 ## 功能  
+**使用 ToMoon，让您在恶劣的网络环境下可以打开任何界面，体验到完整的 Steam Deck**  
 1. 提供开箱即用的 Clash SteamOS 客户端，由 Rust 驱动
 2. 自动配置 DNS，基于分流规则及 DoH 模式绕过 DNS 污染
 3. 自动配置 FAKE-IP 模式，让游戏流量通过 TCP / UDP 加速
