@@ -50,3 +50,7 @@ bin
 build.*.sh
 
 .vscode
+
+release
+
+clash

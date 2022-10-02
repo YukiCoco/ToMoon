@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::path::PathBuf;
 use std::process::{Child, Command};
 use std::sync::{Arc, RwLock};
 
@@ -92,7 +93,7 @@ impl ControlRuntime {
                 drop(v);
                 //刷新网卡
                 match helper::reset_system_network() {
-                    Ok(_) => {},
+                    Ok(_) => {}
                     Err(e) => {
                         log::error!("runtime failed to acquire settings write lock: {}", e);
                     }
@@ -158,9 +159,9 @@ fn get_current_working_dir() -> std::io::Result<std::path::PathBuf> {
 }
 
 pub struct Clash {
-    path: std::path::PathBuf,
-    config: std::path::PathBuf,
-    instence: Option<Child>,
+    pub path: std::path::PathBuf,
+    pub config: std::path::PathBuf,
+    pub instence: Option<Child>,
 }
 
 #[derive(Debug)]
@@ -168,6 +169,7 @@ pub enum ClashErrorKind {
     CoreNotFound,
     ConfigFormatError,
     ConfigNotFound,
+    RuleProviderDownloadError,
     NetworkError,
     Default,
 }
@@ -177,6 +179,8 @@ pub struct ClashError {
     Message: String,
     ErrorKind: ClashErrorKind,
 }
+
+impl error::Error for ClashError {}
 
 impl Display for ClashError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -223,6 +227,28 @@ impl Clash {
             }
         }
         //log::info!("Pre-setting network");
+        //TODO: 未修改的 unwarp
+        let run_config = get_current_working_dir()
+            .unwrap()
+            .join("bin/core/running_config.yaml");
+        let outputs = fs::File::create("/tmp/tomoon.clash.log").unwrap();
+        let errors = outputs.try_clone().unwrap();
+        let clash = Command::new(self.path.clone())
+            .arg("-f")
+            .arg(run_config)
+            .stdout(outputs)
+            .stderr(errors)
+            .spawn();
+        let clash: Result<Child, ClashError> = match clash {
+            Ok(x) => Ok(x),
+            Err(e) => {
+                log::error!("run Clash failed: {}", e);
+                //TODO: 开启 Clash 的错误处理
+                return Err(ClashError::new());
+            }
+        };
+        self.instence = Some(clash.unwrap());
+        //在 clash 启动之后修改 DNS
         match helper::set_system_network() {
             Ok(_) => {
                 log::info!("Successfully set network status");
@@ -235,22 +261,6 @@ impl Clash {
                 });
             }
         }
-        let run_config = get_current_working_dir()
-            .unwrap()
-            .join("bin/core/running_config.yaml");
-        let clash = Command::new(self.path.clone())
-            .arg("-f")
-            .arg(run_config)
-            .spawn();
-        let clash: Result<Child, ClashError> = match clash {
-            Ok(x) => Ok(x),
-            Err(e) => {
-                log::error!("run Clash failed: {}", e);
-                //TODO: 开启 Clash 的错误处理
-                return Err(ClashError::new());
-            }
-        };
-        self.instence = Some(clash.unwrap());
         Ok(())
     }
 
@@ -312,6 +322,19 @@ impl Clash {
             );
         }
 
+        //下载 rules-provider
+        if let Some(x) = yaml.get_mut("rule-providers") {
+            let provider = x.as_mapping().unwrap();
+            match self.downlaod_proxy_providers(provider) {
+                Ok(_) => {
+                    log::info!("All rules provider downloaded");
+                }
+                Err(e) => return Err(Box::new(e)),
+            }
+        } else {
+            log::info!("no rule-providers found.");
+        }
+
         let webui_dir = get_current_working_dir()?.join("bin/core/web");
 
         match yaml.get_mut("external-ui") {
@@ -343,23 +366,7 @@ impl Clash {
         enhanced-mode: fake-ip
         fake-ip-range: 198.18.0.1/16
         nameserver:
-            - https://doh.pub/dns-query
-            - https://dns.alidns.com/dns-query
-            - '114.114.114.114'
-            - '223.5.5.5'
-        default-nameserver:
-            - 119.29.29.29
-            - 223.5.5.5
-        fallback:
-            - https://1.1.1.1/dns-query
-            - https://dns.google/dns-query
-            - https://doh.opendns.com/dns-query
-            - https://doh.pub/dns-query
-        fallback-filter:
-            geoip: true
-            geoip-code: CN
-            ipcidr:
-                - 240.0.0.0/4
+            - tcp://127.0.0.1:5353
         ";
 
         let profile_config = "
@@ -410,6 +417,76 @@ impl Clash {
 
         let yaml_str = serde_yaml::to_string(&yaml)?;
         fs::write(run_config, yaml_str)?;
+        Ok(())
+    }
+
+    pub fn downlaod_proxy_providers(&self, yaml: &serde_yaml::Mapping) -> Result<(), ClashError> {
+        for (_, value) in yaml {
+            if let Some(url) = value.get("url") {
+                if let Some(path) = value.get("path") {
+                    match minreq::get(url.as_str().unwrap()).with_timeout(15).send() {
+                        Ok(response) => {
+                            let response = match response.as_str() {
+                                Ok(x) => x,
+                                Err(_) => {
+                                    log::error!("Error occurred while parase Rule Provder.");
+                                    return Err(ClashError {
+                                        ErrorKind: ClashErrorKind::RuleProviderDownloadError,
+                                        Message: String::from(
+                                            "Error occurred while parase Rule Provder.",
+                                        ),
+                                    });
+                                }
+                            };
+                            //替换有些规则前的 ./
+                            let r = regex::Regex::new(r"^\./").unwrap();
+                            let result = r.replace(path.as_str().unwrap(), "");
+                            let save_path =
+                                PathBuf::from("/root/.config/clash/").join(result.to_string());
+
+                            //保存订阅
+                            if let Some(parent) = save_path.parent() {
+                                if let Err(e) = std::fs::create_dir_all(parent) {
+                                    log::error!("Failed while creating sub dir.");
+                                    log::error!("Error Message:{}", e);
+                                    return Err(ClashError {
+                                        ErrorKind: ClashErrorKind::RuleProviderDownloadError,
+                                        Message: "Error occurred while creating Rule Provder dir."
+                                            .to_string(),
+                                    });
+                                }
+                            }
+
+                            match fs::write(save_path.clone(), response) {
+                                Ok(_) => {
+                                    log::info!("Rule-Provider {} downloaded.", save_path.display());
+                                }
+                                Err(_) => {
+                                    log::error!(
+                                        "Error occurred while saving Rule Provder. path: {}",
+                                        save_path.clone().to_str().unwrap()
+                                    );
+                                    return Err(ClashError {
+                                        ErrorKind: ClashErrorKind::RuleProviderDownloadError,
+                                        Message: "Error occurred while downloading Rule Provder."
+                                            .to_string(),
+                                    });
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            let in_msg = e.to_string();
+                            let mut err_msg = String::from("Error occurred while downloading Rule Provder with error message : ");
+                            err_msg.push_str(in_msg.as_str());
+                            return Err(ClashError {
+                                ErrorKind: ClashErrorKind::RuleProviderDownloadError,
+                                Message: err_msg,
+                            });
+                        }
+                    }
+                }
+            }
+        }
         Ok(())
     }
 }

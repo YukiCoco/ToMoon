@@ -3,7 +3,13 @@ mod tests {
     use crate::{control, helper};
     use regex::Regex;
     use serde_yaml::{Mapping, Number, Value};
-    use std::{fs, process::Command, thread, time::Duration};
+    use std::{
+        fs,
+        path::PathBuf,
+        process::{Command, Stdio},
+        thread,
+        time::Duration,
+    };
 
     use sysinfo::{Pid, ProcessExt, System, SystemExt};
 
@@ -14,17 +20,28 @@ mod tests {
 
     #[test]
     fn read_dns() {
-        assert_eq!(helper::is_clash_running(),true);
+        assert_eq!(helper::is_clash_running(), true);
     }
 
     #[test]
     fn run_clash() {
-        let mut clash = control::Clash::default();
+        //TODO: no such files
+        let outputs = fs::File::create("/tmp/tomoon.clash.log").unwrap();
+        let errors = outputs.try_clone().unwrap();
+        let clash = Command::new("/home/deck/homebrew/plugins/tomoon/bin/core/clash")
+            .arg("-f")
+            .arg("/home/deck/homebrew/plugins/tomoon/bin/core/running_config.yaml")
+            .stdout(outputs)
+            .stderr(errors)
+            .spawn()
+            .unwrap();
         println!("{}", std::env::current_dir().unwrap().to_str().unwrap());
-        //clash.run().unwrap();
+        // clash
+        //     .run(&String::from("/home/deck/.config/tomoon/subs/Ob3jZ.yaml"))
+        //     .unwrap();
         thread::sleep(Duration::from_secs(5));
         println!("disable clash");
-        clash.stop();
+        //clash.stop();
         thread::sleep(Duration::from_secs(10));
     }
 
@@ -46,8 +63,7 @@ mod tests {
         // }
 
         for (pid, process) in sys.processes() {
-            if process.name() == "systemd-resolve"
-            {
+            if process.name() == "systemd-resolve" {
                 println!("[{}] {} {:?}", pid, process.name(), process.disk_usage());
             }
         }
@@ -58,6 +74,35 @@ mod tests {
         println!("{}", std::env::current_dir().unwrap().to_str().unwrap());
         let mut clash = control::Clash::default();
         clash.change_config();
+    }
+
+    #[test]
+    fn test_privider_path() {
+        let test_yaml = "./Rules/IPfake.yaml";
+        let r = Regex::new(r"^\./").unwrap();
+        let result = r.replace(test_yaml, "");
+        let save_path = PathBuf::from("/root/.config/clash/").join(result.to_string());
+        println!("Rule-Provider {} updated.", save_path.display());
+    }
+
+    #[test]
+    fn test_rules_provider() {
+        let path = "./bin/config.yaml";
+        let config = fs::read_to_string(path).unwrap();
+        let mut yaml: serde_yaml::Value = serde_yaml::from_str(config.as_str()).unwrap();
+        let yaml = yaml.as_mapping_mut().unwrap();
+        if let Some(x) = yaml.get_mut("rule-providers") {
+            let provider = x.as_mapping().unwrap();
+            for (key, value) in provider {
+                if let Some(url) = value.get("url") {
+                    if let Some(path) = value.get("path") {
+                        println!("{} {}",path.as_str().unwrap(), url.as_str().unwrap());
+                    }
+                }
+            }
+        } else {
+            log::info!("no rule-providers found.");
+        }
     }
 
     #[test]
