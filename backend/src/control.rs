@@ -17,7 +17,7 @@ pub struct ControlRuntime {
     clash_state: Arc<RwLock<Clash>>,
     downlaod_status: Arc<RwLock<DownloadStatus>>,
     update_status: Arc<RwLock<DownloadStatus>>,
-    running_status: Arc<RwLock<RunningStatus>>
+    running_status: Arc<RwLock<RunningStatus>>,
 }
 
 #[derive(Debug)]
@@ -25,7 +25,7 @@ pub enum RunningStatus {
     Loading,
     Failed,
     Success,
-    None
+    None,
 }
 
 #[derive(Debug)]
@@ -76,7 +76,7 @@ impl ControlRuntime {
             clash_state: Arc::new(RwLock::new(clash)),
             downlaod_status: Arc::new(RwLock::new(download_status)),
             update_status: Arc::new(RwLock::new(update_status)),
-            running_status: Arc::new(RwLock::new(running_status))
+            running_status: Arc::new(RwLock::new(running_status)),
         }
     }
 
@@ -195,6 +195,7 @@ pub enum ClashErrorKind {
     ConfigNotFound,
     RuleProviderDownloadError,
     NetworkError,
+    CpDbError,
     Default,
 }
 
@@ -240,6 +241,35 @@ impl Default for Clash {
 
 impl Clash {
     pub fn run(&mut self, config_path: &String) -> Result<(), ClashError> {
+        //没有 Country.mmdb
+        let country_db_path = "/root/.config/clash/Country.mmdb";
+        if let Some(parent) = PathBuf::from(country_db_path).parent() {
+            if let Err(e) = std::fs::create_dir_all(parent) {
+                log::error!("Failed while creating /root/.config/clash dir.");
+                log::error!("Error Message:{}", e);
+                return Err(ClashError {
+                    ErrorKind: ClashErrorKind::CpDbError,
+                    Message: "Error occurred while creating /root/.config/clash dir.".to_string(),
+                });
+            }
+        }
+        let new_country_db_path = get_current_working_dir()
+            .unwrap()
+            .join("bin/core/Country.mmdb");
+        if !PathBuf::from(country_db_path).is_file() {
+            match fs::copy(new_country_db_path, country_db_path) {
+                Ok(_) => {
+                    log::info!("cp Country.mmdb to .clash dir");
+                }
+                Err(e) => {
+                    log::info!("Error occurred while coping Country.mmdb");
+                    return Err(ClashError {
+                        Message: e.to_string(),
+                        ErrorKind: ClashErrorKind::CpDbError,
+                    });
+                }
+            }
+        }
         self.update_config_path(config_path);
         // 修改配置文件为推荐配置
         match self.change_config() {
@@ -477,7 +507,11 @@ impl Clash {
         for (_, value) in yaml {
             if let Some(url) = value.get("url") {
                 if let Some(path) = value.get("path") {
-                    match minreq::get(url.as_str().unwrap()).with_timeout(30).with_header("User-Agent", "ToMoonClash/0.0.2").send() {
+                    match minreq::get(url.as_str().unwrap())
+                        .with_timeout(30)
+                        .with_header("User-Agent", "ToMoonClash/0.0.2")
+                        .send()
+                    {
                         Ok(response) => {
                             let response = match response.as_str() {
                                 Ok(x) => x,
