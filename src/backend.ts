@@ -71,3 +71,7 @@ export async function updateSubs(): Promise<any> {
 export async function getUpdateStatus(): Promise<String> {
     return (await call_backend("get_update_status", []))[0];
 }
+
+export async function createDebugLog(): Promise<boolean> {
+    return (await call_backend("create_debug_log", []))[0];
+}

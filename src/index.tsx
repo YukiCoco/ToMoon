@@ -16,7 +16,8 @@ import { GiEgyptianBird } from "react-icons/gi";
 
 import {
   Subscriptions,
-  About
+  About,
+  Debug
 } from "./pages";
 
 import * as backend from "./backend";
@@ -152,20 +153,6 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
             Reset Network
           </ButtonItem>
         </PanelSectionRow>
-        <PanelSectionRow>
-          {/* {clashState ? "on" : "off"} */}
-          {/* <ButtonItem
-          layout="below"
-          onClick={() => {
-            //test
-            //var status = false;
-            backend.resolve(backend.getEnabled(), (v: boolean) => {
-            });
-          }}
-        >
-          TEST BTN
-        </ButtonItem> */}
-        </PanelSectionRow>
       </PanelSection>
     </PanelSection>
   );
@@ -186,6 +173,11 @@ const DeckyPluginRouterTest: VFC = () => {
           title: "About",
           content: <About />,
           route: "/tomoon-config/about"
+        },
+        {
+          title: "Debug",
+          content: <Debug />,
+          route: "/tomoon-config/debug"
         }
       ]}
     />

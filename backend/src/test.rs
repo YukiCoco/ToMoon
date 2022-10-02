@@ -99,7 +99,7 @@ mod tests {
             for (key, value) in provider {
                 if let Some(url) = value.get("url") {
                     if let Some(path) = value.get("path") {
-                        println!("{} {}",path.as_str().unwrap(), url.as_str().unwrap());
+                        println!("{} {}", path.as_str().unwrap(), url.as_str().unwrap());
                     }
                 }
             }
@@ -210,5 +210,58 @@ mod tests {
 
         let yaml_str = serde_yaml::to_string(&yaml).unwrap();
         fs::write("./bin/config.new.yaml", yaml_str).unwrap();
+    }
+
+    #[test]
+    fn debug_log() {
+        let running_status = format!(
+            "Clash status : {}, SmartDNS status: {} \n",
+            helper::is_clash_running(),
+            helper::is_samrtdns_running()
+        );
+        let tomoon_log = match fs::read_to_string("/tmp/tomoon.log") {
+            Ok(x) => x,
+            Err(e) => {
+                format!("can not find Tomoon log, error message: {} \n", e)
+            }
+        };
+        let clash_log = match fs::read_to_string("/tmp/tomoon.clash.log") {
+            Ok(x) => x,
+            Err(e) => {
+                format!("can not find Clash log, error message: {} \n", e)
+            }
+        };
+        let dns_resolve_config = match fs::read_to_string("/etc/resolv.conf") {
+            Ok(x) => x,
+            Err(e) => {
+                format!("can not find /etc/resolv.conf, error message: {} \n", e)
+            }
+        };
+
+        let network_config = match fs::read_to_string("/etc/NetworkManager/conf.d/dns.conf") {
+            Ok(x) => x,
+            Err(e) => {
+                format!(
+                    "can not find /etc/NetworkManager/conf.d/dns.conf, error message: {} \n",
+                    e
+                )
+            }
+        };
+
+        let log = format!(
+            "
+        {}\n
+        ToMoon log:\n
+        {}\n
+        Clash log:\n
+        {}\n
+        resolv log:\n
+        {}\n
+        network log:\n
+        {}\n
+        ",
+            running_status, tomoon_log, clash_log, dns_resolve_config, network_config
+        );
+        fs::write("/tmp/tomoon.debug.log", log).unwrap();
     }
 }

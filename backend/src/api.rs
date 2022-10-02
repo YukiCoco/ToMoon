@@ -21,10 +21,13 @@ pub fn get_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
             }
         };
         let is_clash_running = helper::is_clash_running();
-        if !is_clash_running && lock.enable //Clash 不在后台但设置里却表示打开
+        if !is_clash_running && lock.enable
+        //Clash 不在后台但设置里却表示打开
         {
             lock.enable = false;
-            log::debug!("Error occurred while Clash is running in background but settings defined running.");
+            log::debug!(
+                "Error occurred while Clash is not running in background but settings defined running."
+            );
             return vec![is_clash_running.into()];
         }
         log::debug!("get_enable() success");
@@ -70,17 +73,18 @@ pub fn set_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
                         Ok(_) => (),
                         Err(e) => {
                             log::error!("Run clash error: {}", e);
+                            return vec![];
                         }
                     }
                 } else {
                     // Disable Clash
-                    // TODO: 关闭错误处理
                     match clash.stop() {
                         Ok(_) => {
                             log::info!("successfully disable clash");
-                        },
+                        }
                         Err(e) => {
-                             log::error!("Disable clash error: {}", e);
+                            log::error!("Disable clash error: {}", e);
+                            return vec![];
                         }
                     }
                 }
@@ -205,7 +209,7 @@ pub fn download_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<
                                         "download_sub() faild to acquire runtime_setting write {}",
                                         e
                                     );
-                                    update_status(DownloadStatus::Error);
+                                        update_status(DownloadStatus::Error);
                                     }
                                 }
                             }
@@ -427,5 +431,74 @@ pub fn get_update_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) ->
             }
         }
         return vec![];
+    }
+}
+
+pub fn create_debug_log() -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
+    //let update_status = runtime.update_status_clone();
+    move |_| {
+        let running_status = format!(
+            "Clash status : {}, SmartDNS status: {} \n",
+            helper::is_clash_running(),
+            helper::is_samrtdns_running()
+        );
+        let tomoon_config = match fs::read_to_string("/home/deck/.config/tomoon/tomoon.json") {
+            Ok(x) => x,
+            Err(e) => {
+                format!("can not get Tomoon config, error message: {} \n", e)
+            }
+        };
+        let tomoon_log = match fs::read_to_string("/tmp/tomoon.log") {
+            Ok(x) => x,
+            Err(e) => {
+                format!("can not get Tomoon log, error message: {} \n", e)
+            }
+        };
+        let clash_log = match fs::read_to_string("/tmp/tomoon.clash.log") {
+            Ok(x) => x,
+            Err(e) => {
+                format!("can not get Clash log, error message: {} \n", e)
+            }
+        };
+        let dns_resolve_config = match fs::read_to_string("/etc/resolv.conf") {
+            Ok(x) => x,
+            Err(e) => {
+                format!("can not get /etc/resolv.conf, error message: {} \n", e)
+            }
+        };
+
+        let network_config = match fs::read_to_string("/etc/NetworkManager/conf.d/dns.conf") {
+            Ok(x) => x,
+            Err(e) => {
+                format!(
+                    "can not get /etc/NetworkManager/conf.d/dns.conf, error message: {} \n",
+                    e
+                )
+            }
+        };
+
+        let log = format!(
+            "
+        {}\n
+        ToMoon config:\n
+        {}\n
+        ToMoon log:\n
+        {}\n
+        Clash log:\n
+        {}\n
+        resolv log:\n
+        {}\n
+        network log:\n
+        {}\n
+        ",
+            running_status,
+            tomoon_config,
+            tomoon_log,
+            clash_log,
+            dns_resolve_config,
+            network_config
+        );
+        fs::write("/tmp/tomoon.debug.log", log).unwrap();
+        return vec![true.into()];
     }
 }
