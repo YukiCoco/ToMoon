@@ -13,16 +13,23 @@ pub const NAME: &'static str = env!("CARGO_PKG_NAME");
 pub fn get_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
     let runtime_settings = runtime.settings_clone();
     move |_| {
-        let lock = match runtime_settings.read() {
+        let mut lock = match runtime_settings.write() {
             Ok(x) => x,
             Err(e) => {
                 log::error!("get_enable failed to acquire settings read lock: {}", e);
                 return vec![];
             }
         };
+        let is_clash_running = helper::is_clash_running();
+        if !is_clash_running && lock.enable //Clash 不在后台但设置里却表示打开
+        {
+            lock.enable = false;
+            log::debug!("Error occurred while Clash is running in background but settings defined running.");
+            return vec![is_clash_running.into()];
+        }
         log::debug!("get_enable() success");
-        log::info!("get clash status with {}", lock.enable);
-        vec![lock.enable.into()]
+        log::info!("get clash status with {}", is_clash_running);
+        vec![is_clash_running.into()]
     }
 }
 

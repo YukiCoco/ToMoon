@@ -26,23 +26,26 @@ mod tests {
     #[test]
     fn run_clash() {
         //TODO: no such files
-        let outputs = fs::File::create("/tmp/tomoon.clash.log").unwrap();
+        let outputs = fs::File::create("/tmp/tomoon.smartdns.log").unwrap();
         let errors = outputs.try_clone().unwrap();
-        let clash = Command::new("/home/deck/homebrew/plugins/tomoon/bin/core/clash")
+        let mut samrtdns = Command::new("/home/deck/smartdns")
+            .arg("-c")
+            .arg("/home/deck/config.conf")
             .arg("-f")
-            .arg("/home/deck/homebrew/plugins/tomoon/bin/core/running_config.yaml")
-            .stdout(outputs)
-            .stderr(errors)
+            // .stdout(outputs)
+            // .stderr(errors)
             .spawn()
             .unwrap();
         println!("{}", std::env::current_dir().unwrap().to_str().unwrap());
         // clash
         //     .run(&String::from("/home/deck/.config/tomoon/subs/Ob3jZ.yaml"))
         //     .unwrap();
-        thread::sleep(Duration::from_secs(5));
-        println!("disable clash");
-        //clash.stop();
-        thread::sleep(Duration::from_secs(10));
+        println!("run smartDNS");
+        thread::sleep(Duration::from_secs(3));
+        println!("disable smartDNS");
+        samrtdns.kill().unwrap();
+        samrtdns.wait().unwrap();
+        thread::sleep(Duration::from_secs(3));
     }
 
     #[test]

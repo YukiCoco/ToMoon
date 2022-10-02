@@ -305,7 +305,7 @@ impl Clash {
                 log::error!("Error occurred while disabling Clash: Not launch Clash yet");
             }
         };
-        let smartdns_instance = self.instence.as_mut();
+        let smartdns_instance = self.smartdns_instence.as_mut();
         match smartdns_instance {
             Some(x) => {
                 x.kill()?;
