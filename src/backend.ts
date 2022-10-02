@@ -75,3 +75,7 @@ export async function getUpdateStatus(): Promise<String> {
 export async function createDebugLog(): Promise<boolean> {
     return (await call_backend("create_debug_log", []))[0];
 }
+
+export async function getRunningStatus(): Promise<String> {
+    return (await call_backend("get_running_status", []))[0];
+}

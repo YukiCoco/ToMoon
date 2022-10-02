@@ -44,6 +44,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [optionDropdownDisabled, setOptionDropdownDisabled] = useState(enabledGlobal);
   const [isSelectionDisabled, setIsSelectionDisabled] = useState(false);
+  const [SelectionTips, setSelectionTips] = useState("Run Clash in background");
 
   backend.resolve(backend.getSubList(), (v: String) => {
     let x: Array<any> = JSON.parse(v.toString());
@@ -69,12 +70,40 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
           <div>
             <ToggleField
               label="Enable Clash"
-              description="Run Clash in background"
+              description={SelectionTips}
               checked={clashState}
               onChange={(value: boolean) => {
+                setIsSelectionDisabled(true);
+                setSelectionTips("Loading ...");
                 backend.resolve(backend.setEnabled(value), (v: boolean) => {
                   enabledGlobal = v;
+                  setIsSelectionDisabled(false);
                 });
+                //获取 Clash 启动状态
+                if (!clashState) {
+                  let check_running_handle = setInterval(() => {
+                    backend.resolve(backend.getRunningStatus(), (v: String) => {
+                      console.log(v);
+                      switch (v) {
+                        case "Loading":
+                          setSelectionTips("Loading ...");
+                          break;
+                        case "Failed":
+                          setSelectionTips("Enable failed, See GitHub for help.");
+                          setClashState(false);
+                          break;
+                        case "Success":
+                          setSelectionTips("Clash is running.");
+                          break;
+                      }
+                      if (v != "Loading") {
+                        clearInterval(check_running_handle);
+                      }
+                    });
+                  }, 500);
+                } else {
+                  setSelectionTips("Run Clash in background");
+                }
                 setOptionDropdownDisabled(value);
               }}
               disabled={isSelectionDisabled}

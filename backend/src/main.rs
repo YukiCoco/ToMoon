@@ -46,5 +46,6 @@ fn main() -> Result<(), ()> {
         .register("update_subs", api::update_subs(&runtime))
         .register("get_update_status", api::get_update_status(&runtime))
         .register("create_debug_log", api::create_debug_log())
+        .register("get_running_status", api::get_running_status(&runtime))
         .run_blocking()
 }

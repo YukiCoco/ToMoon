@@ -17,6 +17,15 @@ pub struct ControlRuntime {
     clash_state: Arc<RwLock<Clash>>,
     downlaod_status: Arc<RwLock<DownloadStatus>>,
     update_status: Arc<RwLock<DownloadStatus>>,
+    running_status: Arc<RwLock<RunningStatus>>
+}
+
+#[derive(Debug)]
+pub enum RunningStatus {
+    Loading,
+    Failed,
+    Success,
+    None
 }
 
 #[derive(Debug)]
@@ -36,6 +45,14 @@ impl std::fmt::Display for DownloadStatus {
     }
 }
 
+impl std::fmt::Display for RunningStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+        // or, alternatively:
+        // fmt::Debug::fmt(self, f)
+    }
+}
+
 // pub struct DownloadStatus {
 
 // }
@@ -48,6 +65,7 @@ impl ControlRuntime {
         let clash = Clash::default();
         let download_status = DownloadStatus::None;
         let update_status = DownloadStatus::None;
+        let running_status = RunningStatus::None;
         Self {
             settings: Arc::new(RwLock::new(
                 super::settings::Settings::open(settings_p)
@@ -58,6 +76,7 @@ impl ControlRuntime {
             clash_state: Arc::new(RwLock::new(clash)),
             downlaod_status: Arc::new(RwLock::new(download_status)),
             update_status: Arc::new(RwLock::new(update_status)),
+            running_status: Arc::new(RwLock::new(running_status))
         }
     }
 
@@ -79,6 +98,10 @@ impl ControlRuntime {
 
     pub fn update_status_clone(&self) -> Arc<RwLock<DownloadStatus>> {
         self.update_status.clone()
+    }
+
+    pub fn running_status_clone(&self) -> Arc<RwLock<RunningStatus>> {
+        self.running_status.clone()
     }
 
     pub fn run(&self) -> thread::JoinHandle<()> {
@@ -454,7 +477,7 @@ impl Clash {
         for (_, value) in yaml {
             if let Some(url) = value.get("url") {
                 if let Some(path) = value.get("path") {
-                    match minreq::get(url.as_str().unwrap()).with_timeout(15).send() {
+                    match minreq::get(url.as_str().unwrap()).with_timeout(30).with_header("User-Agent", "ToMoonClash/0.0.2").send() {
                         Ok(response) => {
                             let response = match response.as_str() {
                                 Ok(x) => x,

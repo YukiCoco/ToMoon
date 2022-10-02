@@ -1,6 +1,6 @@
 use std::{fs, thread};
 
-use crate::{control::DownloadStatus, helper, settings::Subscription};
+use crate::{control::{DownloadStatus, RunningStatus}, helper, settings::Subscription};
 
 use super::control::ControlRuntime;
 
@@ -40,13 +40,14 @@ pub fn set_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
     let runtime_settings = runtime.settings_clone();
     let runtime_state = runtime.state_clone();
     let clash = runtime.clash_state_clone();
+    let running_status = runtime.running_status_clone();
     move |params| {
         if let Some(Primitive::Bool(enabled)) = params.get(0) {
             let mut settings = match runtime_settings.write() {
                 Ok(x) => x,
                 Err(e) => {
                     log::error!("set_enable failed to acquire settings write lock: {}", e);
-                    return vec![];
+                    return vec![false.into()];
                 }
             };
             log::info!("set clash status to {}", enabled);
@@ -55,9 +56,17 @@ pub fn set_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
                     Ok(x) => x,
                     Err(e) => {
                         log::error!("set_enable failed to acquire state write lock: {}", e);
-                        return vec![];
+                        return vec![false.into()];
                     }
                 };
+                let mut run_status = match running_status.write() {
+                    Ok(x) => x,
+                    Err(e) => {
+                        log::error!("set_enable failed to acquire run status write lock: {}", e);
+                        return vec![false.into()];
+                    }
+                };
+                *run_status = RunningStatus::Loading;
                 // 有些时候第一次没有选择订阅
                 if settings.current_sub == "" {
                     log::info!("no profile provided, try to use first profile.");
@@ -65,6 +74,8 @@ pub fn set_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
                         settings.current_sub = sub.path.clone();
                     } else {
                         log::error!("no profile provided.");
+                        *run_status = RunningStatus::Failed;
+                        return vec![false.into()];
                     }
                 }
                 // Enable Clash
@@ -73,7 +84,8 @@ pub fn set_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
                         Ok(_) => (),
                         Err(e) => {
                             log::error!("Run clash error: {}", e);
-                            return vec![];
+                            *run_status = RunningStatus::Failed;
+                            return vec![false.into()];
                         }
                     }
                 } else {
@@ -84,7 +96,8 @@ pub fn set_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
                         }
                         Err(e) => {
                             log::error!("Disable clash error: {}", e);
-                            return vec![];
+                            *run_status = RunningStatus::Failed;
+                            return vec![false.into()];
                         }
                     }
                 }
@@ -93,15 +106,18 @@ pub fn set_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
                     Ok(x) => x,
                     Err(e) => {
                         log::error!("set_enable failed to acquire state write lock: {}", e);
+                        *run_status = RunningStatus::Failed;
                         return vec![];
                     }
                 };
                 state.dirty = true;
+                *run_status = RunningStatus::Success;
+                drop(run_status);
                 log::debug!("set_enable({}) success", enabled);
             }
             vec![(*enabled).into()]
         } else {
-            Vec::new()
+            return vec![false.into()];
         }
     }
 }
@@ -157,7 +173,7 @@ pub fn download_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<
                                 }
                             }
                         };
-                        match minreq::get(url.clone()).with_timeout(10).send() {
+                        match minreq::get(url.clone()).with_header("User-Agent", "ToMoonClash/0.0.2").with_timeout(15).send() {
                             Ok(x) => {
                                 let response = x.as_str().unwrap();
                                 if !helper::check_yaml(String::from(response)) {
@@ -236,6 +252,22 @@ pub fn get_download_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) 
     let download_status = runtime.downlaod_status_clone();
     move |_| {
         match download_status.read() {
+            Ok(x) => {
+                let status = x.to_string();
+                return vec![status.into()];
+            }
+            Err(_) => {
+                log::error!("Error occured while get_download_status()");
+            }
+        }
+        return vec![];
+    }
+}
+
+pub fn get_running_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
+    let running_status = runtime.running_status_clone();
+    move |_| {
+        match running_status.read() {
             Ok(x) => {
                 let status = x.to_string();
                 return vec![status.into()];
