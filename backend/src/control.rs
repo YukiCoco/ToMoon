@@ -162,6 +162,7 @@ pub struct Clash {
     pub path: std::path::PathBuf,
     pub config: std::path::PathBuf,
     pub instence: Option<Child>,
+    pub smartdns_instence: Option<Child>,
 }
 
 #[derive(Debug)]
@@ -209,6 +210,7 @@ impl Default for Clash {
                 .unwrap()
                 .join("bin/core/config.yaml"),
             instence: None,
+            smartdns_instence: None,
         }
     }
 }
@@ -233,6 +235,22 @@ impl Clash {
             .join("bin/core/running_config.yaml");
         let outputs = fs::File::create("/tmp/tomoon.clash.log").unwrap();
         let errors = outputs.try_clone().unwrap();
+
+        let smartdns_path = get_current_working_dir()
+            .unwrap()
+            .join("bin/smartdns/smartdns");
+
+        let smartdns_config_path = get_current_working_dir()
+            .unwrap()
+            .join("bin/smartdns/config.conf");
+
+        // 启动 SmartDNS 作为 DNS 上游
+        let smart_dns = Command::new(smartdns_path)
+            .arg("-c")
+            .arg(smartdns_config_path)
+            .arg("-f")
+            .spawn();
+
         let clash = Command::new(self.path.clone())
             .arg("-f")
             .arg(run_config)
@@ -248,6 +266,7 @@ impl Clash {
             }
         };
         self.instence = Some(clash.unwrap());
+        self.smartdns_instence = Some(smart_dns.unwrap());
         //在 clash 启动之后修改 DNS
         match helper::set_system_network() {
             Ok(_) => {
@@ -264,13 +283,12 @@ impl Clash {
         Ok(())
     }
 
-    pub fn stop(&mut self) {
+    pub fn stop(&mut self) -> Result<(), Box<dyn error::Error>> {
         let instance = self.instence.as_mut();
         match instance {
             Some(x) => {
-                //TODO: 错误处理
-                x.kill().unwrap();
-                x.wait().unwrap();
+                x.kill()?;
+                x.wait()?;
 
                 // 复原 DNS
                 Command::new("chattr")
@@ -280,12 +298,24 @@ impl Clash {
                     .unwrap()
                     .wait()
                     .unwrap();
-                fs::copy("./resolv.conf.bk", "/etc/resolv.conf").unwrap();
+                fs::copy("./resolv.conf.bk", "/etc/resolv.conf")?;
             }
             None => {
                 //Not launch Clash yet...
+                log::error!("Error occurred while disabling Clash: Not launch Clash yet");
             }
         };
+        let smartdns_instance = self.instence.as_mut();
+        match smartdns_instance {
+            Some(x) => {
+                x.kill()?;
+                x.wait()?;
+            }
+            None => {
+                log::error!("Error occurred while disabling SmartDNS : Not launch SmartDNS yet");
+            }
+        };
+        Ok(())
     }
 
     pub fn update_config_path(&mut self, path: &String) {

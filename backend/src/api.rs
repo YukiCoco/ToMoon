@@ -68,7 +68,14 @@ pub fn set_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
                 } else {
                     // Disable Clash
                     // TODO: 关闭错误处理
-                    clash.stop();
+                    match clash.stop() {
+                        Ok(_) => {
+                            log::info!("successfully disable clash");
+                        },
+                        Err(e) => {
+                             log::error!("Disable clash error: {}", e);
+                        }
+                    }
                 }
                 settings.enable = *enabled;
                 let mut state = match runtime_state.write() {
