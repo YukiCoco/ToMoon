@@ -38,7 +38,8 @@ jobs:
       #     command: build
       #     args: --target x86_64-unknown-linux-gnu --release # ToMoon/backend/target/x86_64-unknown-linux-gnu/release/tomoon
       - name: download asset files
-        run: wget https://github.com/YukiCoco/ToMoon/releases/download/v0.0.2/tomoon-v0.0.2.zip & unzip -n tomoon-v0.0.2.zip -d /tmp
+        run: wget https://github.com/YukiCoco/ToMoon/releases/download/v0.0.2/tomoon-v0.0.2.zip
+      - run: unzip -n tomoon-v0.0.2.zip -d /tmp
       - uses: pnpm/action-setup@v2.2.2
         with:
           version: 6.0.2
@@ -59,7 +60,8 @@ jobs:
               cp plugin.json ./release/tomoon/plugin.json
               cp -r ./tmp/core ./release/tomoon/bin/
               cp -r ./tmp/smartdns ./release/tomoon/bin/
-              cd ./release & zip -r tomoon-${{ env.RELEASE_VERSION }}.zip tomoon
+              cd ./release 
+              zip -r tomoon-${{ env.RELEASE_VERSION }}.zip tomoon
               cd ..
       
       - name: Create Release
