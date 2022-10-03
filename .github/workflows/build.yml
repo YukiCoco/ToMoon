@@ -29,9 +29,6 @@ jobs:
         run: | 
              cp -r tmp/usdpl src/
              pnpm i
-      - uses: bahmutov/npm-install@v1
-        with:
-          working-directory: .
       - name: build front end
         run: pnpm run build
         working-directory: .
