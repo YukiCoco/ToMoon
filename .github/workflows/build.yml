@@ -1,0 +1,76 @@
+on:
+  push:
+    tags:        
+      - 'v*'           # Push events to every tag not containing /
+
+name:  ToMoon Auto Build
+
+jobs:
+  linux_amd64:
+    name: Linux AMD64
+    runs-on: ubuntu-latest
+    steps: #build tomoon
+      - uses: actions/checkout@v2
+      - name: Set env
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+      - name: Switch work dir
+        run: cd backend
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-unknown-linux-gnu
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: build
+          args: --target x86_64-unknown-linux-gnu --release # ToMoon/backend/target/x86_64-unknown-linux-gnu/release/tomoon
+      - name: Switch root dir
+        run: cd ..
+      - name: download asset files
+        run: wget https://github.com/YukiCoco/ToMoon/releases/download/v0.0.2/tomoon-v0.0.2.zip & unzip -n tomoon-v0.0.2.zip -d /tmp
+      - uses: pnpm/action-setup@v2.2.2
+        with:
+          version: 6.0.2
+      - name: build frontend dist
+        run:  cp -r ./tmp/usdpl ./src/ & pnpm install # copy usdpl for build
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - run: npm run build
+      - name: colect files
+        run: |
+              mkdir -p ./release/tomoon/bin/core/web
+              mkdir -p ./release/tomoon/dist
+              cp backend/target/x86_64-unknown-linux-gnu/release/tomoon ./release/tomoon/bin/tomoon
+              cp ./dist/index.js ./release/tomoon/dist/index.js
+              cp main.py ./release/tomoon/main.py
+              cp plugin.json ./release/tomoon/plugin.json
+              cp -r ./tmp/core ./release/tomoon/bin/
+              cp -r ./tmp/smartdns ./release/tomoon/bin/
+              cd ./release & zip -r tomoon-${{ env.RELEASE_VERSION }}.zip tomoon
+              cd ..
+      
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          #body_path: Changelog/${{ env.RELEASE_VERSION }}-changelog.md
+          draft: false
+          prerelease: false
+      - name: Upload Release Asset
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./release/tomoon-${{ env.RELEASE_VERSION }}.zip
+          asset_name: tomoon-${{ env.RELEASE_VERSION }}.zip
+          asset_content_type: application/zip
