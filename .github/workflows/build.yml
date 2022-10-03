@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       #build tomoon start
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set env
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       
@@ -19,7 +19,6 @@ jobs:
         run: wget https://github.com/YukiCoco/ToMoon/releases/download/v0.0.2/build_assets.zip
       - run: unzip -n build_assets.zip -d tmp/
       # build front-end start
-      - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
           node-version: 16
@@ -37,8 +36,7 @@ jobs:
         run: npm run build
         working-directory: .
       # build front-end end
-      - uses: actions/checkout@v2
-      - uses: actions/checkout@v3
+      # build backend start
       - uses: dtolnay/rust-toolchain@stable
       - uses: ClementTsang/cargo-action@v0.0.2
         with:
@@ -47,6 +45,7 @@ jobs:
           args: --target x86_64-unknown-linux-gnu --release
           use-cross: true
           cross-version: 0.2.4
+      # build backend end
       #build tomoon stop
       #output: # ToMoon/backend/target/x86_64-unknown-linux-gnu/release/tomoon
 
@@ -60,12 +59,10 @@ jobs:
       #     use-cross: true
       #     command: build
       #     args: --target x86_64-unknown-linux-gnu --release # ToMoon/backend/target/x86_64-unknown-linux-gnu/release/tomoon
-
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 16
-      - run: pnpm run build
+      # - uses: actions/setup-node@v3
+      #   with:
+      #     node-version: 16
+      # - run: pnpm run build
       - name: colect files
         run: |
               mkdir -p ./release/tomoon/bin/core/web
