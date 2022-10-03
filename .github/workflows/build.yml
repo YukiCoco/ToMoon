@@ -9,37 +9,57 @@ jobs:
   linux_amd64:
     name: Linux AMD64
     runs-on: ubuntu-latest
-    steps: #build tomoon
-      - uses: actions/checkout@v2
+    steps:
+      #build tomoon start
+      - uses: actions/checkout@v3
       - name: Set env
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-      - name: Switch work dir
-        run: cd backend
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: x86_64-unknown-linux-gnu
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: build
-          args: --target x86_64-unknown-linux-gnu --release # ToMoon/backend/target/x86_64-unknown-linux-gnu/release/tomoon
-      - name: Switch root dir
-        run: cd ..
+      
       - name: download asset files
-        run: wget https://github.com/YukiCoco/ToMoon/releases/download/v0.0.2/tomoon-v0.0.2.zip & unzip -n tomoon-v0.0.2.zip -d /tmp
-      - uses: pnpm/action-setup@v2.2.2
-        with:
-          version: 6.0.2
-      - name: build frontend dist
-        run:  cp -r ./tmp/usdpl ./src/ & pnpm install # copy usdpl for build
-      - uses: actions/checkout@v3
+        run: wget https://github.com/YukiCoco/ToMoon/releases/download/v0.0.2/build_assets.zip
+      - run: unzip -n build_assets.zip -d tmp/
+      # build front-end start
       - uses: actions/setup-node@v3
         with:
           node-version: 16
-      - run: npm run build
+      - uses: pnpm/action-setup@v2.2.2
+        with:
+          version: 7.12.2
+      - name: Install Requestment
+        run: | 
+             cp -r tmp/usdpl src/
+             pnpm i
+      - name: build front end
+        run: pnpm run build
+        working-directory: .
+      # build front-end end
+      # build backend start
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: ClementTsang/cargo-action@v0.0.2
+        with:
+          command: build
+          directory: ./backend
+          args: --target x86_64-unknown-linux-gnu --release
+          use-cross: true
+          cross-version: 0.2.4
+      # build backend end
+      #build tomoon stop
+      #output: # ToMoon/backend/target/x86_64-unknown-linux-gnu/release/tomoon
+
+      # - uses: actions-rs/toolchain@v1
+      #   with:
+      #     toolchain: stable
+      #     target: x86_64-unknown-linux-gnu
+      #     override: true
+      # - uses: actions-rs/cargo@v1
+      #   with:
+      #     use-cross: true
+      #     command: build
+      #     args: --target x86_64-unknown-linux-gnu --release # ToMoon/backend/target/x86_64-unknown-linux-gnu/release/tomoon
+      # - uses: actions/setup-node@v3
+      #   with:
+      #     node-version: 16
+      # - run: pnpm run build
       - name: colect files
         run: |
               mkdir -p ./release/tomoon/bin/core/web
@@ -50,7 +70,8 @@ jobs:
               cp plugin.json ./release/tomoon/plugin.json
               cp -r ./tmp/core ./release/tomoon/bin/
               cp -r ./tmp/smartdns ./release/tomoon/bin/
-              cd ./release & zip -r tomoon-${{ env.RELEASE_VERSION }}.zip tomoon
+              cd ./release 
+              zip -r tomoon-${{ env.RELEASE_VERSION }}.zip tomoon
               cd ..
       
       - name: Create Release
