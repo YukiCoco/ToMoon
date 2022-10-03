@@ -24,7 +24,7 @@ jobs:
           node-version: 16
       - uses: pnpm/action-setup@v2.2.2
         with:
-          version: 6.0.2
+          version: 7.12.2
       - name: Install Requestment
         run: | 
              cp -r tmp/usdpl src/
