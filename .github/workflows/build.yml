@@ -24,7 +24,7 @@ jobs:
       - name: actions/setup-node
         uses: actions/setup-node@v1.4.1
         with:
-          node-version: "16.13.2"
+          node-version: "13.9.0"
       - name: pnpm install
         uses: jaid/action-npm-install@v1.2.1
       # - uses: pnpm/action-setup@v2.2.2
