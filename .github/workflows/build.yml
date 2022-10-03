@@ -39,12 +39,12 @@ jobs:
       #     args: --target x86_64-unknown-linux-gnu --release # ToMoon/backend/target/x86_64-unknown-linux-gnu/release/tomoon
       - name: download asset files
         run: wget https://github.com/YukiCoco/ToMoon/releases/download/v0.0.2/build_assets.zip
-      - run: unzip -n build_assets.zip -d /tmp
+      - run: unzip -n build_assets.zip -d tmp/
       - uses: pnpm/action-setup@v2.2.2
         with:
           version: 6.0.2
       - name: build frontend dist
-        run:  cp -r ./tmp/usdpl ./src/ & pnpm install # copy usdpl for build
+        run:  cp -r tmp/usdpl src/ & pnpm install # copy usdpl for build
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
