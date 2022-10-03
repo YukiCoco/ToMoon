@@ -43,13 +43,17 @@ jobs:
       - uses: pnpm/action-setup@v2.2.2
         with:
           version: 6.0.2
+      
       - name: build frontend dist
-        run:  cp -r tmp/usdpl src/ & pnpm install # copy usdpl for build
+        run: |
+          cp -r tmp/usdpl src/ 
+          pnpm install # copy usdpl for build
+
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
           node-version: 16
-      - run: npm run build
+      - run: pnpm run build
       - name: colect files
         run: |
               mkdir -p ./release/tomoon/bin/core/web
