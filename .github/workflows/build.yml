@@ -18,13 +18,22 @@ jobs:
       - name: download asset files
         run: wget https://github.com/YukiCoco/ToMoon/releases/download/v0.0.2/build_assets.zip
       - run: unzip -n build_assets.zip -d tmp/
-      - uses: pnpm/action-setup@v2.2.2
+      # build front end start
+      - name: actions/checkout
+        uses: actions/checkout@v2.0.0
+      - name: actions/setup-node
+        uses: actions/setup-node@v1.4.1
         with:
-          version: 6.0.2
-      - name: Install Requestment
-        run: | 
-             cp -r tmp/usdpl src/
-             pnpm i
+          node-version: "16.13.2"
+      - name: pnpm install
+        uses: jaid/action-npm-install@v1.2.1
+      # - uses: pnpm/action-setup@v2.2.2
+      #   with:
+      #     version: 6.0.2
+      # - name: Install Requestment
+      #   run: | 
+      #        cp -r tmp/usdpl src/
+      #        pnpm i
       - uses: bahmutov/npm-install@v1
         with:
           working-directory: .
