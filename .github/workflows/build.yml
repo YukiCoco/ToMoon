@@ -18,29 +18,27 @@ jobs:
       - name: download asset files
         run: wget https://github.com/YukiCoco/ToMoon/releases/download/v0.0.2/build_assets.zip
       - run: unzip -n build_assets.zip -d tmp/
-      # build front end start
-      - name: actions/checkout
-        uses: actions/checkout@v2.0.0
-      - name: actions/setup-node
-        uses: actions/setup-node@v1.4.1
+      # build front-end start
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
-          node-version: "13.9.0"
-      - name: pnpm install
-        uses: jaid/action-npm-install@v1.2.1
-      # - uses: pnpm/action-setup@v2.2.2
-      #   with:
-      #     version: 6.0.2
-      # - name: Install Requestment
-      #   run: | 
-      #        cp -r tmp/usdpl src/
-      #        pnpm i
+          node-version: 16
+          cache: 'npm'
+          cache-dependency-path: subdir/package-lock.json
+      - uses: pnpm/action-setup@v2.2.2
+        with:
+          version: 6.0.2
+      - name: Install Requestment
+        run: | 
+             cp -r tmp/usdpl src/
+             pnpm i
       - uses: bahmutov/npm-install@v1
         with:
           working-directory: .
       - name: build front end
         run: npm run build
         working-directory: .
-      
+      # build front-end end
       - uses: actions/checkout@v2
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
