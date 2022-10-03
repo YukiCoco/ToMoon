@@ -33,7 +33,7 @@ jobs:
         with:
           working-directory: .
       - name: build front end
-        run: npm run build
+        run: pnpm run build
         working-directory: .
       # build front-end end
       # build backend start
