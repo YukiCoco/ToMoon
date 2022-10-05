@@ -297,11 +297,16 @@ impl Clash {
             .unwrap()
             .join("bin/smartdns/config.conf");
 
+        // let smartdns_outputs = fs::File::create("/tmp/tomoon.smartdns.log").unwrap();
+        // let smartdns_errors = outputs.try_clone().unwrap();
+
         // 启动 SmartDNS 作为 DNS 上游
         let smart_dns = Command::new(smartdns_path)
             .arg("-c")
             .arg(smartdns_config_path)
             .arg("-f")
+            // .stdout(smartdns_outputs)
+            // .stderr(smartdns_errors)
             .spawn();
 
         let clash = Command::new(self.path.clone())

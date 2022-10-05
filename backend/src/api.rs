@@ -1,6 +1,10 @@
-use std::{fs, thread};
+use std::{fs, path::PathBuf, thread};
 
-use crate::{control::{DownloadStatus, RunningStatus}, helper, settings::Subscription};
+use crate::{
+    control::{DownloadStatus, RunningStatus},
+    helper,
+    settings::Subscription,
+};
 
 use super::control::ControlRuntime;
 
@@ -173,21 +177,31 @@ pub fn download_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<
                                 }
                             }
                         };
-                        match minreq::get(url.clone()).with_header("User-Agent", "ToMoonClash/0.0.2").with_timeout(15).send() {
-                            Ok(x) => {
-                                let response = x.as_str().unwrap();
-                                if !helper::check_yaml(String::from(response)) {
+                        //是一个本地文件
+                        if let Some(local_file) = helper::get_file_path(url.clone()) {
+                            let local_file = PathBuf::from(local_file);
+                            if local_file.exists() {
+                                let file_content = match fs::read_to_string(local_file) {
+                                    Ok(x) => x,
+                                    Err(e) => {
+                                        log::error!("Failed while creating sub dir.");
+                                        log::error!("Error Message:{}", e);
+                                        update_status(DownloadStatus::Error);
+                                        return;
+                                    }
+                                };
+                                if !helper::check_yaml(&file_content) {
                                     log::error!("The downlaoded sub is not a legal profile.");
                                     update_status(DownloadStatus::Error);
                                     return;
                                 }
+                                //保存订阅
                                 let s: String = rand::thread_rng()
                                     .sample_iter(&Alphanumeric)
                                     .take(5)
                                     .map(char::from)
                                     .collect();
                                 let path = path.join(s + ".yaml");
-                                //保存订阅
                                 if let Some(parent) = path.parent() {
                                     if let Err(e) = std::fs::create_dir_all(parent) {
                                         log::error!("Failed while creating sub dir.");
@@ -197,11 +211,11 @@ pub fn download_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<
                                     }
                                 }
                                 let path = path.to_str().unwrap();
-                                if let Err(e) = fs::write(path, response) {
-                                    log::error!("Failed while saving sub.");
+                                if let Err(e) = fs::write(path, file_content) {
+                                    log::error!("Failed while saving sub, path: {}", path);
                                     log::error!("Error Message:{}", e);
+                                    return;
                                 }
-                                //下载成功
                                 //修改下载状态
                                 log::info!("Download profile successfully.");
                                 update_status(DownloadStatus::Success);
@@ -209,7 +223,7 @@ pub fn download_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<
                                 match runtime_setting.write() {
                                     Ok(mut x) => {
                                         x.subscriptions
-                                            .push(Subscription::new(path.to_string(), url));
+                                            .push(Subscription::new(path.to_string(), url.clone()));
                                         let mut state = match runtime_state.write() {
                                             Ok(x) => x,
                                             Err(e) => {
@@ -228,13 +242,80 @@ pub fn download_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<
                                         update_status(DownloadStatus::Error);
                                     }
                                 }
+                            } else {
+                                log::error!("Cannt found file {}", local_file.to_str().unwrap());
+                                update_status(DownloadStatus::Error);
+                                return;
                             }
-                            Err(e) => {
-                                log::error!("Failed while downloading sub.");
-                                log::error!("Error Message:{}", e);
-                                update_status(DownloadStatus::Failed);
-                            }
-                        };
+                            // 是一个链接
+                        } else {
+                            match minreq::get(url.clone())
+                                .with_header("User-Agent", "ToMoonClash/0.0.2")
+                                .with_timeout(15)
+                                .send()
+                            {
+                                Ok(x) => {
+                                    let response = x.as_str().unwrap();
+                                    if !helper::check_yaml(&String::from(response)) {
+                                        log::error!("The downlaoded sub is not a legal profile.");
+                                        update_status(DownloadStatus::Error);
+                                        return;
+                                    }
+                                    let s: String = rand::thread_rng()
+                                        .sample_iter(&Alphanumeric)
+                                        .take(5)
+                                        .map(char::from)
+                                        .collect();
+                                    let path = path.join(s + ".yaml");
+                                    //保存订阅
+                                    if let Some(parent) = path.parent() {
+                                        if let Err(e) = std::fs::create_dir_all(parent) {
+                                            log::error!("Failed while creating sub dir.");
+                                            log::error!("Error Message:{}", e);
+                                            update_status(DownloadStatus::Error);
+                                            return;
+                                        }
+                                    }
+                                    let path = path.to_str().unwrap();
+                                    if let Err(e) = fs::write(path, response) {
+                                        log::error!("Failed while saving sub.");
+                                        log::error!("Error Message:{}", e);
+                                    }
+                                    //下载成功
+                                    //修改下载状态
+                                    log::info!("Download profile successfully.");
+                                    update_status(DownloadStatus::Success);
+                                    //存入设置
+                                    match runtime_setting.write() {
+                                        Ok(mut x) => {
+                                            x.subscriptions
+                                                .push(Subscription::new(path.to_string(), url));
+                                            let mut state = match runtime_state.write() {
+                                                Ok(x) => x,
+                                                Err(e) => {
+                                                    log::error!("set_enable failed to acquire state write lock: {}", e);
+                                                    update_status(DownloadStatus::Error);
+                                                    return;
+                                                }
+                                            };
+                                            state.dirty = true;
+                                        }
+                                        Err(e) => {
+                                            log::error!(
+                                        "download_sub() faild to acquire runtime_setting write {}",
+                                        e
+                                    );
+                                            update_status(DownloadStatus::Error);
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    log::error!("Failed while downloading sub.");
+                                    log::error!("Error Message:{}", e);
+                                    update_status(DownloadStatus::Failed);
+                                }
+                            };
+                        }
                     });
                 }
                 Err(_) => {
@@ -404,34 +485,44 @@ pub fn update_subs(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<P
                 let runtime_update_status = runtime_update_status.clone();
                 thread::spawn(move || {
                     for i in subs {
+                        //是一个本地文件
+                        if helper::get_file_path(i.url.clone()).is_some() {
+                            continue;
+                        }
                         thread::spawn(move || {
-                            if let Ok(response) = minreq::get(i.url).with_timeout(10).send() {
-                                let response = match response.as_str() {
-                                    Ok(x) => x,
-                                    Err(_) => {
-                                        log::error!("Error occurred while parsing response.");
+                            match minreq::get(i.url.clone())
+                            .with_header("User-Agent", "ToMoonClash/0.0.2")
+                            .with_timeout(15)
+                            .send() {
+                                Ok(response) => {
+                                    let response = match response.as_str() {
+                                        Ok(x) => x,
+                                        Err(_) => {
+                                            log::error!("Error occurred while parsing response.");
+                                            return;
+                                        }
+                                    };
+                                    if !helper::check_yaml(&response.to_string()) {
+                                        log::error!("The downlaoded sub is not a legal profile.");
                                         return;
                                     }
-                                };
-                                if !helper::check_yaml(response.to_string()) {
-                                    log::error!("The downlaoded sub is not a legal profile.");
-                                    return;
-                                }
-                                match fs::write(i.path.clone(), response) {
-                                    Ok(_) => {
-                                        log::info!("Subscription {} updated.", i.path);
-                                    }
-                                    Err(e) => {
-                                        log::error!(
+                                    match fs::write(i.path.clone(), response) {
+                                        Ok(_) => {
+                                            log::info!("Subscription {} updated.", i.path);
+                                        }
+                                        Err(e) => {
+                                            log::error!(
                                         "Error occurred while write to file in update_subs(). {}",
                                         e
                                     );
-                                        return;
+                                            return;
+                                        }
                                     }
+                                },
+                                Err(e) => {
+                                    log::error!("Error occurred while download sub {}", i.url);
+                                    log::error!("Error Message : {}", e);
                                 }
-                            } else {
-                                //下载失败
-                                log::error!("Error occurred while download subscription files");
                             }
                         });
                     }

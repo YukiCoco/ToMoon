@@ -6,7 +6,6 @@ use std::fs;
 
 use sysinfo::{ProcessExt, System, SystemExt};
 
-
 pub fn set_system_network() -> Result<(), Box<dyn std::error::Error>> {
     // 修改 DNS 为可写
     Command::new("chattr")
@@ -126,8 +125,8 @@ pub fn get_current_working_dir() -> std::io::Result<std::path::PathBuf> {
     std::env::current_dir()
 }
 
-pub fn check_yaml(str: String) -> bool {
-    if let Ok(x) = serde_yaml::from_str::<serde_yaml::Value>(str.as_str()) {
+pub fn check_yaml(str: &String) -> bool {
+    if let Ok(x) = serde_yaml::from_str::<serde_yaml::Value>(str) {
         if let Some(v) = x.as_mapping() {
             if v.contains_key("rules") {
                 return true;
@@ -150,7 +149,7 @@ pub fn is_clash_running() -> bool {
         if process.name() == "clash" {
             return true;
         }
-    };
+    }
     return false;
 }
 
@@ -162,6 +161,15 @@ pub fn is_samrtdns_running() -> bool {
         if process.name() == "smartdns" {
             return true;
         }
-    };
+    }
     return false;
+}
+
+pub fn get_file_path(url: String) -> Option<String> {
+    let r = Regex::new(r"^file://").unwrap();
+    if let Some(x) = r.find(url.clone().as_str()) {
+        let file_path = url[x.end()..url.len()].to_string();
+        return Some(file_path);
+    };
+    return  None;
 }

@@ -80,6 +80,22 @@ mod tests {
     }
 
     #[test]
+    fn regex_test() {
+        let url = String::from("file:///home/dek/b.yaml");
+        if let Some(path) = helper::get_file_path(url) {
+            println!("{}",path);
+        }
+    }
+
+    fn fun_name(url: String) {
+        let r = Regex::new(r"^file://").unwrap();
+        if let Some(x) = r.find(url.clone().as_str()) {
+            let file_path = url[x.end()..url.len()].to_string();
+            println!("{}",file_path);
+        };
+    }
+
+    #[test]
     fn test_privider_path() {
         let test_yaml = "./Rules/IPfake.yaml";
         let r = Regex::new(r"^\./").unwrap();
