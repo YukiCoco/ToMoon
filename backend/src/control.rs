@@ -281,6 +281,21 @@ impl Clash {
                 });
             }
         }
+        //在 clash 启动前修改 DNS
+        //先结束 systemd-resolve ，否则会因为端口占用启动失败
+        match helper::set_system_network() {
+            Ok(_) => {
+                log::info!("Successfully set network status");
+            }
+            Err(e) => {
+                log::error!("Error occurred while setting system network: {}", e);
+                return Err(ClashError {
+                    Message: e.to_string(),
+                    ErrorKind: ClashErrorKind::NetworkError,
+                });
+            }
+        }
+        
         //log::info!("Pre-setting network");
         //TODO: 未修改的 unwarp
         let run_config = get_current_working_dir()
@@ -325,19 +340,6 @@ impl Clash {
         };
         self.instence = Some(clash.unwrap());
         self.smartdns_instence = Some(smart_dns.unwrap());
-        //在 clash 启动之后修改 DNS
-        match helper::set_system_network() {
-            Ok(_) => {
-                log::info!("Successfully set network status");
-            }
-            Err(e) => {
-                log::error!("Error occurred while setting system network: {}", e);
-                return Err(ClashError {
-                    Message: e.to_string(),
-                    ErrorKind: ClashErrorKind::NetworkError,
-                });
-            }
-        }
         Ok(())
     }
 
