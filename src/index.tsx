@@ -25,6 +25,7 @@ import * as backend from "./backend";
 let enabledGlobal = false;
 let usdplReady = false;
 let subs: any[];
+let subs_option: any[];
 
 
 const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
@@ -40,7 +41,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   backend.resolve(backend.getEnabled(), setClashState);
   //setInterval(refreshSubOptions, 2000);
   console.log("status :" + clashState);
-  let [options, setOptions] = useState<DropdownOption[]>([]);
+  let [options, setOptions] = useState<DropdownOption[]>(subs_option);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [optionDropdownDisabled, setOptionDropdownDisabled] = useState(enabledGlobal);
   const [isSelectionDisabled, setIsSelectionDisabled] = useState(false);
@@ -58,6 +59,14 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
         url: x.url
       }
     });
+    let items = x.map(x => {
+      let name = re.exec(x.path);
+      return {
+        label: name![0],
+        data: x.path
+      }
+    });
+    subs_option = items;
     console.log("Subs ready");
     setIsSelectionDisabled(i == 0);
     //console.log(sub);
@@ -115,23 +124,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
             rgOptions={options}
             selectedOption={selectedOption}
             onMenuWillOpen={() => {
-              //console.log("Getting subs");
-              //setOptions(getOptions());
-              backend.resolve(backend.getSubList(), (v: String) => {
-                let x: Array<any> = JSON.parse(v.toString());
-                let re = new RegExp("(?<=subs\/).+\.yaml$");
-                let items = x.map(x => {
-                  let name = re.exec(x.path);
-                  return {
-                    label: name![0],
-                    data: x.path
-                  }
-                });
-                setOptions(items)
-                console.log("refresh subOptions");
-                console.log(items);
-                //console.log(sub);
-              });
+              setOptions(subs_option);
             }}
             onChange={(x) => {
               backend.resolve(backend.setSub(x.data), () => {
@@ -221,22 +214,6 @@ export default definePlugin((serverApi: ServerAPI) => {
     backend.resolve(backend.getEnabled(), (v: boolean) => {
       enabledGlobal = v;
     });
-    // backend.resolve(backend.getSubList(), (v: String) => {
-    //   let x: Array<any> = JSON.parse(v.toString());
-    //   let re = new RegExp("(?<=subs\/).+\.yaml$");
-    //   let i = 0;
-    //   subs = x.map(x => {
-    //     let name = re.exec(x.path);
-    //     return {
-    //       id: i++,
-    //       name: name![0],
-    //       url: x.url
-    //     }
-    //   });
-    //   console.log("Subs ready");
-    //   console.log(subs);
-    //   //console.log(sub);
-    // });
   })();
 
 
