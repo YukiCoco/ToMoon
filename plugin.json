@@ -1,7 +1,7 @@
 {
   "name": "To Moon",
   "author": "Sayo Kurisu",
-  "flags": ["debug", "root"],
+  "flags": ["root"],
   "publish": {
     "tags": ["root", "network"],
     "description": "SteamOS Network Tools Box.",
