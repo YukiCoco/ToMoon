@@ -16,7 +16,7 @@
 5. 按电源键切换到 Desktop 桌面模式
 6. 打开 Konsole，输入 `curl -L http://dl.ohmydeck.net | sh` 安装 Plugin Loader
 7. 切换回到 Gamming 游戏模式，按下右侧摇杆下的按钮，可以看到多了一个 Decky 插件面板
-8. 打开左上角设置，在 Mannul plugin install 中输入 `http://moon.ohmydeck.net`，点击 install
+8. 打开左上角设置，在 Mannul plugin install 中输入 `http://moon.ohmydeck.net`，点击 install，这里安装后不会在 Decky 里显示，需要重启 Steam Deck
 9. 重启你的 Steam Deck
 
 ## 使用
@@ -38,6 +38,14 @@
 [Telegram Group](https://t.me/steamdecktalk)  
 ## 已知 BUG
 当 SteamOS 系统更新等某些外部原因导致 Decky Loader 失效，ToMoon 没有正确关闭 Clash，会出现**无法上网**的情况。此时请进入桌面模式，使用 Konsole 复原 DNS.  
+````shell
+sudo chattr -i /etc/resolv.conf
+sudo systemctl stop systemd-resolved
+sudo chmod a+w /etc/NetworkManager/conf.d/dns.conf
+sudo echo -e "[main]\ndns=auto"  > /etc/NetworkManager/conf.d/dns.conf
+sudo nmcli general reload
+````
+如果安装的是 `v0.0.5` *(2022/11/18)* 以上版本，可以使用脚本直接恢复。
 ````shell
 bash ~/tomoon_recover.sh
 ````
