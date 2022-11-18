@@ -36,6 +36,11 @@
 ## 支持
 加入我们的讨论社群，提交 Bug & Feature Request  
 [Telegram Group](https://t.me/steamdecktalk)  
+## 已知 BUG
+当 SteamOS 系统更新等某些外部原因导致 Decky Loader 失效，ToMoon 没有正确关闭 Clash，会出现**无法上网**的情况。此时请进入桌面模式，使用 Konsole 复原 DNS.  
+````shell
+bash ~/tomoon_recover.sh
+````
 
 ## Reference
 [decky-loader](https://github.com/SteamDeckHomebrew/decky-loader)  
