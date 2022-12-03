@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.tomoon-input {
+    height: 4rem;
+    background: linear-gradient(0deg, rgba(90, 98, 66, 0.08), rgba(90, 98, 66, 0.08)), #FAFFE3;
+    color: #474743;
+}
+
+.tomoon-button {
+    height: 4rem;
+    background: #5A6242;
+    color: #FFFFFF;
+    width: 4.25rem;
+}
+
+.tomoon-button > svg {
+    width: 4.25rem;
+}
