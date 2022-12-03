@@ -14,10 +14,11 @@
 3. 回到设置向下翻，找到开发者 -> 打开 CEF 远程调试
 4. 等待 Steam Deck 重启
 5. 按电源键切换到 Desktop 桌面模式
-6. 打开 Konsole，输入 `curl -L http://dl.ohmydeck.net | sh` 安装 Plugin Loader
-7. 切换回到 Gamming 游戏模式，按下右侧摇杆下的按钮，可以看到多了一个 Decky 插件面板
-8. 打开左上角设置，在 Mannul plugin install 中输入 `http://moon.ohmydeck.net`，点击 install，这里安装后不会在 Decky 里显示，需要重启 Steam Deck
-9. 重启你的 Steam Deck
+6. 打开 Konsole，如果事先没有创建过终端密码，使用 `passwd` 设置你的密码  
+7. 输入 `curl -L http://dl.ohmydeck.net | sh` 安装 Plugin Loader  
+8. 切换回到 Gamming 游戏模式，按下右侧摇杆下的按钮，可以看到多了一个 Decky 插件面板
+9. 打开左上角设置，在 Mannul plugin install 中输入 `http://moon.ohmydeck.net`，点击 install，这里安装后不会在 Decky 里显示，需要重启 Steam Deck
+10. 重启你的 Steam Deck
 
 ## 使用
 1. 打开 Manage Subscriptions，添加你服务商提供的 Clash 订阅链接并下载  
