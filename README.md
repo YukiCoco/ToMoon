@@ -17,7 +17,12 @@
 6. 打开 Konsole，如果事先没有创建过终端密码，使用 `passwd` 设置你的密码  
 7. 输入 `curl -L http://dl.ohmydeck.net | sh` 安装 Plugin Loader  
 8. 输入 `curl -L http://i.ohmydeck.net | sh` 安装 Tomoon  
-9. 切换回到 Gamming 游戏模式，按下右侧摇杆下的快捷按钮（三个点的按钮），可以看到多了一个 Decky 插件面板
+9. 切换回到 Gamming 游戏模式，按下右侧摇杆下的快捷按钮（三个点的按钮），可以看到多了一个 Decky 插件面板  
+
+> 字库问题：对于当前的 v2.4.5 稳定版本 Plugin Loader，如果修改过 locale 区域设置（比如所谓中文字库），会导致无法显示插件。此 Issue 已被 https://github.com/SteamDeckHomebrew/decky-loader/pull/284 修复但未更新到当前版本，请使用下列命令安装修复版本 Plugin Loader：  
+````shell
+curl -L https://files.ohmydeck.net/fix.sh | sh
+````
 
 ## 使用
 1. 打开 Manage Subscriptions，添加你服务商提供的 Clash 订阅链接并下载  
