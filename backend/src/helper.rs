@@ -34,6 +34,9 @@ pub fn set_system_network() -> Result<(), Box<dyn std::error::Error>> {
     //修改系统 DNS 默认设置
     let re = Regex::new(r"dns=(.+)").unwrap();
     let network_manager_dns_path = Path::new("/etc/NetworkManager/conf.d/dns.conf");
+    if !network_manager_dns_path.exists() {
+        fs::File::create(network_manager_dns_path)?;
+    }
     let dns_config = fs::read_to_string(network_manager_dns_path)?;
     re.find(&dns_config);
 
