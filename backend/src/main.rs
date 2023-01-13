@@ -70,6 +70,7 @@ async fn main() -> Result<(), std::io::Error> {
             .wrap(middleware::Logger::default())
             .service(web::resource("/gen_link").route(web::post().to(external_web::gen_link)))
             .service(web::resource("/get_link").route(web::post().to(external_web::get_link)))
+            .service(web::resource("/get_ip_address").route(web::get().to(external_web::get_local_web_address)))
             //.service(web::resource("/manual").route(web::get().to(external_web.web_download_sub)))
             .service(fs::Files::new("/", "./web").show_files_listing())
     })

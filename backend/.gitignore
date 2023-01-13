@@ -15,3 +15,5 @@ Cargo.lock
 bin
 
 config.yaml
+
+web/
