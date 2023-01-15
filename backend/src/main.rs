@@ -11,6 +11,7 @@ use simplelog::{LevelFilter, WriteLogger};
 use usdpl_back::Instance;
 use actix_web::{middleware, App, HttpServer, web};
 use actix_files as fs;
+use actix_cors::Cors;
 
 const PORT: u16 = 55555;
 const WEB_PORT: u16 = 55556;
@@ -64,10 +65,15 @@ async fn main() -> Result<(), std::io::Error> {
         link_table: Mutex::new(HashMap::new()),
     });
      HttpServer::new(move|| {
+        let cors = Cors::default()
+        .allow_any_origin()
+        .allow_any_method()
+        .allow_any_header();
         App::new()
             .app_data(appState.clone())
             // enable logger
             .wrap(middleware::Logger::default())
+            .wrap(cors)
             .service(web::resource("/gen_link").route(web::post().to(external_web::gen_link)))
             .service(web::resource("/get_link").route(web::post().to(external_web::get_link)))
             .service(web::resource("/get_ip_address").route(web::get().to(external_web::get_local_web_address)))
