@@ -51,10 +51,10 @@ pub async fn gen_link(
 
 pub async fn get_link(
     state: web::Data<AppState>,
-    params: web::Form<GetLinkParams>,
+    info: web::Query<GetLinkParams>,
 ) -> Result<web::Json<GetLinkResponse>> {
     let table = state.link_table.lock().unwrap();
-    let link = table.get(&params.code);
+    let link = table.get(&info.code);
     match link {
         Some(x) => {
             let r = GetLinkResponse {
