@@ -47,30 +47,34 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   const [isSelectionDisabled, setIsSelectionDisabled] = useState(false);
   const [SelectionTips, setSelectionTips] = useState("Run Clash in background");
 
-  backend.resolve(backend.getSubList(), (v: String) => {
-    let x: Array<any> = JSON.parse(v.toString());
-    let re = new RegExp("(?<=subs\/).+\.yaml$");
-    let i = 0;
-    subs = x.map(x => {
-      let name = re.exec(x.path);
-      return {
-        id: i++,
-        name: name![0],
-        url: x.url
-      }
+  const update_subs = () => {
+    backend.resolve(backend.getSubList(), (v: String) => {
+      let x: Array<any> = JSON.parse(v.toString());
+      let re = new RegExp("(?<=subs\/).+\.yaml$");
+      let i = 0;
+      subs = x.map(x => {
+        let name = re.exec(x.path);
+        return {
+          id: i++,
+          name: name![0],
+          url: x.url
+        }
+      });
+      let items = x.map(x => {
+        let name = re.exec(x.path);
+        return {
+          label: name![0],
+          data: x.path
+        }
+      });
+      subs_option = items;
+      console.log("Subs ready");
+      setIsSelectionDisabled(i == 0);
+      //console.log(sub);
     });
-    let items = x.map(x => {
-      let name = re.exec(x.path);
-      return {
-        label: name![0],
-        data: x.path
-      }
-    });
-    subs_option = items;
-    console.log("Subs ready");
-    setIsSelectionDisabled(i == 0);
-    //console.log(sub);
-  });
+  }
+
+  update_subs();
 
   return (
     <PanelSection>
@@ -124,6 +128,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
             rgOptions={options}
             selectedOption={selectedOption}
             onMenuWillOpen={() => {
+              update_subs();
               setOptions(subs_option);
             }}
             onChange={(x) => {

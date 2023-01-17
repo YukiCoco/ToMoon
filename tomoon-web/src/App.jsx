@@ -40,19 +40,41 @@ const on_download_btn_click = (url) => {
   if (import.meta.env.DEV) {
     baseHost = 'http://127.0.0.1:55556/';
   }
-  axios.post(baseHost + "gen_link", {
-    link: url
+  Swal.fire({
+    iconColor: '#5E5F55',
+    confirmButtonColor: '#5A6242',
+    background: '#DEE7BF',
+    title: "下载中",
+    text: "正在下载订阅配置，请稍等......",
+    icon: "info"
+  });
+  Swal.showLoading(null);
+  axios.post(baseHost + "download_sub", {
+    link: url.trim()
   }, {
     headers: { 'content-type': 'application/x-www-form-urlencoded' },
   }).then((response) => {
-    Swal.fire({
-      icon: 'success',
-      iconColor: '#5E5F55',
-      title: '完成',
-      text: '订阅代码： ' + response.data.code,
-      confirmButtonColor: '#5A6242',
-      background: '#DEE7BF'
-    });
+    if (response.status === 200) {
+      Swal.fire({
+        icon: 'success',
+        iconColor: '#5E5F55',
+        title: '完成',
+        text: '已添加订阅',
+        confirmButtonColor: '#5A6242',
+        background: '#DEE7BF'
+      });
+    }
+  }).catch(error => {
+    if (error.response) {
+      Swal.fire({
+        icon: 'error',
+        iconColor: '#5E5F55',
+        title: '失败',
+        text: error.response.data,
+        confirmButtonColor: '#5A6242',
+        background: '#DEE7BF'
+      });
+    }
   });
 
 }

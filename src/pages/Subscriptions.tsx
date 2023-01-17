@@ -99,7 +99,7 @@ export const Subscriptions: VFC<SubProp> = ({ Subscriptions }) => {
     axios.get("http://127.0.0.1:55556/get_ip_address").then(r => {
         console.log(r.data)
         if (r.data.status_code == 200) {
-            setQRPageUrl(`http://${r.data.ip}:55556/index.html`)
+            setQRPageUrl(`http://${r.data.ip}:55556`)
         } else {
             setQRPageUrl('')
         }
