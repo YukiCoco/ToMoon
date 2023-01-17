@@ -1,17 +1,22 @@
 mod api;
 mod control;
+mod external_web;
 mod helper;
 mod settings;
 mod test;
-mod external_web;
 
-use std::{thread, sync::Mutex, collections::HashMap};
+use std::{collections::HashMap, sync::Mutex, thread};
 
+use actix_cors::Cors;
+use actix_files as fs;
+use actix_web::{middleware, web, App, HttpServer};
 use simplelog::{LevelFilter, WriteLogger};
 use usdpl_back::Instance;
-use actix_web::{middleware, App, HttpServer, web};
-use actix_files as fs;
-use actix_cors::Cors;
+
+use crate::{
+    control::{ControlRuntime, RunningStatus},
+    external_web::Runtime,
+};
 
 const PORT: u16 = 55555;
 const WEB_PORT: u16 = 55556;
@@ -32,16 +37,15 @@ async fn main() -> Result<(), std::io::Error> {
     )
     .unwrap();
 
-    log::info!(
-        "Starting back-end ({} v{})",
-        api::NAME,
-        api::VERSION
-    );
+    log::info!("Starting back-end ({} v{})", api::NAME, api::VERSION);
     log::info!("{}", std::env::current_dir().unwrap().to_str().unwrap());
     println!("Starting back-end ({} v{})", api::NAME, api::VERSION);
 
-    let runtime = control::ControlRuntime::new();
+
+    let runtime: ControlRuntime = control::ControlRuntime::new();
     runtime.run();
+
+    let runtime_pr = Runtime(&runtime as *const ControlRuntime);
 
     thread::spawn(move || {
         Instance::new(PORT)
@@ -57,31 +61,34 @@ async fn main() -> Result<(), std::io::Error> {
         .register("get_update_status", api::get_update_status(&runtime))
         .register("create_debug_log", api::create_debug_log())
         .register("get_running_status", api::get_running_status(&runtime))
-        .run_blocking().unwrap();
+        .run_blocking()
+        .unwrap();
     });
-    //std::env::set_var("RUST_LOG", "debug");
-    //let external_web =  api::ExternalWeb::new(runtime);
-    let appState = web::Data::new(external_web::AppState {
-        link_table: Mutex::new(HashMap::new()),
-    });
-     HttpServer::new(move|| {
-        let cors = Cors::default()
-        .allow_any_origin()
-        .allow_any_method()
-        .allow_any_header();
-        App::new()
-            .app_data(appState.clone())
-            // enable logger
-            .wrap(middleware::Logger::default())
-            .wrap(cors)
-            .service(web::resource("/gen_link").route(web::post().to(external_web::gen_link)))
-            .service(web::resource("/get_link").route(web::get().to(external_web::get_link)))
-            .service(web::resource("/get_ip_address").route(web::get().to(external_web::get_local_web_address)))
-            //.service(web::resource("/manual").route(web::get().to(external_web.web_download_sub)))
-            .service(fs::Files::new("/", "./web").show_files_listing())
-    })
-    .bind(("0.0.0.0", WEB_PORT))?
-    .run()
-    .await
-}
 
+    let app_state = web::Data::new(external_web::AppState {
+            link_table: Mutex::new(HashMap::new()),
+            runtime: Mutex::new(runtime_pr),
+        });
+        HttpServer::new(move || {
+            let cors = Cors::default()
+                .allow_any_origin()
+                .allow_any_method()
+                .allow_any_header();
+            App::new()
+                .app_data(app_state.clone())
+                // enable logger
+                .wrap(middleware::Logger::default())
+                .wrap(cors)
+                .service(web::resource("/download_sub").route(web::post().to(external_web::download_sub)))
+                .service(web::resource("/get_link").route(web::get().to(external_web::get_link)))
+                .service(
+                    web::resource("/get_ip_address")
+                        .route(web::get().to(external_web::get_local_web_address)),
+                )
+                //.service(web::resource("/manual").route(web::get().to(external_web.web_download_sub)))
+                .service(fs::Files::new("/", "./web").show_files_listing())
+        })
+        .bind(("0.0.0.0", WEB_PORT))
+        .unwrap()
+        .run().await
+}

@@ -208,21 +208,21 @@ pub struct Clash {
     pub smartdns_instence: Option<Child>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ClashErrorKind {
-    CoreNotFound,
     ConfigFormatError,
     ConfigNotFound,
     RuleProviderDownloadError,
     NetworkError,
     CpDbError,
+    InnerError,
     Default,
 }
 
 #[derive(Debug)]
 pub struct ClashError {
-    Message: String,
-    ErrorKind: ClashErrorKind,
+    pub Message: String,
+    pub ErrorKind: ClashErrorKind,
 }
 
 impl error::Error for ClashError {}
@@ -238,7 +238,7 @@ impl Display for ClashError {
 }
 
 impl ClashError {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             Message: "".to_string(),
             ErrorKind: ClashErrorKind::Default,
