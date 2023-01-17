@@ -41,7 +41,6 @@ async fn main() -> Result<(), std::io::Error> {
     log::info!("{}", std::env::current_dir().unwrap().to_str().unwrap());
     println!("Starting back-end ({} v{})", api::NAME, api::VERSION);
 
-
     let runtime: ControlRuntime = control::ControlRuntime::new();
     runtime.run();
 
@@ -49,46 +48,53 @@ async fn main() -> Result<(), std::io::Error> {
 
     thread::spawn(move || {
         Instance::new(PORT)
-        .register("set_clash_status", api::set_clash_status(&runtime))
-        .register("get_clash_status", api::get_clash_status(&runtime))
-        .register("reset_network", api::reset_network())
-        .register("download_sub", api::download_sub(&runtime))
-        .register("get_download_status", api::get_download_status(&runtime))
-        .register("get_sub_list", api::get_sub_list(&runtime))
-        .register("delete_sub", api::delete_sub(&runtime))
-        .register("set_sub", api::set_sub(&runtime))
-        .register("update_subs", api::update_subs(&runtime))
-        .register("get_update_status", api::get_update_status(&runtime))
-        .register("create_debug_log", api::create_debug_log())
-        .register("get_running_status", api::get_running_status(&runtime))
-        .run_blocking()
-        .unwrap();
+            .register("set_clash_status", api::set_clash_status(&runtime))
+            .register("get_clash_status", api::get_clash_status(&runtime))
+            .register("reset_network", api::reset_network())
+            .register("download_sub", api::download_sub(&runtime))
+            .register("get_download_status", api::get_download_status(&runtime))
+            .register("get_sub_list", api::get_sub_list(&runtime))
+            .register("delete_sub", api::delete_sub(&runtime))
+            .register("set_sub", api::set_sub(&runtime))
+            .register("update_subs", api::update_subs(&runtime))
+            .register("get_update_status", api::get_update_status(&runtime))
+            .register("create_debug_log", api::create_debug_log())
+            .register("get_running_status", api::get_running_status(&runtime))
+            .run_blocking()
+            .unwrap();
     });
 
     let app_state = web::Data::new(external_web::AppState {
-            link_table: Mutex::new(HashMap::new()),
-            runtime: Mutex::new(runtime_pr),
-        });
-        HttpServer::new(move || {
-            let cors = Cors::default()
-                .allow_any_origin()
-                .allow_any_method()
-                .allow_any_header();
-            App::new()
-                .app_data(app_state.clone())
-                // enable logger
-                .wrap(middleware::Logger::default())
-                .wrap(cors)
-                .service(web::resource("/download_sub").route(web::post().to(external_web::download_sub)))
-                .service(web::resource("/get_link").route(web::get().to(external_web::get_link)))
-                .service(
-                    web::resource("/get_ip_address")
-                        .route(web::get().to(external_web::get_local_web_address)),
-                )
-                //.service(web::resource("/manual").route(web::get().to(external_web.web_download_sub)))
-                .service(fs::Files::new("/", "./web").show_files_listing())
-        })
-        .bind(("0.0.0.0", WEB_PORT))
-        .unwrap()
-        .run().await
+        link_table: Mutex::new(HashMap::new()),
+        runtime: Mutex::new(runtime_pr),
+    });
+    HttpServer::new(move || {
+        let cors = Cors::default()
+            .allow_any_origin()
+            .allow_any_method()
+            .allow_any_header();
+        App::new()
+            .app_data(app_state.clone())
+            // enable logger
+            .wrap(middleware::Logger::default())
+            .wrap(cors)
+            .service(
+                web::resource("/download_sub").route(web::post().to(external_web::download_sub)),
+            )
+            .service(web::resource("/get_link").route(web::get().to(external_web::get_link)))
+            .service(
+                web::resource("/get_ip_address")
+                    .route(web::get().to(external_web::get_local_web_address)),
+            )
+            //.service(web::resource("/manual").route(web::get().to(external_web.web_download_sub)))
+            .service(
+                fs::Files::new("/", "./web")
+                    .index_file("index.html")
+                    .show_files_listing(),
+            )
+    })
+    .bind(("0.0.0.0", WEB_PORT))
+    .unwrap()
+    .run()
+    .await
 }

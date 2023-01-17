@@ -93,9 +93,9 @@ pub async fn download_sub(
                 }
             };
             if !helper::check_yaml(&file_content) {
-                log::error!("The downlaoded sub is not a legal profile.");
+                log::error!("The downloaded subscription is not a legal profile.");
                 return Err(actix_web::Error::from(ClashError {
-                    Message: "The downlaoded sub is not a legal profile.".to_string(),
+                    Message: "The downloaded subscription is not a legal profile.".to_string(),
                     ErrorKind: ClashErrorKind::ConfigFormatError,
                 }));
             }
@@ -167,16 +167,16 @@ pub async fn download_sub(
         // 是一个链接
     } else {
         match minreq::get(url.clone())
-            .with_header("User-Agent", "ToMoonClash/0.0.6")
+            .with_header("User-Agent", "ToMoonClash/0.1.0")
             .with_timeout(15)
             .send()
         {
             Ok(x) => {
                 let response = x.as_str().unwrap();
                 if !helper::check_yaml(&String::from(response)) {
-                    log::error!("The downlaoded sub is not a legal profile.");
+                    log::error!("The downloaded subscription is not a legal profile.");
                     return Err(actix_web::Error::from(ClashError {
-                        Message: "The downlaoded sub is not a legal profile.".to_string(),
+                        Message: "The downloaded subscription is not a legal profile.".to_string(),
                         ErrorKind: ClashErrorKind::ConfigFormatError,
                     }));
                 }

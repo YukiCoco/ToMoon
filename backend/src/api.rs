@@ -191,7 +191,7 @@ pub fn download_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<
                                     }
                                 };
                                 if !helper::check_yaml(&file_content) {
-                                    log::error!("The downlaoded sub is not a legal profile.");
+                                    log::error!("The downloaded subscription is not a legal profile.");
                                     update_status(DownloadStatus::Error);
                                     return;
                                 }
@@ -250,14 +250,14 @@ pub fn download_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<
                             // 是一个链接
                         } else {
                             match minreq::get(url.clone())
-                                .with_header("User-Agent", "ToMoonClash/0.0.2")
+                                .with_header("User-Agent", "ToMoonClash/0.1.0")
                                 .with_timeout(15)
                                 .send()
                             {
                                 Ok(x) => {
                                     let response = x.as_str().unwrap();
                                     if !helper::check_yaml(&String::from(response)) {
-                                        log::error!("The downlaoded sub is not a legal profile.");
+                                        log::error!("The downloaded subscription is not a legal profile.");
                                         update_status(DownloadStatus::Error);
                                         return;
                                     }
@@ -491,7 +491,7 @@ pub fn update_subs(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<P
                         }
                         thread::spawn(move || {
                             match minreq::get(i.url.clone())
-                            .with_header("User-Agent", "ToMoonClash/0.0.2")
+                            .with_header("User-Agent", "ToMoonClash/0.1.0")
                             .with_timeout(15)
                             .send() {
                                 Ok(response) => {
@@ -503,7 +503,7 @@ pub fn update_subs(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<P
                                         }
                                     };
                                     if !helper::check_yaml(&response.to_string()) {
-                                        log::error!("The downlaoded sub is not a legal profile.");
+                                        log::error!("The downloaded subscription is not a legal profile.");
                                         return;
                                     }
                                     match fs::write(i.path.clone(), response) {
