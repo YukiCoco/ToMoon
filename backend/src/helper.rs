@@ -7,6 +7,10 @@ use std::fs;
 use sysinfo::{ProcessExt, System, SystemExt};
 
 pub fn set_system_network() -> Result<(), Box<dyn std::error::Error>> {
+    let network_manager_dns_path = Path::new("/etc/NetworkManager/conf.d/dns.conf");
+    if !network_manager_dns_path.exists() {
+        fs::File::create(network_manager_dns_path)?;
+    }
     // https://github.com/YukiCoco/ToMoon/issues/7
     // 判断 systemd-resolve 是否启动
     if is_resolve_running() {
@@ -20,6 +24,18 @@ pub fn set_system_network() -> Result<(), Box<dyn std::error::Error>> {
         Command::new("systemctl")
             .arg("restart")
             .arg("systemd-resolved")
+            .spawn()
+            .unwrap()
+            .wait()
+            .unwrap();
+        //将启用 systemd-resolved 写入 Network Manager
+        let default_config = "[main]\ndns=systemd-resolved\n";
+        fs::write(network_manager_dns_path, default_config)?;
+
+        // 更新 NetworkManager
+        Command::new("nmcli")
+            .arg("general")
+            .arg("reload")
             .spawn()
             .unwrap()
             .wait()
@@ -51,10 +67,6 @@ pub fn set_system_network() -> Result<(), Box<dyn std::error::Error>> {
         log::info!("Successfully set /etc/resolv.conf to read-only");
         //修改系统 DNS 默认设置
         let re = Regex::new(r"dns=(.+)").unwrap();
-        let network_manager_dns_path = Path::new("/etc/NetworkManager/conf.d/dns.conf");
-        if !network_manager_dns_path.exists() {
-            fs::File::create(network_manager_dns_path)?;
-        }
         let dns_config = fs::read_to_string(network_manager_dns_path)?;
         re.find(&dns_config);
 
