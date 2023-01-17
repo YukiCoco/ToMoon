@@ -16,7 +16,7 @@ jobs:
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       
       - name: download asset files
-        run: wget https://github.com/YukiCoco/ToMoon/releases/download/v0.0.2/build_assets.zip
+        run: wget https://github.com/YukiCoco/ToMoon/releases/download/build/build_assets.zip
       - run: unzip -n build_assets.zip -d tmp/
       # build front-end start
       - uses: actions/setup-node@v3
@@ -32,6 +32,11 @@ jobs:
       - name: build front end
         run: pnpm run build
         working-directory: .
+      - name: build external web page
+        run: |
+              npm i
+              npm run build
+        working-directory: tomoon-web
       # build front-end end
       # build backend start
       - uses: dtolnay/rust-toolchain@stable
@@ -70,6 +75,7 @@ jobs:
               cp plugin.json ./release/tomoon/plugin.json
               cp -r ./tmp/core ./release/tomoon/bin/
               cp -r ./tmp/smartdns ./release/tomoon/bin/
+              cp -r ./tomoon-web/dist ./release/tomoon/web
               cd ./release 
               zip -r tomoon-${{ env.RELEASE_VERSION }}.zip tomoon
               cd ..
