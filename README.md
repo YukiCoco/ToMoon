@@ -26,12 +26,11 @@ curl -L https://files.ohmydeck.net/fix.sh | sh
 
 ## 使用
 1. 打开 Manage Subscriptions，添加你服务商提供的 Clash 订阅链接并下载  
+> **若使用扫描二维码添加订阅功能，请确保手机和 Steam Deck 在同一局域网下**
+
 > 如果需要添加本地文件，使用  `file://` 加绝对路径作为下载链接填入即可，如 `file:///home/deck/config.yaml`
 2. 下载完成后，切换回主界面选择订阅并点击启动  
 3. 在桌面模式可通过浏览器 http://127.0.0.1:9090/ui 打开仪表盘  
-
->注意：若是订阅链接过长可以使用短域名缩短服务，如 [t.ly](https://t.ly/) [n9.cl](https://n9.cl/zh).  
-> 别忘了在缩短后的链接前面加 `http(s)://`，形如 `https://n9.cl/abcdef` 才是有效的订阅链接
 
 ## 演示  
 ![Gamming](https://github.com/YukiCoco/StaticFilesCDN/blob/main/deck_gaming.jpg?raw=true)
