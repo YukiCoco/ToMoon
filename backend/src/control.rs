@@ -208,21 +208,21 @@ pub struct Clash {
     pub smartdns_instence: Option<Child>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ClashErrorKind {
-    CoreNotFound,
     ConfigFormatError,
     ConfigNotFound,
     RuleProviderDownloadError,
     NetworkError,
     CpDbError,
+    InnerError,
     Default,
 }
 
 #[derive(Debug)]
 pub struct ClashError {
-    Message: String,
-    ErrorKind: ClashErrorKind,
+    pub Message: String,
+    pub ErrorKind: ClashErrorKind,
 }
 
 impl error::Error for ClashError {}
@@ -238,7 +238,7 @@ impl Display for ClashError {
 }
 
 impl ClashError {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             Message: "".to_string(),
             ErrorKind: ClashErrorKind::Default,
@@ -538,68 +538,74 @@ impl Clash {
         for (_, value) in yaml {
             if let Some(url) = value.get("url") {
                 if let Some(path) = value.get("path") {
-                    match minreq::get(url.as_str().unwrap())
-                        .with_timeout(30)
-                        .with_header("User-Agent", "ToMoonClash/0.0.2")
-                        .send()
-                    {
-                        Ok(response) => {
-                            let response = match response.as_str() {
-                                Ok(x) => x,
-                                Err(_) => {
-                                    log::error!("Error occurred while parase Rule Provder.");
-                                    return Err(ClashError {
-                                        ErrorKind: ClashErrorKind::RuleProviderDownloadError,
-                                        Message: String::from(
-                                            "Error occurred while parase Rule Provder.",
-                                        ),
-                                    });
-                                }
-                            };
-                            //替换有些规则前的 ./
-                            let r = regex::Regex::new(r"^\./").unwrap();
-                            let result = r.replace(path.as_str().unwrap(), "");
-                            let save_path =
-                                PathBuf::from("/root/.config/clash/").join(result.to_string());
+                    //替换有些规则前的 ./
+                    let r = regex::Regex::new(r"^\./").unwrap();
+                    let result = r.replace(path.as_str().unwrap(), "");
+                    let save_path = PathBuf::from("/root/.config/clash/").join(result.to_string());
+                    if !save_path.exists() {
+                        match minreq::get(url.as_str().unwrap())
+                            .with_timeout(30)
+                            .with_header("User-Agent", "ToMoonClash/0.1.0")
+                            .send()
+                        {
+                            Ok(response) => {
+                                let response = match response.as_str() {
+                                    Ok(x) => x,
+                                    Err(_) => {
+                                        log::error!("Error occurred while parase Rule Provder.");
+                                        return Err(ClashError {
+                                            ErrorKind: ClashErrorKind::RuleProviderDownloadError,
+                                            Message: String::from(
+                                                "Error occurred while parase Rule Provder.",
+                                            ),
+                                        });
+                                    }
+                                };
 
-                            //保存订阅
-                            if let Some(parent) = save_path.parent() {
-                                if let Err(e) = std::fs::create_dir_all(parent) {
-                                    log::error!("Failed while creating sub dir.");
-                                    log::error!("Error Message:{}", e);
-                                    return Err(ClashError {
-                                        ErrorKind: ClashErrorKind::RuleProviderDownloadError,
-                                        Message: "Error occurred while creating Rule Provder dir."
-                                            .to_string(),
-                                    });
+                                //保存订阅
+                                if let Some(parent) = save_path.parent() {
+                                    if let Err(e) = std::fs::create_dir_all(parent) {
+                                        log::error!("Failed while creating sub dir.");
+                                        log::error!("Error Message:{}", e);
+                                        return Err(ClashError {
+                                            ErrorKind: ClashErrorKind::RuleProviderDownloadError,
+                                            Message:
+                                                "Error occurred while creating Rule Provder dir."
+                                                    .to_string(),
+                                        });
+                                    }
+                                }
+
+                                match fs::write(save_path.clone(), response) {
+                                    Ok(_) => {
+                                        log::info!(
+                                            "Rule-Provider {} downloaded.",
+                                            save_path.display()
+                                        );
+                                    }
+                                    Err(_) => {
+                                        log::error!(
+                                            "Error occurred while saving Rule Provder. path: {}",
+                                            save_path.clone().to_str().unwrap()
+                                        );
+                                        return Err(ClashError {
+                                            ErrorKind: ClashErrorKind::RuleProviderDownloadError,
+                                            Message:
+                                                "Error occurred while downloading Rule Provder."
+                                                    .to_string(),
+                                        });
+                                    }
                                 }
                             }
-
-                            match fs::write(save_path.clone(), response) {
-                                Ok(_) => {
-                                    log::info!("Rule-Provider {} downloaded.", save_path.display());
-                                }
-                                Err(_) => {
-                                    log::error!(
-                                        "Error occurred while saving Rule Provder. path: {}",
-                                        save_path.clone().to_str().unwrap()
-                                    );
-                                    return Err(ClashError {
-                                        ErrorKind: ClashErrorKind::RuleProviderDownloadError,
-                                        Message: "Error occurred while downloading Rule Provder."
-                                            .to_string(),
-                                    });
-                                }
+                            Err(e) => {
+                                let in_msg = e.to_string();
+                                let mut err_msg = String::from("Error occurred while downloading Rule Provder with error message : ");
+                                err_msg.push_str(in_msg.as_str());
+                                return Err(ClashError {
+                                    ErrorKind: ClashErrorKind::RuleProviderDownloadError,
+                                    Message: err_msg,
+                                });
                             }
-                        }
-                        Err(e) => {
-                            let in_msg = e.to_string();
-                            let mut err_msg = String::from("Error occurred while downloading Rule Provder with error message : ");
-                            err_msg.push_str(in_msg.as_str());
-                            return Err(ClashError {
-                                ErrorKind: ClashErrorKind::RuleProviderDownloadError,
-                                Message: err_msg,
-                            });
                         }
                     }
                 }

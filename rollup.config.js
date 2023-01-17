@@ -12,7 +12,7 @@ export default defineConfig({
   input: './src/index.tsx',
   plugins: [
     commonjs(),
-    nodeResolve(),
+    nodeResolve({ browser: true }),
     typescript(),
     json(),
     replace({

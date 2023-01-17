@@ -2,8 +2,10 @@ import { PanelSectionRow, TextField, ButtonItem } from "decky-frontend-lib";
 import { useReducer, useState, VFC } from "react";
 import { cleanPadding } from "../style";
 import { SubList } from "./components/SubList";
+import { QRCodeCanvas } from 'qrcode.react';
 
 import * as backend from "../backend";
+import axios from "axios";
 
 interface SubProp {
     Subscriptions: Array<any>,
@@ -17,6 +19,7 @@ export const Subscriptions: VFC<SubProp> = ({ Subscriptions }) => {
     const [updateBtnDisable, setUpdateBtnDisable] = useState(false);
     const [_, forceUpdate] = useReducer(x => x + 1, 0);
     const [updateTips, setUpdateTips] = useState("");
+    const [QRPageUrl, setQRPageUrl] = useState("");
 
     let checkStatusHandler: any;
     let checkUpdateStatusHandler: any;
@@ -92,6 +95,16 @@ export const Subscriptions: VFC<SubProp> = ({ Subscriptions }) => {
         });
     }
 
+    //获取 QR Page
+    axios.get("http://127.0.0.1:55556/get_ip_address").then(r => {
+        console.log(r.data)
+        if (r.data.status_code == 200) {
+            setQRPageUrl(`http://${r.data.ip}:55556`)
+        } else {
+            setQRPageUrl('')
+        }
+    })
+
     console.log("load Subs page");
 
     return (
@@ -104,9 +117,16 @@ export const Subscriptions: VFC<SubProp> = ({ Subscriptions }) => {
                     #subscription-download-textfiled > div {
                         margin-bottom: 0px !important
                     }
+                    #subscription-qrcode {
+                        display: flex;
+                        justify-content: center;
+                    }
                 `}
             </style>
             <PanelSectionRow>
+                <div id="subscription-qrcode">
+                    <QRCodeCanvas value={QRPageUrl} size={128} />
+                </div>
                 <div id="subscription-download-textfiled" style={cleanPadding}>
                     <TextField
                         label="Subscription Link"
