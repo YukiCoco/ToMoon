@@ -474,14 +474,29 @@ impl Clash {
         ";
 
         //部分配置来自 https://www.xkww3n.cyou/2022/02/08/use-clash-dns-anti-dns-hijacking/
-        let dns_config = "
+
+        let dns_config = match helper::is_resolve_running() {
+            true => {
+                "
+        enable: true
+        listen: 0.0.0.0:5354
+        enhanced-mode: fake-ip
+        fake-ip-range: 198.18.0.1/16
+        nameserver:
+            - tcp://127.0.0.1:5353
+        "
+            }
+            false => {
+                "
         enable: true
         listen: 0.0.0.0:53
         enhanced-mode: fake-ip
         fake-ip-range: 198.18.0.1/16
         nameserver:
             - tcp://127.0.0.1:5353
-        ";
+        "
+            }
+        };
 
         let profile_config = "
         store-selected: true

@@ -14,6 +14,9 @@ mod tests {
     use sysinfo::{Pid, ProcessExt, System, SystemExt};
 
     #[test]
+    fn check_systemd_resolved() {}
+
+    #[test]
     fn it_works() {
         assert_eq!(2 + 3, 4);
     }
@@ -50,21 +53,24 @@ mod tests {
 
     #[test]
     fn test_network() {
-        helper::set_system_network().unwrap();
+        let is_resolve_running = || {
+            let mut sys = System::new_all();
+            // First we update all information of our `System` struct.
+            sys.refresh_all();
+            for (_, process) in sys.processes() {
+                if process.name() == "systemd-resolve" {
+                    return true;
+                }
+            }
+            return false;
+        };
+        assert_eq!(false, is_resolve_running());
     }
 
     #[test]
     fn find_process() {
         let mut sys = System::new_all();
-
-        // First we update all information of our `System` struct.
         sys.refresh_all();
-        // if let Some(process) = sys.process(Pid::from(28656)) {
-        //     println!("process : {}", process.name());
-        // } else {
-        //     println!("Not found");
-        // }
-
         for (pid, process) in sys.processes() {
             if process.name() == "systemd-resolve" {
                 println!("[{}] {} {:?}", pid, process.name(), process.disk_usage());
@@ -83,7 +89,7 @@ mod tests {
     fn regex_test() {
         let url = String::from("file:///home/dek/b.yaml");
         if let Some(path) = helper::get_file_path(url) {
-            println!("{}",path);
+            println!("{}", path);
         }
     }
 
@@ -91,7 +97,7 @@ mod tests {
         let r = Regex::new(r"^file://").unwrap();
         if let Some(x) = r.find(url.clone().as_str()) {
             let file_path = url[x.end()..url.len()].to_string();
-            println!("{}",file_path);
+            println!("{}", file_path);
         };
     }
 
@@ -171,8 +177,35 @@ mod tests {
         auto-detect-interface: true
         ";
 
-        //部分配置来自 https://www.xkww3n.cyou/2022/02/08/use-clash-dns-anti-dns-hijacking/
-        let dns_config = "
+        let dns_config = match helper::is_resolve_running() {
+            true => {
+                "
+        enable: true
+        listen: 0.0.0.0:5354
+        enhanced-mode: fake-ip
+        fake-ip-range: 198.18.0.1/16
+        nameserver:
+            - https://doh.pub/dns-query
+            - https://dns.alidns.com/dns-query
+            - '114.114.114.114'
+            - '223.5.5.5'
+        default-nameserver:
+            - 119.29.29.29
+            - 223.5.5.5
+        fallback:
+            - https://1.1.1.1/dns-query
+            - https://dns.google/dns-query
+            - https://doh.opendns.com/dns-query
+            - https://doh.pub/dns-query
+        fallback-filter:
+            geoip: true
+            geoip-code: CN
+            ipcidr:
+                - 240.0.0.0/4
+        "
+            }
+            false => {
+                "
         enable: true
         listen: 0.0.0.0:53
         enhanced-mode: fake-ip
@@ -195,7 +228,11 @@ mod tests {
             geoip-code: CN
             ipcidr:
                 - 240.0.0.0/4
-        ";
+        "
+            }
+        };
+
+        //部分配置来自 https://www.xkww3n.cyou/2022/02/08/use-clash-dns-anti-dns-hijacking/
 
         let insert_config = |yaml: &mut Mapping, config: &str, key: &str| {
             let inner_config: Value = serde_yaml::from_str(config).unwrap();
