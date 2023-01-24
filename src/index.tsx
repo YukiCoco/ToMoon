@@ -44,6 +44,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   let [options, setOptions] = useState<DropdownOption[]>(subs_option);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [optionDropdownDisabled, setOptionDropdownDisabled] = useState(enabledGlobal);
+  const [openDashboardDisabled, setOpenDashboardDisabled] = useState(!enabledGlobal);
   const [isSelectionDisabled, setIsSelectionDisabled] = useState(false);
   const [SelectionTips, setSelectionTips] = useState("Run Clash in background");
 
@@ -118,6 +119,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
                   setSelectionTips("Run Clash in background");
                 }
                 setOptionDropdownDisabled(value);
+                setOpenDashboardDisabled(!value);
               }}
               disabled={isSelectionDisabled}
             />
@@ -160,6 +162,8 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
               Router.CloseSideMenus()
               Router.NavigateToExternalWeb("http://127.0.0.1:9090/ui")
             }}
+            disabled={openDashboardDisabled}
+
           >
             Open Dashboard
           </ButtonItem>
