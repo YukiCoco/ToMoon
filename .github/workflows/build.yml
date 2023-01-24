@@ -73,6 +73,7 @@ jobs:
               cp ./dist/index.js ./release/tomoon/dist/index.js
               cp main.py ./release/tomoon/main.py
               cp plugin.json ./release/tomoon/plugin.json
+              cp package.json ./release/tomoon/package.json
               cp -r ./tmp/core ./release/tomoon/bin/
               cp -r ./tmp/smartdns ./release/tomoon/bin/
               cp -r ./tomoon-web/dist ./release/tomoon/web
