@@ -19,10 +19,6 @@
 8. 输入 `curl -L http://i.ohmydeck.net | sh` 安装 Tomoon  
 9. 切换回到 Gamming 游戏模式，按下右侧摇杆下的快捷按钮（三个点的按钮），可以看到多了一个 Decky 插件面板  
 
-````shell
-curl -L https://files.ohmydeck.net/fix.sh | sh
-````
-
 ## 使用
 1. 打开 Manage Subscriptions，添加你服务商提供的 Clash 订阅链接并下载  
 > **若使用扫描二维码添加订阅功能，请确保手机和 Steam Deck 在同一局域网下**
