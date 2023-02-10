@@ -167,7 +167,7 @@ pub async fn download_sub(
         // 是一个链接
     } else {
         match minreq::get(url.clone())
-            .with_header("User-Agent", "ToMoonClash/0.1.0")
+            .with_header("User-Agent", format!("ToMoonClash/{}",env!("CARGO_PKG_VERSION")))
             .with_timeout(15)
             .send()
         {

@@ -27,6 +27,12 @@ mod tests {
     }
 
     #[test]
+    fn get_version() {
+        let version = env!("CARGO_PKG_VERSION");
+        println!("{}",version);
+    }
+
+    #[test]
     fn run_clash() {
         //TODO: no such files
         let outputs = fs::File::create("/tmp/tomoon.smartdns.log").unwrap();

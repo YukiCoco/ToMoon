@@ -560,7 +560,7 @@ impl Clash {
                     if !save_path.exists() {
                         match minreq::get(url.as_str().unwrap())
                             .with_timeout(30)
-                            .with_header("User-Agent", "ToMoonClash/0.1.0")
+                            .with_header("User-Agent", format!("ToMoonClash/{}",env!("CARGO_PKG_VERSION")))
                             .send()
                         {
                             Ok(response) => {
