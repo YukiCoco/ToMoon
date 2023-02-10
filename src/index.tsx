@@ -103,7 +103,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
                           setSelectionTips("Loading ...");
                           break;
                         case "Failed":
-                          setSelectionTips("Enable failed, See GitHub for help.");
+                          setSelectionTips("Failed to start, please check /tmp/tomoon.log");
                           setClashState(false);
                           break;
                         case "Success":
