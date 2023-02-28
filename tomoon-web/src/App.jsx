@@ -66,7 +66,6 @@ const on_download_btn_click = (url) => {
     }
   }).catch(error => {
     if (error.response) {
-      console.log(error);
       Swal.fire({
         icon: 'error',
         iconColor: '#5E5F55',
