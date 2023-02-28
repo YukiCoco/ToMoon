@@ -70,7 +70,7 @@ const on_download_btn_click = (url) => {
         icon: 'error',
         iconColor: '#5E5F55',
         title: '失败',
-        text: error.response.data,
+        text: error.response.data.message,
         confirmButtonColor: '#5A6242',
         background: '#DEE7BF'
       });
