@@ -66,11 +66,12 @@ const on_download_btn_click = (url) => {
     }
   }).catch(error => {
     if (error.response) {
+      console.log(error);
       Swal.fire({
         icon: 'error',
         iconColor: '#5E5F55',
         title: '失败',
-        text: error.response.data.message,
+        text: error.response.data?.error?.message,
         confirmButtonColor: '#5A6242',
         background: '#DEE7BF'
       });
