@@ -1,5 +1,5 @@
 import { VFC } from "react";
-import { ButtonItem, PanelSectionRow, Router } from "decky-frontend-lib";
+import { ButtonItem, PanelSectionRow } from "decky-frontend-lib";
 import { VscDebug } from "react-icons/vsc"
 
 import * as backend from "../backend";
