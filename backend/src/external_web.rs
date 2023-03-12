@@ -1,5 +1,5 @@
 use actix_web::{body::BoxBody, web, HttpResponse, Result};
-use local_ip_address::list_afinet_netifas;
+use local_ip_address::local_ip;
 use rand::{distributions::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs, path::PathBuf, sync::Mutex};
@@ -55,7 +55,10 @@ impl actix_web::ResponseError for ClashError {
     fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> {
         let mut res = HttpResponse::new(self.status_code());
         let mime = "text/plain; charset=utf-8";
-        res.headers_mut().insert(actix_web::http::header::CONTENT_TYPE, actix_web::http::header::HeaderValue::from_str(mime).unwrap());
+        res.headers_mut().insert(
+            actix_web::http::header::CONTENT_TYPE,
+            actix_web::http::header::HeaderValue::from_str(mime).unwrap(),
+        );
         res.set_body(BoxBody::new(self.Message.clone()))
     }
 }
@@ -167,7 +170,10 @@ pub async fn download_sub(
         // 是一个链接
     } else {
         match minreq::get(url.clone())
-            .with_header("User-Agent", format!("ToMoonClash/{}",env!("CARGO_PKG_VERSION")))
+            .with_header(
+                "User-Agent",
+                format!("ToMoonClash/{}", env!("CARGO_PKG_VERSION")),
+            )
             .with_timeout(15)
             .send()
         {
@@ -280,20 +286,20 @@ pub async fn get_link(
 }
 
 pub async fn get_local_web_address() -> Result<HttpResponse> {
-    let network_interfaces = list_afinet_netifas().unwrap();
-    for (name, ip) in network_interfaces.iter() {
-        if name == "wlan0" {
-            //steamdeck 的网卡名
+    match local_ip() {
+        Ok(x) => {
             let r = GetLocalIpAddressResponse {
                 status_code: 200,
-                ip: Some(ip.to_string()),
+                ip: Some(x.to_string()),
             };
             return Ok(HttpResponse::Ok().json(r));
         }
-    }
-    let r = GetLocalIpAddressResponse {
-        status_code: 404,
-        ip: None,
+        Err(_) => {
+            let r = GetLocalIpAddressResponse {
+                status_code: 404,
+                ip: None,
+            };
+            return Ok(HttpResponse::Ok().json(r));
+        }
     };
-    return Ok(HttpResponse::Ok().json(r));
 }
