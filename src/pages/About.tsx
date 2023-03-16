@@ -1,5 +1,5 @@
 import { VFC } from "react";
-import { ButtonItem, PanelSectionRow, Router } from "decky-frontend-lib";
+import { ButtonItem, PanelSectionRow, Navigation } from "decky-frontend-lib";
 import { FiGithub } from "react-icons/fi";
 import { FaSteamSymbol } from "react-icons/fa"
 import { TbBrandTelegram } from "react-icons/tb"
@@ -22,7 +22,7 @@ export const About: VFC = () => {
                     icon={<FiGithub style={{ display: "block" }} />}
                     label="ToMoon"
                     onClick={() => {
-                        Router.NavigateToExternalWeb("https://github.com/YukiCoco/ToMoon")
+                        Navigation.NavigateToExternalWeb("https://github.com/YukiCoco/ToMoon")
                     }}
                 >
                     GitHub Repo
@@ -38,7 +38,7 @@ export const About: VFC = () => {
                     icon={<FaSteamSymbol style={{ display: "block" }} />}
                     label="Sayo Kurisu"
                     onClick={() => {
-                        Router.NavigateToExternalWeb("https://steamcommunity.com/profiles/76561198217352855/")
+                        Navigation.NavigateToExternalWeb("https://steamcommunity.com/profiles/76561198217352855/")
                      }}
                 >
                     Steam Profile
@@ -58,7 +58,7 @@ export const About: VFC = () => {
                     icon={<TbBrandTelegram style={{ display: "block" }} />}
                     label="@steamdecktalk"
                     onClick={() => {
-                        Router.NavigateToExternalWeb("https://github.com/YukiCoco/StaticFilesCDN/blob/main/deck_tg_2.jpg?raw=true")
+                        Navigation.NavigateToExternalWeb("https://github.com/YukiCoco/StaticFilesCDN/blob/main/deck_tg_2.jpg?raw=true")
                     }}
                 >
                     Telegram Group

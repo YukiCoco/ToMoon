@@ -10,6 +10,7 @@ import {
   SidebarNavigation,
   DropdownOption,
   Dropdown,
+  Navigation,
 } from "decky-frontend-lib";
 import { VFC, useState } from "react";
 import { GiEgyptianBird } from "react-icons/gi";
@@ -160,7 +161,8 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
             layout="below"
             onClick={() => {
               Router.CloseSideMenus()
-              Router.NavigateToExternalWeb("http://127.0.0.1:9090/ui")
+              Navigation.NavigateToExternalWeb("http://127.0.0.1:9090/ui")
+              //Router.NavigateToExternalWeb("http://127.0.0.1:9090/ui")
             }}
             disabled={openDashboardDisabled}
 

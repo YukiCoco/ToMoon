@@ -1,6 +1,6 @@
 {
   "name": "tomoon",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "SteamOS Network Tools Box.",
   "scripts": {
     "build": "shx rm -rf dist && rollup -c",
