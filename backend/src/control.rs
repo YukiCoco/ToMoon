@@ -69,7 +69,7 @@ impl ControlRuntime {
         Self {
             settings: Arc::new(RwLock::new(
                 super::settings::Settings::open(settings_p)
-                    .unwrap_or_default()
+                    .unwrap()
                     .into(),
             )),
             state: Arc::new(RwLock::new(new_state)),
@@ -260,7 +260,7 @@ impl Default for Clash {
 }
 
 impl Clash {
-    pub fn run(&mut self, config_path: &String) -> Result<(), ClashError> {
+    pub fn run(&mut self, config_path: &String, skip_proxy: bool) -> Result<(), ClashError> {
         //没有 Country.mmdb
         let country_db_path = "/root/.config/clash/Country.mmdb";
         if let Some(parent) = PathBuf::from(country_db_path).parent() {
@@ -292,7 +292,7 @@ impl Clash {
         }
         self.update_config_path(config_path);
         // 修改配置文件为推荐配置
-        match self.change_config() {
+        match self.change_config(skip_proxy) {
             Ok(_) => (),
             Err(e) => {
                 return Err(ClashError {
@@ -406,7 +406,7 @@ impl Clash {
         self.config = std::path::PathBuf::from((*path).clone());
     }
 
-    pub fn change_config(&self) -> Result<(), Box<dyn error::Error>> {
+    pub fn change_config(&self, skip_proxy: bool) -> Result<(), Box<dyn error::Error>> {
         let path = self.config.clone();
         let config = fs::read_to_string(path)?;
         let mut yaml: serde_yaml::Value = serde_yaml::from_str(config.as_str())?;
@@ -434,6 +434,13 @@ impl Clash {
                 0,
                 Value::String(String::from("DOMAIN,test.steampowered.com,DIRECT")),
             );
+
+            if skip_proxy {
+                rules.insert(
+                0,
+                Value::String(String::from("DOMAIN-SUFFIX,cm.steampowered.com,DIRECT")),
+            );
+            }
         }
 
         //下载 rules-provider
@@ -533,7 +540,6 @@ impl Clash {
         // 保存上次的配置
         match yaml.get("profile") {
             Some(_) => {
-                //删除 DNS 配置
                 yaml.remove("profile").unwrap();
                 insert_config(yaml, profile_config, "profile");
             }

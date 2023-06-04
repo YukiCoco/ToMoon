@@ -82,9 +82,8 @@ pub fn set_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
                         return vec![false.into()];
                     }
                 }
-                // Enable Clash
                 if *enabled {
-                    match clash.run(&settings.current_sub) {
+                    match clash.run(&settings.current_sub, settings.skip_proxy) {
                         Ok(_) => (),
                         Err(e) => {
                             log::error!("Run clash error: {}", e);

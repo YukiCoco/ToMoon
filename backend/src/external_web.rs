@@ -22,11 +22,23 @@ pub struct GenLinkParams {
     link: String,
 }
 
+#[derive(Deserialize)]
+pub struct SkipProxyParams {
+    skip_proxy: bool,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct GenLinkResponse {
     status_code: u16,
     message: String,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct SkipProxyResponse {
+    status_code: u16,
+    message: String,
+}
+
 #[derive(Deserialize)]
 pub struct GetLinkParams {
     code: u16,
@@ -35,6 +47,12 @@ pub struct GetLinkParams {
 pub struct GetLinkResponse {
     status_code: u16,
     link: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct GetSkipProxyResponse {
+    status_code: u16,
+    skip_proxy: bool,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -61,6 +79,76 @@ impl actix_web::ResponseError for ClashError {
         );
         res.set_body(BoxBody::new(self.Message.clone()))
     }
+}
+
+pub async fn skip_proxy(
+    state: web::Data<AppState>,
+    params: web::Form<SkipProxyParams>,
+) -> Result<HttpResponse> {
+    let skip_proxy = params.skip_proxy.clone();
+    let runtime = state.runtime.lock().unwrap();
+    let runtime_settings;
+    let runtime_state;
+    unsafe {
+        let runtime = runtime.0.as_ref().unwrap();
+        runtime_settings = runtime.settings_clone();
+        runtime_state = runtime.state_clone();
+    }
+    match runtime_settings.write() {
+        Ok(mut x) => {
+            x.skip_proxy = skip_proxy;
+            let mut state = match runtime_state.write() {
+                Ok(x) => x,
+                Err(e) => {
+                    log::error!("set_enable failed to acquire state write lock: {}", e);
+                    return Err(actix_web::Error::from(ClashError {
+                        Message: e.to_string(),
+                        ErrorKind: ClashErrorKind::InnerError,
+                    }));
+                }
+            };
+            state.dirty = true;
+        }
+        Err(e) => {
+            log::error!("Failed while toggle skip Steam proxy.");
+            log::error!("Error Message:{}", e);
+            return Err(actix_web::Error::from(ClashError {
+                Message: e.to_string(),
+                ErrorKind: ClashErrorKind::ConfigNotFound,
+            }));
+        }
+    }
+    let r = SkipProxyResponse {
+        message: "修改成功".to_string(),
+        status_code: 200,
+    };
+    Ok(HttpResponse::Ok().json(r))
+}
+
+pub async fn get_skip_proxy(state: web::Data<AppState>) -> Result<HttpResponse> {
+    let runtime = state.runtime.lock().unwrap();
+    let runtime_settings;
+    unsafe {
+        let runtime = runtime.0.as_ref().unwrap();
+        runtime_settings = runtime.settings_clone();
+    }
+    match runtime_settings.read() {
+        Ok(x) => {
+            let r = GetSkipProxyResponse {
+                skip_proxy: x.skip_proxy,
+                status_code: 200,
+            };
+            return Ok(HttpResponse::Ok().json(r));
+        }
+        Err(e) => {
+            log::error!("Failed while geting skip Steam proxy.");
+            log::error!("Error Message:{}", e);
+            return Err(actix_web::Error::from(ClashError {
+                Message: e.to_string(),
+                ErrorKind: ClashErrorKind::ConfigNotFound,
+            }));
+        }
+    };
 }
 
 pub async fn download_sub(
