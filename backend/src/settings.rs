@@ -5,10 +5,37 @@ use crate::helper;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Settings {
-    pub enable : bool,
-    pub tun_mode : bool,
+    #[serde(default = "default_enable")]
+    pub enable: bool,
+    #[serde(default = "default_tun_mode")]
+    pub tun_mode: bool,
+    #[serde(default = "default_skip_proxy")]
+    pub skip_proxy: bool,
+    #[serde(default = "default_current_sub")]
     pub current_sub: String,
-    pub subscriptions : Vec<Subscription>
+    #[serde(default = "default_subscriptions")]
+    pub subscriptions: Vec<Subscription>,
+}
+
+fn default_skip_proxy() -> bool {
+    true
+}
+
+fn default_enable() -> bool {
+    false
+}
+
+fn default_tun_mode() -> bool {
+    true
+}
+
+fn default_current_sub() -> String {
+    let default_profile = helper::get_current_working_dir().unwrap().join("bin/core/config.yaml");
+    default_profile.to_string_lossy().to_string()
+}
+
+fn default_subscriptions() -> Vec<Subscription> {
+    Vec::new()
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -82,20 +109,21 @@ impl Settings {
         serde_json::to_writer_pretty(&mut file, &self).map_err(JsonError::Serde)
     }
 
-    pub fn open<P: AsRef<std::path::Path>>(path: P) -> Result<Self, JsonError> {
+    pub fn open<P: AsRef<std::path::Path>>(path: P) -> Result<Settings, JsonError> {
         let mut file = std::fs::File::open(path).map_err(JsonError::Io)?;
         serde_json::from_reader(&mut file).map_err(JsonError::Serde)
     }
 }
 
-impl Default for Settings {
-    fn default() -> Self {
-        let default_profile = helper::get_current_working_dir().unwrap().join("bin/core/config.yaml");
-        Self {
-            enable: false,
-            tun_mode: true,
-            current_sub: default_profile.to_string_lossy().to_string(),
-            subscriptions: Vec::new()
-        }
-    }
-}
+// impl Default for Settings {
+//     fn default() -> Self {
+//         let default_profile = helper::get_current_working_dir().unwrap().join("bin/core/config.yaml");
+//         Self {
+//             enable: false,
+//             tun_mode: true,
+//             skip_proxy: true,
+//             current_sub: default_profile.to_string_lossy().to_string(),
+//             subscriptions: Vec::new()
+//         }
+//     }
+// }
