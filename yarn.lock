@@ -409,10 +409,10 @@ csstype@^3.0.2:
   resolved "https://registry.yarnpkg.com/csstype/-/csstype-3.1.1.tgz#841b532c45c758ee546a11d5bd7b7b473c8c30b9"
   integrity sha512-DJR/VvkAvSZW9bTouZue2sSxDwdTN92uHjqeKVm+0dAqdfNykRzQ95tay8aXMBAAPpUiq4Qcug2L7neoRh2Egw==
 
-decky-frontend-lib@^3.6.0:
-  version "3.18.6"
-  resolved "https://registry.yarnpkg.com/decky-frontend-lib/-/decky-frontend-lib-3.18.6.tgz#4a62f8e52882e6c633bd2a5d4dd6e1dabf7db5f0"
-  integrity sha512-kM+kH/EuYCW+zsdYnNZa39EsU1bTF/iYn03zbeaTSIVwe/oxqOoEG2mwVaQdhk98jqY1uWZgayBQYnnTksMXFw==
+decky-frontend-lib@^3.21.1:
+  version "3.21.1"
+  resolved "https://registry.yarnpkg.com/decky-frontend-lib/-/decky-frontend-lib-3.21.1.tgz#49c6af2d1fbf414868476cae7a847c8a123659c7"
+  integrity sha512-30605ET9qqZ6St6I9WmMmLGgSrTIdMwo7xy85+lRaF1miUd2icOGEJjwnbVcZDdkal+1fJ3tNEDXlchVfG4TrA==
 
 deepmerge@^4.2.2:
   version "4.2.2"

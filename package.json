@@ -40,7 +40,7 @@
   },
   "dependencies": {
     "axios": "^1.2.2",
-    "decky-frontend-lib": "^3.19.2",
+    "decky-frontend-lib": "^3.21.1",
     "qrcode.react": "^3.1.0",
     "react-icons": "^4.6.0",
     "usdpl-front": "file:src/usdpl"

@@ -9,7 +9,7 @@ specifiers:
   '@types/react': 16.14.0
   '@types/webpack': ^5.28.0
   axios: ^1.2.2
-  decky-frontend-lib: ^3.19.2
+  decky-frontend-lib: ^3.21.1
   qrcode.react: ^3.1.0
   react-icons: ^4.6.0
   rollup: ^2.79.1
@@ -21,7 +21,7 @@ specifiers:
 
 dependencies:
   axios: 1.2.2
-  decky-frontend-lib: 3.19.2
+  decky-frontend-lib: 3.21.1
   qrcode.react: 3.1.0
   react-icons: 4.6.0
   usdpl-front: file:src/usdpl
@@ -445,8 +445,8 @@ packages:
     resolution: {integrity: sha512-DJR/VvkAvSZW9bTouZue2sSxDwdTN92uHjqeKVm+0dAqdfNykRzQ95tay8aXMBAAPpUiq4Qcug2L7neoRh2Egw==}
     dev: true
 
-  /decky-frontend-lib/3.19.2:
-    resolution: {integrity: sha512-J8QYlzi+FEwwoDxoUOhq+BvRO1bdg8O60oxyfcRF7nLalGPrRyaXx4MNNP117X/RY7smPF1xigjglNthdv9Yzw==}
+  /decky-frontend-lib/3.21.1:
+    resolution: {integrity: sha512-30605ET9qqZ6St6I9WmMmLGgSrTIdMwo7xy85+lRaF1miUd2icOGEJjwnbVcZDdkal+1fJ3tNEDXlchVfG4TrA==}
     dev: false
 
   /deepmerge/4.2.2:
