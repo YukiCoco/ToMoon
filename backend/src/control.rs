@@ -69,7 +69,7 @@ impl ControlRuntime {
         Self {
             settings: Arc::new(RwLock::new(
                 super::settings::Settings::open(settings_p)
-                    .unwrap()
+                    .unwrap_or_default()
                     .into(),
             )),
             state: Arc::new(RwLock::new(new_state)),

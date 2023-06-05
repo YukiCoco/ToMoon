@@ -115,15 +115,15 @@ impl Settings {
     }
 }
 
-// impl Default for Settings {
-//     fn default() -> Self {
-//         let default_profile = helper::get_current_working_dir().unwrap().join("bin/core/config.yaml");
-//         Self {
-//             enable: false,
-//             tun_mode: true,
-//             skip_proxy: true,
-//             current_sub: default_profile.to_string_lossy().to_string(),
-//             subscriptions: Vec::new()
-//         }
-//     }
-// }
+impl Default for Settings {
+    fn default() -> Self {
+        let default_profile = helper::get_current_working_dir().unwrap().join("bin/core/config.yaml");
+        Self {
+            enable: false,
+            tun_mode: true,
+            skip_proxy: true,
+            current_sub: default_profile.to_string_lossy().to_string(),
+            subscriptions: Vec::new()
+        }
+    }
+}
