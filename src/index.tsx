@@ -11,6 +11,7 @@ import {
   DropdownOption,
   Dropdown,
   Navigation,
+  DropdownItem,
 } from "decky-frontend-lib";
 import { VFC, useState } from "react";
 import { GiEgyptianBird } from "react-icons/gi";
@@ -87,53 +88,53 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   update_subs();
 
   return (
-    <PanelSection>
+    <div>
       <PanelSection title="Service">
         <PanelSectionRow>
-          <div>
-            <ToggleField
-              label="Enable Clash"
-              description={SelectionTips}
-              checked={clashState}
-              onChange={(value: boolean) => {
-                setIsSelectionDisabled(true);
-                setSelectionTips("Loading ...");
-                backend.resolve(backend.setEnabled(value), (v: boolean) => {
-                  enabledGlobal = v;
-                  setIsSelectionDisabled(false);
-                });
-                //获取 Clash 启动状态
-                if (!clashState) {
-                  let check_running_handle = setInterval(() => {
-                    backend.resolve(backend.getRunningStatus(), (v: String) => {
-                      console.log(v);
-                      switch (v) {
-                        case "Loading":
-                          setSelectionTips("Loading ...");
-                          break;
-                        case "Failed":
-                          setSelectionTips("Failed to start, please check /tmp/tomoon.log");
-                          setClashState(false);
-                          break;
-                        case "Success":
-                          setSelectionTips("Clash is running.");
-                          break;
-                      }
-                      if (v != "Loading") {
-                        clearInterval(check_running_handle);
-                      }
-                    });
-                  }, 500);
-                } else {
-                  setSelectionTips("Run Clash in background");
-                }
-                setOptionDropdownDisabled(value);
-                setOpenDashboardDisabled(!value);
-              }}
-              disabled={isSelectionDisabled}
-            />
-          </div>
-          <Dropdown
+          <ToggleField
+            label="Enable Clash"
+            description={SelectionTips}
+            checked={clashState}
+            onChange={(value: boolean) => {
+              setIsSelectionDisabled(true);
+              setSelectionTips("Loading ...");
+              backend.resolve(backend.setEnabled(value), (v: boolean) => {
+                enabledGlobal = v;
+                setIsSelectionDisabled(false);
+              });
+              //获取 Clash 启动状态
+              if (!clashState) {
+                let check_running_handle = setInterval(() => {
+                  backend.resolve(backend.getRunningStatus(), (v: String) => {
+                    console.log(v);
+                    switch (v) {
+                      case "Loading":
+                        setSelectionTips("Loading ...");
+                        break;
+                      case "Failed":
+                        setSelectionTips("Failed to start, please check /tmp/tomoon.log");
+                        setClashState(false);
+                        break;
+                      case "Success":
+                        setSelectionTips("Clash is running.");
+                        break;
+                    }
+                    if (v != "Loading") {
+                      clearInterval(check_running_handle);
+                    }
+                  });
+                }, 500);
+              } else {
+                setSelectionTips("Run Clash in background");
+              }
+              setOptionDropdownDisabled(value);
+              setOpenDashboardDisabled(!value);
+            }}
+            disabled={isSelectionDisabled}
+          />
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <DropdownItem
             disabled={optionDropdownDisabled}
             strDefaultLabel="Select a Subscription"
             rgOptions={options}
@@ -149,10 +150,6 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
             }}
           />
         </PanelSectionRow>
-        {/* <PanelSectionRow>
-          
-        </PanelSectionRow> */}
-
         <PanelSectionRow>
           <ButtonItem
             layout="below"
@@ -173,29 +170,25 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
               //Router.NavigateToExternalWeb("http://127.0.0.1:9090/ui")
             }}
             disabled={openDashboardDisabled}
-
           >
             Open Dashboard
           </ButtonItem>
         </PanelSectionRow>
         <PanelSectionRow>
-          <div>
-            <ToggleField
-              label="Skip Steam Proxy"
-              description="Enable for direct Steam downloads"
-              checked={skipProxyState}
-              onChange={(value: boolean) => {
-                axios.post("http://127.0.0.1:55556/skip_proxy", {
-                  skip_proxy: value
-                }, {
-                  headers: { 'content-type': 'application/x-www-form-urlencoded' },
-                });
-                setSkipProxyState(value);
-              }}
-            >
-
-            </ToggleField>
-          </div>
+          <ToggleField
+            label="Skip Steam Proxy"
+            description="Enable for direct Steam downloads"
+            checked={skipProxyState}
+            onChange={(value: boolean) => {
+              axios.post("http://127.0.0.1:55556/skip_proxy", {
+                skip_proxy: value
+              }, {
+                headers: { 'content-type': 'application/x-www-form-urlencoded' },
+              });
+              setSkipProxyState(value);
+            }}
+          >
+          </ToggleField>
         </PanelSectionRow>
       </PanelSection>
 
@@ -214,7 +207,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
           </ButtonItem>
         </PanelSectionRow>
       </PanelSection>
-    </PanelSection>
+    </div>
   );
 };
 

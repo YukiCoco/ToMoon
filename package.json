@@ -1,6 +1,6 @@
 {
   "name": "tomoon",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "SteamOS Network Tools Box.",
   "scripts": {
     "build": "shx rm -rf dist && rollup -c",
@@ -40,7 +40,7 @@
   },
   "dependencies": {
     "axios": "^1.2.2",
-    "decky-frontend-lib": "^3.21.1",
+    "decky-frontend-lib": "^3.24.5",
     "qrcode.react": "^3.1.0",
     "react-icons": "^4.6.0",
     "usdpl-front": "file:src/usdpl"
