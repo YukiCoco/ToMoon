@@ -1,16 +1,9 @@
 lockfileVersion: '6.0'
 
-settings:
-  autoInstallPeers: true
-  excludeLinksFromLockfile: false
-
 dependencies:
   axios:
     specifier: ^1.2.2
     version: 1.2.2
-  decky-frontend-lib:
-    specifier: ^3.24.5
-    version: 3.24.5
   qrcode.react:
     specifier: ^3.1.0
     version: 3.1.0
@@ -43,6 +36,9 @@ devDependencies:
   '@types/webpack':
     specifier: ^5.28.0
     version: 5.28.0
+  decky-frontend-lib:
+    specifier: ^3.24.5
+    version: 3.24.5
   rollup:
     specifier: ^2.79.1
     version: 2.79.1
@@ -466,7 +462,7 @@ packages:
 
   /decky-frontend-lib@3.24.5:
     resolution: {integrity: sha512-eYlbKDOOcIBPI0b76Rqvlryq2ym/QNiry4xf2pFrXmBa1f95dflqbQAb2gTq9uHEa5gFmeV4lUcMPGJ3M14Xqw==}
-    dev: false
+    dev: true
 
   /deepmerge@4.2.2:
     resolution: {integrity: sha512-FJ3UgI4gIl+PHZm53knsuSFpE+nESMr7M4v9QcgB7S63Kj/6WqMiFQJpBBYz1Pt+66bZpP3Q7Lye0Oo9MPKEdg==}
@@ -1008,4 +1004,9 @@ packages:
   file:src/usdpl:
     resolution: {directory: src/usdpl, type: directory}
     name: usdpl-front
+    version: 0.7.0
     dev: false
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
