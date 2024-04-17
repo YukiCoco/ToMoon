@@ -440,6 +440,10 @@ impl Clash {
                 0,
                 Value::String(String::from("DOMAIN-SUFFIX,cm.steampowered.com,DIRECT")),
             );
+            rules.insert(
+            0,
+            Value::String(String::from("DOMAIN-SUFFIX,steamserver.net,DIRECT")),
+        );
             }
         }
 
