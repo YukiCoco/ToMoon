@@ -1,6 +1,7 @@
-import { PanelSection, PanelSectionRow, ButtonItem, Field } from "decky-frontend-lib";
+import { PanelSection, PanelSectionRow, Field } from "decky-frontend-lib";
 import { VFC, useEffect, useState } from "react";
 import { PyBackend } from "../backend";
+import { ActionButtonItem } from "./components/actionButtonItem";
 
 
 export const VersionComponent: VFC = () => {
@@ -25,12 +26,12 @@ export const VersionComponent: VFC = () => {
   return (
     <PanelSection title={'Version'}>
       <PanelSectionRow>
-        <ButtonItem
+        <ActionButtonItem
           layout="below"
-          onClick={() => {
-            PyBackend.updateLatest();
+          onClick={async () => {
+            await PyBackend.updateLatest();
           }}
-        >{uptButtonText}</ButtonItem>
+        >{uptButtonText}</ActionButtonItem>
       </PanelSectionRow>
       <PanelSectionRow>
         <Field focusable label={'Installed Version'}>

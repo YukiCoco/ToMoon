@@ -41,7 +41,7 @@ def update_latest():
             shutil.unpack_archive(
                 downloaded_filepath,
                 f"{decky_plugin.DECKY_USER_HOME}/homebrew/plugins",
-                format="gztar",
+                format="zip",
             )
 
             # cleanup downloaded files
@@ -76,7 +76,7 @@ def download_latest_build():
 
     logger.info(download_url)
 
-    file_path = f"/tmp/{decky_plugin.DECKY_PLUGIN_NAME}.tag.gz"
+    file_path = f"/tmp/{decky_plugin.DECKY_PLUGIN_NAME}.zip"
 
     with urllib.request.urlopen(download_url, context=gcontext) as response, open(
         file_path, "wb"
