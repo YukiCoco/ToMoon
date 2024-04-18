@@ -1,17 +1,8 @@
-import pathlib
 import subprocess
 import asyncio
 import os
-import logging
-
-HOME_DIR = str(pathlib.Path(os.getcwd()).parent.parent.resolve())
-PARENT_DIR = str(pathlib.Path(__file__).parent.resolve())
-logging.basicConfig(filename="/tmp/tomoon.py.log",
-                    format='[tomoon] %(asctime)s %(levelname)s %(message)s',
-                    filemode='w+',
-                    force=True)
-logger=logging.getLogger()
-logger.setLevel(logging.INFO) # can be changed to logging.DEBUG for debugging issues
+from config import logger,PARENT_DIR
+import update
 
 class Plugin:
     backend_proc = None
@@ -30,3 +21,13 @@ class Plugin:
         logger.info("Stop Tomoon.")
         self.backend_proc.kill()
         pass
+
+    async def update_latest(self):
+        logger.info("Updating latest")
+        return update.update_latest()
+
+    async def get_version(self):
+        return update.get_version()
+
+    async def get_latest_version(self):
+        return update.get_latest_version()
