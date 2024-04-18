@@ -9,7 +9,6 @@ import {
   ToggleField,
   SidebarNavigation,
   DropdownOption,
-  Dropdown,
   Navigation,
   DropdownItem,
 } from "decky-frontend-lib";
@@ -19,7 +18,8 @@ import { GiEgyptianBird } from "react-icons/gi";
 import {
   Subscriptions,
   About,
-  Debug
+  Debug,
+  VersionComponent
 } from "./pages";
 
 import * as backend from "./backend";
@@ -207,6 +207,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
           </ButtonItem>
         </PanelSectionRow>
       </PanelSection>
+      <VersionComponent />
     </div>
   );
 };
@@ -241,6 +242,7 @@ export default definePlugin((serverApi: ServerAPI) => {
   // init USDPL WASM and connection to back-end
   (async function () {
     await backend.initBackend();
+    await backend.PyBackend.init(serverApi);
     usdplReady = true;
     backend.resolve(backend.getEnabled(), (v: boolean) => {
       enabledGlobal = v;
