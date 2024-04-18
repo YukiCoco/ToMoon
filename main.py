@@ -1,18 +1,21 @@
+import logging
 import subprocess
 import asyncio
 import os
-from config import logger,PARENT_DIR
+from config import logger, setup_logger
 import update
+import decky_plugin
 
 class Plugin:
     backend_proc = None
     # Asyncio-compatible long-running code, executed in a task when the plugin is loaded
     async def _main(self):
+        logger = setup_logger()
         logger.info("Start Tomoon.")
-        os.system('chmod -R 777 ' + PARENT_DIR)
+        os.system('chmod -R a+x ' + decky_plugin.DECKY_PLUGIN_DIR)
         # 切换到工作目录
-        os.chdir(PARENT_DIR)
-        self.backend_proc = subprocess.Popen([PARENT_DIR + "/bin/tomoon"])
+        os.chdir(decky_plugin.DECKY_PLUGIN_DIR)
+        self.backend_proc = subprocess.Popen([decky_plugin.DECKY_PLUGIN_DIR + "/bin/tomoon"])
         while True:
             await asyncio.sleep(1)
     
@@ -27,7 +30,11 @@ class Plugin:
         return update.update_latest()
 
     async def get_version(self):
-        return update.get_version()
+        version = update.get_version()
+        logger.info(f"Current version: {version}")
+        return version
 
     async def get_latest_version(self):
-        return update.get_latest_version()
+        version = update.get_latest_version()
+        logger.info(f"Latest version: {version}")
+        return version

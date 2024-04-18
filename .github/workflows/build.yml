@@ -77,6 +77,7 @@ jobs:
               cp -r ./tmp/core ./release/tomoon/bin/
               cp -r ./tmp/smartdns ./release/tomoon/bin/
               cp -r ./tomoon-web/dist ./release/tomoon/web
+              cp -r ./py_modules ./release/tomoon/py_modules
               cd ./release 
               zip -r tomoon-${{ env.RELEASE_VERSION }}.zip tomoon
               cd ..
