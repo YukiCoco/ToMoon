@@ -1,9 +1,8 @@
 on:
-  push:
-    tags:        
-      - 'v*'           # Push events to every tag not containing /
+  - push
+  - pull_request
 
-name:  ToMoon Auto Build
+name: ToMoon Auto Build
 
 jobs:
   linux_amd64:
@@ -13,44 +12,41 @@ jobs:
       contents: write
     steps:
       #build tomoon start
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set env
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-      
+
       - name: Download Clash and Yacd
         run: |
-              mkdir tmp && cd tmp
-              mkdir core && cd core
-              # Mihomo (Clash Meta)
-              wget -O clash.gz https://github.com/MetaCubeX/mihomo/releases/download/v1.18.3/mihomo-linux-amd64-v1.18.3.gz
-              gzip -d clash.gz
-              # country.mmdb & geosite.dat
-              wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country.mmdb
-              wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat
-              wget -O asn.mmdb https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-ASN.mmdb
-              # yacd
-              wget -O yacd.zip https://github.com/MetaCubeX/yacd/archive/gh-pages.zip
-              unzip yacd.zip
-              mv Yacd-meta-gh-pages web
+          mkdir tmp && cd tmp
+          mkdir core && cd core
+          # Mihomo (Clash Meta)
+          wget -O clash.gz https://github.com/MetaCubeX/mihomo/releases/download/v1.18.3/mihomo-linux-amd64-v1.18.3.gz
+          gzip -d clash.gz
+          # country.mmdb & geosite.dat
+          wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country.mmdb
+          wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat
+          wget -O asn.mmdb https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-ASN.mmdb
+          # yacd
+          wget -O yacd.zip https://github.com/MetaCubeX/yacd/archive/gh-pages.zip
+          unzip yacd.zip
+          mv Yacd-meta-gh-pages web
 
       # build front-end start
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
-          node-version: 16
-      - uses: pnpm/action-setup@v2.2.2
-        with:
-          version: 7.12.2
+          node-version: 20
       - name: Install Requestment
-        run: | 
-             cp -r usdpl src/
-             pnpm i
+        run: |
+          cp -r usdpl src/
+          npm i
       - name: build front end
-        run: pnpm run build
+        run: npm run build
         working-directory: .
       - name: build external web page
         run: |
-              npm i
-              npm run build
+          npm i
+          npm run build
         working-directory: tomoon-web
       # build front-end end
       # build backend start
@@ -79,25 +75,27 @@ jobs:
       #   with:
       #     node-version: 16
       # - run: pnpm run build
-      - name: collect files
+      - name: Collect Files
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
         run: |
-              mkdir -p ./release/tomoon/bin/core/web
-              mkdir -p ./release/tomoon/dist
-              cp backend/target/x86_64-unknown-linux-gnu/release/tomoon ./release/tomoon/bin/tomoon
-              cp ./dist/index.js ./release/tomoon/dist/index.js
-              cp main.py ./release/tomoon/main.py
-              cp plugin.json ./release/tomoon/plugin.json
-              cp package.json ./release/tomoon/package.json
-              cp -r ./tmp/core ./release/tomoon/bin/
-              cp -r ./tomoon-web/dist ./release/tomoon/web
-              cp -r ./py_modules ./release/tomoon/py_modules
-              cd ./release 
-              zip -r tomoon-${{ env.RELEASE_VERSION }}.zip tomoon
-              cd ..
-      
+          mkdir -p ./release/tomoon/bin/core/web
+          mkdir -p ./release/tomoon/dist
+          cp backend/target/x86_64-unknown-linux-gnu/release/tomoon ./release/tomoon/bin/tomoon
+          cp ./dist/index.js ./release/tomoon/dist/index.js
+          cp main.py ./release/tomoon/main.py
+          cp plugin.json ./release/tomoon/plugin.json
+          cp package.json ./release/tomoon/package.json
+          cp -r ./tmp/core ./release/tomoon/bin/
+          cp -r ./tomoon-web/dist ./release/tomoon/web
+          cp -r ./py_modules ./release/tomoon/py_modules
+          cd ./release 
+          zip -r tomoon-${{ env.RELEASE_VERSION }}.zip tomoon
+          cd ..
+
       - name: Create Release
-        id: create_release
+        id: create-release
         uses: actions/create-release@v1
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -106,13 +104,15 @@ jobs:
           #body_path: Changelog/${{ env.RELEASE_VERSION }}-changelog.md
           draft: false
           prerelease: false
+
       - name: Upload Release Asset
-        id: upload-release-asset 
+        id: upload-release-asset
         uses: actions/upload-release-asset@v1
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
           asset_path: ./release/tomoon-${{ env.RELEASE_VERSION }}.zip
           asset_name: tomoon-${{ env.RELEASE_VERSION }}.zip
           asset_content_type: application/zip
