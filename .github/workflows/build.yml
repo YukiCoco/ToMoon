@@ -51,13 +51,12 @@ jobs:
       # build front-end end
       # build backend start
       - uses: dtolnay/rust-toolchain@stable
-      - uses: ClementTsang/cargo-action@v0.0.2
+      - uses: ClementTsang/cargo-action@v0.0.6
         with:
           command: build
           directory: ./backend
           args: --target x86_64-unknown-linux-gnu --release
           use-cross: true
-          cross-version: 0.2.4
       # build backend end
       #build tomoon stop
       #output: # ToMoon/backend/target/x86_64-unknown-linux-gnu/release/tomoon
@@ -76,7 +75,7 @@ jobs:
       #   with:
       #     node-version: 16
       # - run: pnpm run build
-      - name: colect files
+      - name: collect files
         run: |
               mkdir -p ./release/tomoon/bin/core/web
               mkdir -p ./release/tomoon/dist
