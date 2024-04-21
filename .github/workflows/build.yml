@@ -5,6 +5,9 @@ on:
 
 name:  ToMoon Auto Build
 
+permissions:
+  contents: write
+
 jobs:
   linux_amd64:
     name: Linux AMD64
