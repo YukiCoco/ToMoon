@@ -15,9 +15,20 @@ jobs:
       - name: Set env
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       
-      - name: download asset files
-        run: wget https://github.com/YukiCoco/ToMoon/releases/download/build/build_assets.zip
-      - run: unzip -n build_assets.zip -d tmp/
+      - name: Download Clash and Yacd
+        run: |
+              mkdir tmp && cd tmp
+              mkdir core && cd core
+              # Mihomo (Clash Meta)
+              wget -O clash.gz https://github.com/MetaCubeX/mihomo/releases/download/v1.18.3/mihomo-linux-amd64-v1.18.3.gz
+              gzip -d clash.gz
+              # country.mmdb
+              wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country.mmdb
+              # yacd
+              wget -O yacd.zip https://github.com/MetaCubeX/yacd/archive/gh-pages.zip
+              unzip yacd.zip
+              mv Yacd-meta-gh-pages web
+
       # build front-end start
       - uses: actions/setup-node@v3
         with:
@@ -27,7 +38,7 @@ jobs:
           version: 7.12.2
       - name: Install Requestment
         run: | 
-             cp -r tmp/usdpl src/
+             cp -r usdpl src/
              pnpm i
       - name: build front end
         run: pnpm run build
@@ -75,7 +86,6 @@ jobs:
               cp plugin.json ./release/tomoon/plugin.json
               cp package.json ./release/tomoon/package.json
               cp -r ./tmp/core ./release/tomoon/bin/
-              cp -r ./tmp/smartdns ./release/tomoon/bin/
               cp -r ./tomoon-web/dist ./release/tomoon/web
               cp -r ./py_modules ./release/tomoon/py_modules
               cd ./release 
