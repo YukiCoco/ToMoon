@@ -27,6 +27,7 @@ import axios from "axios";
 
 let enabledGlobal = false;
 let enabledSkipProxy = false;
+let enabledOverrideDNS = false;
 let usdplReady = false;
 let subs: any[];
 let subs_option: any[];
@@ -43,9 +44,10 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   }
   const [clashState, setClashState] = useState(enabledGlobal);
   backend.resolve(backend.getEnabled(), setClashState);
-  axios.get("http://127.0.0.1:55556/get_skip_proxy").then(r => {
+  axios.get("http://127.0.0.1:55556/get_config").then(r => {
     if (r.data.status_code == 200) {
       enabledSkipProxy = r.data.skip_proxy;
+      enabledOverrideDNS = r.data.override_dns;
     }
   })
   //setInterval(refreshSubOptions, 2000);
@@ -57,6 +59,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   const [isSelectionDisabled, setIsSelectionDisabled] = useState(false);
   const [SelectionTips, setSelectionTips] = useState("Run Clash in background");
   const [skipProxyState, setSkipProxyState] = useState(enabledSkipProxy);
+  const [overrideDNSState, setOverrideDNSState] = useState(enabledOverrideDNS);
 
   const update_subs = () => {
     backend.resolve(backend.getSubList(), (v: String) => {
@@ -190,6 +193,22 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
           >
           </ToggleField>
         </PanelSectionRow>
+        <PanelSectionRow>
+          <ToggleField
+            label="Override DNS Config"
+            description="Force Clash to hijack DNS query"
+            checked={overrideDNSState}
+            onChange={(value: boolean) => {
+              axios.post("http://127.0.0.1:55556/override_dns", {
+                override_dns: value
+              }, {
+                headers: { 'content-type': 'application/x-www-form-urlencoded' },
+              });
+              setOverrideDNSState(value);
+            }}
+          >
+          </ToggleField>
+        </PanelSectionRow>
       </PanelSection>
 
       <PanelSection title="Tools">
@@ -247,11 +266,12 @@ export default definePlugin((serverApi: ServerAPI) => {
     backend.resolve(backend.getEnabled(), (v: boolean) => {
       enabledGlobal = v;
     });
-    axios.get("http://127.0.0.1:55556/get_skip_proxy").then(r => {
+    axios.get("http://127.0.0.1:55556/get_config").then(r => {
       if (r.data.status_code == 200) {
         enabledSkipProxy = r.data.skip_proxy;
+        enabledOverrideDNS = r.data.override_dns;
       }
-    })
+    });
   })();
 
 

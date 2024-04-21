@@ -260,39 +260,10 @@ impl Default for Clash {
 }
 
 impl Clash {
-    pub fn run(&mut self, config_path: &String, skip_proxy: bool) -> Result<(), ClashError> {
-        //没有 Country.mmdb
-        let country_db_path = "/root/.config/clash/Country.mmdb";
-        if let Some(parent) = PathBuf::from(country_db_path).parent() {
-            if let Err(e) = std::fs::create_dir_all(parent) {
-                log::error!("Failed while creating /root/.config/clash dir.");
-                log::error!("Error Message:{}", e);
-                return Err(ClashError {
-                    ErrorKind: ClashErrorKind::CpDbError,
-                    Message: "Error occurred while creating /root/.config/clash dir.".to_string(),
-                });
-            }
-        }
-        let new_country_db_path = get_current_working_dir()
-            .unwrap()
-            .join("bin/core/Country.mmdb");
-        if !PathBuf::from(country_db_path).is_file() {
-            match fs::copy(new_country_db_path, country_db_path) {
-                Ok(_) => {
-                    log::info!("cp Country.mmdb to .clash dir");
-                }
-                Err(e) => {
-                    log::info!("Error occurred while coping Country.mmdb");
-                    return Err(ClashError {
-                        Message: e.to_string(),
-                        ErrorKind: ClashErrorKind::CpDbError,
-                    });
-                }
-            }
-        }
+    pub fn run(&mut self, config_path: &String, skip_proxy: bool, override_dns: bool) -> Result<(), ClashError> {
         self.update_config_path(config_path);
         // 修改配置文件为推荐配置
-        match self.change_config(skip_proxy) {
+        match self.change_config(skip_proxy, override_dns) {
             Ok(_) => (),
             Err(e) => {
                 return Err(ClashError {
@@ -301,48 +272,15 @@ impl Clash {
                 });
             }
         }
-        //在 clash 启动前修改 DNS
-        //先结束 systemd-resolve ，否则会因为端口占用启动失败
-        match helper::set_system_network() {
-            Ok(_) => {
-                log::info!("Successfully set network status");
-            }
-            Err(e) => {
-                log::error!("Error occurred while setting system network: {}", e);
-                return Err(ClashError {
-                    Message: e.to_string(),
-                    ErrorKind: ClashErrorKind::NetworkError,
-                });
-            }
-        }
 
         //log::info!("Pre-setting network");
         //TODO: 未修改的 unwarp
-        let run_config = get_current_working_dir()
+        let running_dir = get_current_working_dir()
             .unwrap()
-            .join("bin/core/running_config.yaml");
+            .join("bin/core/");
+        let run_config = running_dir.join("running_config.yaml");
         let outputs = fs::File::create("/tmp/tomoon.clash.log").unwrap();
         let errors = outputs.try_clone().unwrap();
-
-        let smartdns_path = get_current_working_dir()
-            .unwrap()
-            .join("bin/smartdns/smartdns");
-
-        let smartdns_config_path = get_current_working_dir()
-            .unwrap()
-            .join("bin/smartdns/config.conf");
-
-        // let smartdns_outputs = fs::File::create("/tmp/tomoon.smartdns.log").unwrap();
-        // let smartdns_errors = outputs.try_clone().unwrap();
-
-        // 启动 SmartDNS 作为 DNS 上游
-        let smart_dns = Command::new(smartdns_path)
-            .arg("-c")
-            .arg(smartdns_config_path)
-            .arg("-f")
-            // .stdout(smartdns_outputs)
-            // .stderr(smartdns_errors)
-            .spawn();
 
         let clash = Command::new(self.path.clone())
             .arg("-f")
@@ -359,7 +297,6 @@ impl Clash {
             }
         };
         self.instence = Some(clash.unwrap());
-        self.smartdns_instence = Some(smart_dns.unwrap());
         Ok(())
     }
 
@@ -370,33 +307,12 @@ impl Clash {
                 x.kill()?;
                 x.wait()?;
 
-                // 复原 DNS
-                //弃用，因为可能是在中途换过 WiFi 导致原有 DNS 失效
-                // Command::new("chattr")
-                //     .arg("-i")
-                //     .arg("/etc/resolv.conf")
-                //     .spawn()
-                //     .unwrap()
-                //     .wait()
-                //     .unwrap();
-                // fs::copy("./resolv.conf.bk", "/etc/resolv.conf")?;
-
                 //直接重置网络
                 helper::reset_system_network()?;
             }
             None => {
                 //Not launch Clash yet...
                 log::error!("Error occurred while disabling Clash: Not launch Clash yet");
-            }
-        };
-        let smartdns_instance = self.smartdns_instence.as_mut();
-        match smartdns_instance {
-            Some(x) => {
-                x.kill()?;
-                x.wait()?;
-            }
-            None => {
-                log::error!("Error occurred while disabling SmartDNS : Not launch SmartDNS yet");
             }
         };
         Ok(())
@@ -406,7 +322,7 @@ impl Clash {
         self.config = std::path::PathBuf::from((*path).clone());
     }
 
-    pub fn change_config(&self, skip_proxy: bool) -> Result<(), Box<dyn error::Error>> {
+    pub fn change_config(&self, skip_proxy: bool, override_dns: bool) -> Result<(), Box<dyn error::Error>> {
         let path = self.config.clone();
         let config = fs::read_to_string(path)?;
         let mut yaml: serde_yaml::Value = serde_yaml::from_str(config.as_str())?;
@@ -447,19 +363,6 @@ impl Clash {
             }
         }
 
-        //下载 rules-provider
-        if let Some(x) = yaml.get_mut("rule-providers") {
-            let provider = x.as_mapping().unwrap();
-            match self.downlaod_proxy_providers(provider) {
-                Ok(_) => {
-                    log::info!("All rules provider downloaded");
-                }
-                Err(e) => return Err(Box::new(e)),
-            }
-        } else {
-            log::info!("no rule-providers found.");
-        }
-
         let webui_dir = get_current_working_dir()?.join("bin/core/web");
 
         match yaml.get_mut("external-ui") {
@@ -482,32 +385,47 @@ impl Clash {
         stack: system
         auto-route: true
         auto-detect-interface: true
+        dns-hijack:
+            - any:53
         ";
 
         //部分配置来自 https://www.xkww3n.cyou/2022/02/08/use-clash-dns-anti-dns-hijacking/
 
-        let dns_config = match helper::is_resolve_running() {
-            true => {
-                "
+        let dns_config = "
         enable: true
-        listen: 0.0.0.0:5354
+        listen: 127.0.0.1:8853
+        default-nameserver:
+            - 223.5.5.5
+            - 8.8.4.4
+        ipv6: false
         enhanced-mode: fake-ip
-        fake-ip-range: 198.18.0.1/16
         nameserver:
-            - tcp://127.0.0.1:5353
-        "
-            }
-            false => {
-                "
-        enable: true
-        listen: 0.0.0.0:53
-        enhanced-mode: fake-ip
-        fake-ip-range: 198.18.0.1/16
-        nameserver:
-            - tcp://127.0.0.1:5353
-        "
-            }
-        };
+            - 119.29.29.29
+            - 223.5.5.5
+            - tls://223.5.5.5:853
+            - tls://223.6.6.6:853
+        fallback:
+            - https://1.0.0.1/dns-query
+            - https://public.dns.iij.jp/dns-query
+            - tls://8.8.4.4:853
+        fallback-filter:
+            geoip: false
+            ipcidr:
+            - 240.0.0.0/4
+            - 0.0.0.0/32
+            - 127.0.0.1/32
+        fake-ip-filter:
+            - \"*.lan\"
+            - \"*.localdomain\"
+            - \"*.localhost\"
+            - \"*.local\"
+            - \"*.home.arpa\"
+            - stun.*.*
+            - stun.*.*.*
+            - +.stun.*.*
+            - +.stun.*.*.*
+            - +.stun.*.*.*.*
+        ";
 
         let profile_config = "
         store-selected: true
@@ -533,8 +451,10 @@ impl Clash {
         match yaml.get("dns") {
             Some(_) => {
                 //删除 DNS 配置
-                yaml.remove("dns").unwrap();
-                insert_config(yaml, dns_config, "dns");
+                if override_dns {
+                    yaml.remove("dns").unwrap();
+                    insert_config(yaml, dns_config, "dns");
+                }
             }
             None => {
                 insert_config(yaml, dns_config, "dns");
@@ -559,83 +479,4 @@ impl Clash {
         Ok(())
     }
 
-    pub fn downlaod_proxy_providers(&self, yaml: &serde_yaml::Mapping) -> Result<(), ClashError> {
-        for (_, value) in yaml {
-            if let Some(url) = value.get("url") {
-                if let Some(path) = value.get("path") {
-                    //替换有些规则前的 ./
-                    let r = regex::Regex::new(r"^\./").unwrap();
-                    let result = r.replace(path.as_str().unwrap(), "");
-                    let save_path = PathBuf::from("/root/.config/clash/").join(result.to_string());
-                    if !save_path.exists() {
-                        match minreq::get(url.as_str().unwrap())
-                            .with_timeout(30)
-                            .with_header("User-Agent", format!("ToMoonClash/{}",env!("CARGO_PKG_VERSION")))
-                            .send()
-                        {
-                            Ok(response) => {
-                                let response = match response.as_str() {
-                                    Ok(x) => x,
-                                    Err(_) => {
-                                        log::error!("Error occurred while parase Rule Provder.");
-                                        return Err(ClashError {
-                                            ErrorKind: ClashErrorKind::RuleProviderDownloadError,
-                                            Message: String::from(
-                                                "Error occurred while parase Rule Provder.",
-                                            ),
-                                        });
-                                    }
-                                };
-
-                                //保存订阅
-                                if let Some(parent) = save_path.parent() {
-                                    if let Err(e) = std::fs::create_dir_all(parent) {
-                                        log::error!("Failed while creating sub dir.");
-                                        log::error!("Error Message:{}", e);
-                                        return Err(ClashError {
-                                            ErrorKind: ClashErrorKind::RuleProviderDownloadError,
-                                            Message:
-                                                "Error occurred while creating Rule Provder dir."
-                                                    .to_string(),
-                                        });
-                                    }
-                                }
-
-                                match fs::write(save_path.clone(), response) {
-                                    Ok(_) => {
-                                        log::info!(
-                                            "Rule-Provider {} downloaded.",
-                                            save_path.display()
-                                        );
-                                    }
-                                    Err(_) => {
-                                        log::error!(
-                                            "Error occurred while saving Rule Provder. path: {}",
-                                            save_path.clone().to_str().unwrap()
-                                        );
-                                        return Err(ClashError {
-                                            ErrorKind: ClashErrorKind::RuleProviderDownloadError,
-                                            Message:
-                                                "Error occurred while downloading Rule Provder."
-                                                    .to_string(),
-                                        });
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                let in_msg = e.to_string();
-                                let mut err_msg = String::from("Error occurred while downloading Rule Provder with error message : ");
-                                err_msg.push_str(in_msg.as_str());
-                                return Err(ClashError {
-                                    ErrorKind: ClashErrorKind::RuleProviderDownloadError,
-                                    Message: err_msg,
-                                });
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        Ok(())
-    }
 }
