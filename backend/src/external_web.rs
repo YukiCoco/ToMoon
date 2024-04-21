@@ -331,12 +331,36 @@ pub async fn download_sub(
                         ErrorKind: ClashErrorKind::ConfigFormatError,
                     }));
                 }
-                let s: String = rand::thread_rng()
-                    .sample_iter(&Alphanumeric)
-                    .take(5)
-                    .map(char::from)
-                    .collect();
-                let path = path.join(s + ".yaml");
+                let filename = x.headers.get("content-disposition");
+                let filename = match filename {
+                    Some(x) => {
+                        let filename = x
+                            .split("filename=").collect::<Vec<&str>>()[1]
+                            .split(";").collect::<Vec<&str>>()[0]
+                            .replace("\"", "");
+                        filename.to_string()
+                    }
+                    None => {
+                        let slash_split = *url.split("/").collect::<Vec<&str>>().last().unwrap();
+                        slash_split.split("?").collect::<Vec<&str>>().first().unwrap().to_string()
+                    }
+                };
+                let filename = if filename.is_empty() {
+                    log::warn!("The downloaded subscription does not have a file name.");
+                    rand::thread_rng()
+                        .sample_iter(&Alphanumeric)
+                        .take(5)
+                        .map(char::from)
+                        .collect()
+                } else {
+                    filename
+                };
+                let filename = if filename.ends_with(".yaml") || filename.ends_with(".yml"){
+                    filename
+                } else {
+                    filename + ".yaml"
+                };
+                let path = path.join(filename);
                 //保存订阅
                 if let Some(parent) = path.parent() {
                     if let Err(e) = std::fs::create_dir_all(parent) {

@@ -205,16 +205,13 @@ pub struct Clash {
     pub path: std::path::PathBuf,
     pub config: std::path::PathBuf,
     pub instence: Option<Child>,
-    pub smartdns_instence: Option<Child>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ClashErrorKind {
     ConfigFormatError,
     ConfigNotFound,
-    RuleProviderDownloadError,
     NetworkError,
-    CpDbError,
     InnerError,
     Default,
 }
@@ -254,7 +251,6 @@ impl Default for Clash {
                 .unwrap()
                 .join("bin/core/config.yaml"),
             instence: None,
-            smartdns_instence: None,
         }
     }
 }
