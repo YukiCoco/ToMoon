@@ -92,7 +92,7 @@ impl State {
 impl Default for State {
     fn default() -> Self {
         Self {
-            home: "/home/deck".into(),
+            home: "/root".into(),
             dirty: true,
         }
     }

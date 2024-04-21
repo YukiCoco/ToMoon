@@ -223,7 +223,7 @@ pub async fn download_sub(
         runtime_state = runtime.state_clone();
     }
 
-    let path: PathBuf = PathBuf::from("/home/deck/.config/tomoon/subs");
+    let path: PathBuf = usdpl_back::api::dirs::home().unwrap_or("/root".into()).join(".config/tomoon/subs/");
 
     //是一个本地文件
     if let Some(local_file) = helper::get_file_path(url.clone()) {
