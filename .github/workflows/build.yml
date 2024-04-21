@@ -56,7 +56,7 @@ jobs:
           command: build
           directory: ./backend
           args: --target x86_64-unknown-linux-gnu --release
-          use-cross: true
+          use-cross: false
       # build backend end
       #build tomoon stop
       #output: # ToMoon/backend/target/x86_64-unknown-linux-gnu/release/tomoon
