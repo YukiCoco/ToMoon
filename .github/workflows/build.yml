@@ -5,13 +5,12 @@ on:
 
 name:  ToMoon Auto Build
 
-permissions:
-  contents: write
-
 jobs:
   linux_amd64:
     name: Linux AMD64
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       #build tomoon start
       - uses: actions/checkout@v3
