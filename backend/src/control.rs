@@ -279,6 +279,8 @@ impl Clash {
         let errors = outputs.try_clone().unwrap();
 
         let clash = Command::new(self.path.clone())
+            .arg("-d")
+            .arg(running_dir)
             .arg("-f")
             .arg(run_config)
             .stdout(outputs)
