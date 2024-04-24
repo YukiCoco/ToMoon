@@ -2,9 +2,8 @@
 ## 功能  
 **使用 ToMoon，让您在恶劣的网络环境下可以打开任何界面，体验到完整的 Steam Deck**  
 1. 提供开箱即用的 Clash SteamOS 客户端，由 Rust 驱动
-2. 自动配置 DNS，使用 [SmartDNS](https://pymumu.github.io/smartdns/) 作为 DNS 上游，基于分流规则绕过 DNS 污染
-3. 自动配置 FAKE-IP 模式，让游戏流量通过 TCP / UDP 加速
-4. 基于 [yacd](https://github.com/haishanh/yacd) 的策略管理仪表盘  
+2. 自动配置 FAKE-IP 模式，让游戏流量通过 TCP / UDP 加速
+3. 基于 [yacd](https://github.com/MetaCubeX/Yacd-meta) 的策略管理仪表盘  
 
 ## 安装
 如果已经安装过 Plugin Loader 2.0 以上版本，直接从第 8 点开始即可。  

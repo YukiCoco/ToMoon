@@ -27,6 +27,11 @@ pub struct SkipProxyParams {
     skip_proxy: bool,
 }
 
+#[derive(Deserialize)]
+pub struct OverrideDNSParams {
+    override_dns: bool,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct GenLinkResponse {
     status_code: u16,
@@ -35,6 +40,12 @@ pub struct GenLinkResponse {
 
 #[derive(Serialize, Deserialize)]
 pub struct SkipProxyResponse {
+    status_code: u16,
+    message: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct OverrideDNSResponse {
     status_code: u16,
     message: String,
 }
@@ -50,9 +61,10 @@ pub struct GetLinkResponse {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct GetSkipProxyResponse {
+pub struct GetConfigResponse {
     status_code: u16,
     skip_proxy: bool,
+    override_dns: bool,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -125,7 +137,51 @@ pub async fn skip_proxy(
     Ok(HttpResponse::Ok().json(r))
 }
 
-pub async fn get_skip_proxy(state: web::Data<AppState>) -> Result<HttpResponse> {
+pub async fn override_dns(
+    state: web::Data<AppState>,
+    params: web::Form<OverrideDNSParams>,
+) -> Result<HttpResponse> {
+    let override_dns = params.override_dns.clone();
+    let runtime = state.runtime.lock().unwrap();
+    let runtime_settings;
+    let runtime_state;
+    unsafe {
+        let runtime = runtime.0.as_ref().unwrap();
+        runtime_settings = runtime.settings_clone();
+        runtime_state = runtime.state_clone();
+    }
+    match runtime_settings.write() {
+        Ok(mut x) => {
+            x.override_dns = override_dns;
+            let mut state = match runtime_state.write() {
+                Ok(x) => x,
+                Err(e) => {
+                    log::error!("set_enable failed to acquire state write lock: {}", e);
+                    return Err(actix_web::Error::from(ClashError {
+                        Message: e.to_string(),
+                        ErrorKind: ClashErrorKind::InnerError,
+                    }));
+                }
+            };
+            state.dirty = true;
+        }
+        Err(e) => {
+            log::error!("Failed while toggle override dns.");
+            log::error!("Error Message:{}", e);
+            return Err(actix_web::Error::from(ClashError {
+                Message: e.to_string(),
+                ErrorKind: ClashErrorKind::ConfigNotFound,
+            }));
+        }
+    }
+    let r = OverrideDNSResponse {
+        message: "修改成功".to_string(),
+        status_code: 200,
+    };
+    Ok(HttpResponse::Ok().json(r))
+}
+
+pub async fn get_config(state: web::Data<AppState>) -> Result<HttpResponse> {
     let runtime = state.runtime.lock().unwrap();
     let runtime_settings;
     unsafe {
@@ -134,8 +190,9 @@ pub async fn get_skip_proxy(state: web::Data<AppState>) -> Result<HttpResponse> 
     }
     match runtime_settings.read() {
         Ok(x) => {
-            let r = GetSkipProxyResponse {
+            let r = GetConfigResponse {
                 skip_proxy: x.skip_proxy,
+                override_dns: x.override_dns,
                 status_code: 200,
             };
             return Ok(HttpResponse::Ok().json(r));
@@ -166,7 +223,7 @@ pub async fn download_sub(
         runtime_state = runtime.state_clone();
     }
 
-    let path: PathBuf = PathBuf::from("/home/deck/.config/tomoon/subs");
+    let path: PathBuf = usdpl_back::api::dirs::home().unwrap_or("/root".into()).join(".config/tomoon/subs/");
 
     //是一个本地文件
     if let Some(local_file) = helper::get_file_path(url.clone()) {
@@ -274,12 +331,36 @@ pub async fn download_sub(
                         ErrorKind: ClashErrorKind::ConfigFormatError,
                     }));
                 }
-                let s: String = rand::thread_rng()
-                    .sample_iter(&Alphanumeric)
-                    .take(5)
-                    .map(char::from)
-                    .collect();
-                let path = path.join(s + ".yaml");
+                let filename = x.headers.get("content-disposition");
+                let filename = match filename {
+                    Some(x) => {
+                        let filename = x
+                            .split("filename=").collect::<Vec<&str>>()[1]
+                            .split(";").collect::<Vec<&str>>()[0]
+                            .replace("\"", "");
+                        filename.to_string()
+                    }
+                    None => {
+                        let slash_split = *url.split("/").collect::<Vec<&str>>().last().unwrap();
+                        slash_split.split("?").collect::<Vec<&str>>().first().unwrap().to_string()
+                    }
+                };
+                let filename = if filename.is_empty() {
+                    log::warn!("The downloaded subscription does not have a file name.");
+                    rand::thread_rng()
+                        .sample_iter(&Alphanumeric)
+                        .take(5)
+                        .map(char::from)
+                        .collect()
+                } else {
+                    filename
+                };
+                let filename = if filename.ends_with(".yaml") || filename.ends_with(".yml"){
+                    filename
+                } else {
+                    filename + ".yaml"
+                };
+                let path = path.join(filename);
                 //保存订阅
                 if let Some(parent) = path.parent() {
                     if let Err(e) = std::fs::create_dir_all(parent) {

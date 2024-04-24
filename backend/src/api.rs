@@ -83,7 +83,7 @@ pub fn set_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
                     }
                 }
                 if *enabled {
-                    match clash.run(&settings.current_sub, settings.skip_proxy) {
+                    match clash.run(&settings.current_sub, settings.skip_proxy, settings.override_dns) {
                         Ok(_) => (),
                         Err(e) => {
                             log::error!("Run clash error: {}", e);
@@ -560,9 +560,8 @@ pub fn create_debug_log() -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
     //let update_status = runtime.update_status_clone();
     move |_| {
         let running_status = format!(
-            "Clash status : {}, SmartDNS status: {} \n",
-            helper::is_clash_running(),
-            helper::is_samrtdns_running()
+            "Clash status : {}\n",
+            helper::is_clash_running()
         );
         let tomoon_config = match fs::read_to_string("/home/deck/.config/tomoon/tomoon.json") {
             Ok(x) => x,

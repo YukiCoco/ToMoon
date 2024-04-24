@@ -7,10 +7,10 @@ use crate::helper;
 pub struct Settings {
     #[serde(default = "default_enable")]
     pub enable: bool,
-    #[serde(default = "default_tun_mode")]
-    pub tun_mode: bool,
     #[serde(default = "default_skip_proxy")]
     pub skip_proxy: bool,
+    #[serde(default = "default_override_dns")]
+    pub override_dns: bool,
     #[serde(default = "default_current_sub")]
     pub current_sub: String,
     #[serde(default = "default_subscriptions")]
@@ -25,7 +25,7 @@ fn default_enable() -> bool {
     false
 }
 
-fn default_tun_mode() -> bool {
+fn default_override_dns() -> bool {
     true
 }
 
@@ -92,7 +92,7 @@ impl State {
 impl Default for State {
     fn default() -> Self {
         Self {
-            home: "/home/deck".into(),
+            home: "/root".into(),
             dirty: true,
         }
     }
@@ -120,8 +120,8 @@ impl Default for Settings {
         let default_profile = helper::get_current_working_dir().unwrap().join("bin/core/config.yaml");
         Self {
             enable: false,
-            tun_mode: true,
             skip_proxy: true,
+            override_dns: true,
             current_sub: default_profile.to_string_lossy().to_string(),
             subscriptions: Vec::new()
         }

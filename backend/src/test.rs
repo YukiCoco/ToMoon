@@ -35,26 +35,10 @@ mod tests {
     #[test]
     fn run_clash() {
         //TODO: no such files
-        let outputs = fs::File::create("/tmp/tomoon.smartdns.log").unwrap();
-        let errors = outputs.try_clone().unwrap();
-        let mut samrtdns = Command::new("/home/deck/smartdns")
-            .arg("-c")
-            .arg("/home/deck/config.conf")
-            .arg("-f")
-            // .stdout(outputs)
-            // .stderr(errors)
-            .spawn()
-            .unwrap();
         println!("{}", std::env::current_dir().unwrap().to_str().unwrap());
         // clash
         //     .run(&String::from("/home/deck/.config/tomoon/subs/Ob3jZ.yaml"))
         //     .unwrap();
-        println!("run smartDNS");
-        thread::sleep(Duration::from_secs(3));
-        println!("disable smartDNS");
-        samrtdns.kill().unwrap();
-        samrtdns.wait().unwrap();
-        thread::sleep(Duration::from_secs(3));
     }
 
     #[test]
@@ -88,7 +72,7 @@ mod tests {
     fn test_yaml() {
         println!("{}", std::env::current_dir().unwrap().to_str().unwrap());
         let mut clash = control::Clash::default();
-        clash.change_config(true);
+        clash.change_config(true, true);
     }
 
     #[test]
@@ -274,9 +258,8 @@ mod tests {
     #[test]
     fn debug_log() {
         let running_status = format!(
-            "Clash status : {}, SmartDNS status: {} \n",
-            helper::is_clash_running(),
-            helper::is_samrtdns_running()
+            "Clash status : {} \n",
+            helper::is_clash_running()
         );
         let tomoon_log = match fs::read_to_string("/tmp/tomoon.log") {
             Ok(x) => x,
