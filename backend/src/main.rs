@@ -54,6 +54,7 @@ async fn main() -> Result<(), std::io::Error> {
             .register("download_sub", api::download_sub(&runtime))
             .register("get_download_status", api::get_download_status(&runtime))
             .register("get_sub_list", api::get_sub_list(&runtime))
+            .register("get_current_sub", api::get_current_sub(&runtime))
             .register("delete_sub", api::delete_sub(&runtime))
             .register("set_sub", api::set_sub(&runtime))
             .register("update_subs", api::update_subs(&runtime))

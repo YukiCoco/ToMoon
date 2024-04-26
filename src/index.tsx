@@ -12,7 +12,7 @@ import {
   Navigation,
   DropdownItem,
 } from "decky-frontend-lib";
-import { VFC, useState } from "react";
+import { VFC, useEffect, useState } from "react";
 import { GiEgyptianBird } from "react-icons/gi";
 
 import {
@@ -60,9 +60,11 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   const [SelectionTips, setSelectionTips] = useState("Run Clash in background");
   const [skipProxyState, setSkipProxyState] = useState(enabledSkipProxy);
   const [overrideDNSState, setOverrideDNSState] = useState(enabledOverrideDNS);
+  const [currentSub, setCurrentSub] = useState<string>("");
 
   const update_subs = () => {
     backend.resolve(backend.getSubList(), (v: String) => {
+      console.log(`getSubList: ${v}`);
       let x: Array<any> = JSON.parse(v.toString());
       let re = new RegExp("(?<=subs\/).+\.yaml$");
       let i = 0;
@@ -89,6 +91,14 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   }
 
   update_subs();
+
+  useEffect(() => {
+    const getCurrentSub = async () => {
+      const sub = await backend.getCurrentSub();
+      setCurrentSub(`${sub}`);
+    }
+    getCurrentSub();
+  }, []);
 
   return (
     <div>
@@ -139,7 +149,8 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
         <PanelSectionRow>
           <DropdownItem
             disabled={optionDropdownDisabled}
-            strDefaultLabel="Select a Subscription"
+            // strDefaultLabel="Select a Subscription"
+            strDefaultLabel={currentSub ? currentSub : "Select a Subscription"}
             rgOptions={options}
             selectedOption={selectedOption}
             onMenuWillOpen={() => {

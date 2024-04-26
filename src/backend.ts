@@ -81,6 +81,10 @@ export async function getRunningStatus(): Promise<String> {
   return (await call_backend("get_running_status", []))[0];
 }
 
+export async function getCurrentSub(): Promise<String> {
+  return (await call_backend("get_current_sub", []))[0];
+}
+
 export class PyBackendData {
   private serverAPI: ServerAPI | undefined;
   private current_version = "";

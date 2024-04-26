@@ -388,6 +388,22 @@ pub fn get_sub_list(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<
     }
 }
 
+// get_current_sub 获取当前订阅
+pub fn get_current_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
+    let runtime_setting = runtime.settings_clone();
+    move |_| {
+        match runtime_setting.read() {
+            Ok(x) => {
+                return vec![x.current_sub.clone().into()];
+            }
+            Err(e) => {
+                log::error!("get_current_sub() faild , {}", e);
+            }
+        }
+        return vec![];
+    }
+}
+
 pub fn delete_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
     let runtime_setting = runtime.settings_clone();
     let runtime_state = runtime.state_clone();
