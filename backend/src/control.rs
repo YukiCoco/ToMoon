@@ -275,6 +275,9 @@ impl Clash {
         let new_geosite_path = get_current_working_dir()
             .unwrap()
             .join("bin/core/geosite.dat");
+        let country_db_path = decky_data_dir.join("country.mmdb");
+        let asn_db_path = decky_data_dir.join("asn.mmdb");
+        let geosite_path = decky_data_dir.join("geosite.dat");
 
         // 检查 decky_data_dir 是否存在，不存在则创建
         if !decky_data_dir.exists() {
@@ -282,7 +285,7 @@ impl Clash {
         }
 
         // 检查数据库文件是否存在，不存在则复制
-        if !PathBuf::from(new_country_db_path).is_file() {
+        if !PathBuf::from(country_db_path).is_file() {
             match fs::copy(
                 get_current_working_dir().unwrap().join("bin/core/country.mmdb"),
                 decky_data_dir.join("country.mmdb"),
@@ -299,7 +302,7 @@ impl Clash {
             }
         }
 
-        if !PathBuf::from(new_asn_db_path).is_file() {
+        if !PathBuf::from(asn_db_path).is_file() {
             match fs::copy(
                 get_current_working_dir().unwrap().join("bin/core/asn.mmdb"),
                 decky_data_dir.join("asn.mmdb"),
@@ -316,7 +319,7 @@ impl Clash {
             }
         }
         
-        if !PathBuf::from(new_geosite_path).is_file() {
+        if !PathBuf::from(geosite_path).is_file() {
             match fs::copy(
                 get_current_working_dir().unwrap().join("bin/core/geosite.dat"),
                 decky_data_dir.join("geosite.dat"),
