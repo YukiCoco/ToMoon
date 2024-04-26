@@ -275,9 +275,13 @@ impl Clash {
         let new_geosite_path = get_current_working_dir()
             .unwrap()
             .join("bin/core/geosite.dat");
+        let new_geoip_path = get_current_working_dir()
+            .unwrap()
+            .join("bin/core/geoip.metadb");
         let country_db_path = decky_data_dir.join("country.mmdb");
         let asn_db_path = decky_data_dir.join("asn.mmdb");
         let geosite_path = decky_data_dir.join("geosite.dat");
+        let geoip_path = decky_data_dir.join("geoip.metadb");
 
         // 检查 decky_data_dir 是否存在，不存在则创建
         if !decky_data_dir.exists() {
@@ -326,6 +330,23 @@ impl Clash {
             ) {
                 Ok(_) => {
                     log::info!("Copy geosite.dat to decky data dir")
+                },
+                Err(e) => {
+                    return Err(ClashError {
+                        Message: e.to_string(),
+                        ErrorKind: ClashErrorKind::CpDbError,
+                    });
+                }
+            }
+        }
+
+        if !PathBuf::from(geoip_path).is_file() {
+            match fs::copy(
+                get_current_working_dir().unwrap().join("bin/core/geoip.metadb"),
+                decky_data_dir.join("geoip.metadb"),
+            ) {
+                Ok(_) => {
+                    log::info!("Copy geoip.metadb to decky data dir")
                 },
                 Err(e) => {
                     return Err(ClashError {

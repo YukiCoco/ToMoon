@@ -25,6 +25,7 @@ jobs:
           wget -O clash.gz https://github.com/MetaCubeX/mihomo/releases/download/v1.18.3/mihomo-linux-amd64-v1.18.3.gz
           gzip -d clash.gz
           # country.mmdb & geosite.dat
+          wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.metadb
           wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country.mmdb
           wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat
           wget -O asn.mmdb https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-ASN.mmdb
