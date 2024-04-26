@@ -72,14 +72,14 @@ jobs:
           cp -r ./tomoon-web/dist ./release/tomoon/web
           cp -r ./py_modules ./release/tomoon/py_modules
           cd ./release 
-          zip -r tomoon.zip tomoon
+          zip -r tomoon-${{ github.ref_name }}.zip tomoon
           cd ..
 
       - name: Publish Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: tomoon-artifacts
-          path: ./release/tomoon.zip
+          path: ./release/tomoon*.zip
           if-no-files-found: error
 
 
@@ -101,7 +101,7 @@ jobs:
       - name: publish to github release
         uses: softprops/action-gh-release@v2
         with:
-          files: /tmp/artifacts/tomoon-artifacts/tomoon.zip
+          files: /tmp/artifacts/tomoon-artifacts/tomoon*.zip
           name: Release ${{ github.ref_name }}
           draft: false
           generate_release_notes: true
