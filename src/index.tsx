@@ -95,7 +95,9 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   useEffect(() => {
     const getCurrentSub = async () => {
       const sub = await backend.getCurrentSub();
-      setCurrentSub(`${sub}`);
+      const re = new RegExp("(?<=subs\/).+\.yaml$");
+      const name = re.exec(sub);
+      setCurrentSub(name?.[0] || "");
     }
     getCurrentSub();
   }, []);
