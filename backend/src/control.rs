@@ -289,10 +289,10 @@ impl Clash {
         }
 
         // 检查数据库文件是否存在，不存在则复制
-        if !PathBuf::from(country_db_path).is_file() {
+        if !PathBuf::from(country_db_path.clone()).is_file() {
             match fs::copy(
-                get_current_working_dir().unwrap().join("bin/core/country.mmdb"),
-                decky_data_dir.join("country.mmdb"),
+                new_country_db_path.clone(),
+                country_db_path.clone(),
             ) {
                 Ok(_) => {
                     log::info!("Copy country.mmdb to decky data dir")
@@ -306,10 +306,10 @@ impl Clash {
             }
         }
 
-        if !PathBuf::from(asn_db_path).is_file() {
+        if !PathBuf::from(asn_db_path.clone()).is_file() {
             match fs::copy(
-                get_current_working_dir().unwrap().join("bin/core/asn.mmdb"),
-                decky_data_dir.join("asn.mmdb"),
+                new_asn_db_path.clone(),
+                asn_db_path.clone(),
             ) {
                 Ok(_) => {
                     log::info!("Copy asn.mmdb to decky data dir")
@@ -323,10 +323,10 @@ impl Clash {
             }
         }
         
-        if !PathBuf::from(geosite_path).is_file() {
+        if !PathBuf::from(geosite_path.clone()).is_file() {
             match fs::copy(
-                get_current_working_dir().unwrap().join("bin/core/geosite.dat"),
-                decky_data_dir.join("geosite.dat"),
+                new_geosite_path.clone(),
+                geosite_path.clone(),
             ) {
                 Ok(_) => {
                     log::info!("Copy geosite.dat to decky data dir")
@@ -340,10 +340,10 @@ impl Clash {
             }
         }
 
-        if !PathBuf::from(geoip_path).is_file() {
+        if !PathBuf::from(geoip_path.clone()).is_file() {
             match fs::copy(
-                get_current_working_dir().unwrap().join("bin/core/geoip.metadb"),
-                decky_data_dir.join("geoip.metadb"),
+                new_geoip_path.clone(),
+                geoip_path.clone()
             ) {
                 Ok(_) => {
                     log::info!("Copy geoip.metadb to decky data dir")
