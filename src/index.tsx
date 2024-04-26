@@ -31,6 +31,7 @@ let enabledOverrideDNS = false;
 let usdplReady = false;
 let subs: any[];
 let subs_option: any[];
+let current_sub = '';
 
 
 const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
@@ -52,15 +53,14 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   })
   //setInterval(refreshSubOptions, 2000);
   console.log("status :" + clashState);
-  let [options, setOptions] = useState<DropdownOption[]>(subs_option);
-  // const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [options, setOptions] = useState<DropdownOption[]>(subs_option);
   const [optionDropdownDisabled, setOptionDropdownDisabled] = useState(enabledGlobal);
   const [openDashboardDisabled, setOpenDashboardDisabled] = useState(!enabledGlobal);
   const [isSelectionDisabled, setIsSelectionDisabled] = useState(false);
   const [SelectionTips, setSelectionTips] = useState("Run Clash in background");
   const [skipProxyState, setSkipProxyState] = useState(enabledSkipProxy);
   const [overrideDNSState, setOverrideDNSState] = useState(enabledOverrideDNS);
-  const [currentSub, setCurrentSub] = useState<string>("");
+  const [currentSub, setCurrentSub] = useState<string>(current_sub);
 
   const update_subs = () => {
     backend.resolve(backend.getSubList(), (v: String) => {
@@ -84,13 +84,12 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
         }
       });
       subs_option = items;
+      setOptions(subs_option)
       console.log("Subs ready");
       setIsSelectionDisabled(i == 0);
       //console.log(sub);
     });
   }
-
-  update_subs();
 
   useEffect(() => {
     const getCurrentSub = async () => {
@@ -98,7 +97,12 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
       setCurrentSub(sub);
     }
     getCurrentSub();
+    update_subs();
   }, []);
+
+  useEffect(() => {
+    current_sub = currentSub;
+  }, [currentSub]);
 
   return (
     <div>
@@ -154,7 +158,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
             selectedOption={currentSub}
             onMenuWillOpen={() => {
               update_subs();
-              setOptions(subs_option);
+              // setOptions(subs_option);
             }}
             onChange={(x) => {
               backend.resolve(backend.setSub(x.data), () => {
