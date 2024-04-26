@@ -53,7 +53,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   //setInterval(refreshSubOptions, 2000);
   console.log("status :" + clashState);
   let [options, setOptions] = useState<DropdownOption[]>(subs_option);
-  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  // const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [optionDropdownDisabled, setOptionDropdownDisabled] = useState(enabledGlobal);
   const [openDashboardDisabled, setOpenDashboardDisabled] = useState(!enabledGlobal);
   const [isSelectionDisabled, setIsSelectionDisabled] = useState(false);
@@ -95,9 +95,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   useEffect(() => {
     const getCurrentSub = async () => {
       const sub = await backend.getCurrentSub();
-      const re = new RegExp("(?<=subs\/).+\.yaml$");
-      const name = re.exec(sub);
-      setCurrentSub(name?.[0] || "");
+      setCurrentSub(sub);
     }
     getCurrentSub();
   }, []);
@@ -151,10 +149,9 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
         <PanelSectionRow>
           <DropdownItem
             disabled={optionDropdownDisabled}
-            // strDefaultLabel="Select a Subscription"
-            strDefaultLabel={currentSub ? currentSub : "Select a Subscription"}
+            strDefaultLabel={"Select a Subscription"}
             rgOptions={options}
-            selectedOption={selectedOption}
+            selectedOption={currentSub}
             onMenuWillOpen={() => {
               update_subs();
               setOptions(subs_option);
