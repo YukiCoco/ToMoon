@@ -6,6 +6,7 @@ use std::sync::{Arc, RwLock};
 use std::time::Duration;
 use std::{error, fs, thread};
 
+use serde::de;
 use serde_yaml::{Mapping, Value};
 
 use super::helper;
@@ -201,6 +202,11 @@ fn get_current_working_dir() -> std::io::Result<std::path::PathBuf> {
     std::env::current_dir()
 }
 
+fn get_decky_data_dir() -> std::io::Result<std::path::PathBuf> {
+    let data_dir = get_current_working_dir().unwrap().join("../../data/tomoon");
+    Ok(data_dir)
+}
+
 pub struct Clash {
     pub path: std::path::PathBuf,
     pub config: std::path::PathBuf,
@@ -214,6 +220,7 @@ pub enum ClashErrorKind {
     NetworkError,
     InnerError,
     Default,
+    CpDbError,
 }
 
 #[derive(Debug)]
@@ -257,6 +264,75 @@ impl Default for Clash {
 
 impl Clash {
     pub fn run(&mut self, config_path: &String, skip_proxy: bool, override_dns: bool) -> Result<(), ClashError> {
+        // decky 插件数据目录 
+        let decky_data_dir = get_decky_data_dir().unwrap();
+        let new_country_db_path = get_current_working_dir()
+            .unwrap()
+            .join("bin/core/country.mmdb");
+        let new_asn_db_path = get_current_working_dir()
+            .unwrap()
+            .join("bin/core/asn.mmdb");
+        let new_geosite_path = get_current_working_dir()
+            .unwrap()
+            .join("bin/core/geosite.dat");
+
+        // 检查 decky_data_dir 是否存在，不存在则创建
+        if !decky_data_dir.exists() {
+            fs::create_dir_all(&decky_data_dir).unwrap();
+        }
+
+        // 检查数据库文件是否存在，不存在则复制
+        if !PathBuf::from(new_country_db_path).is_file() {
+            match fs::copy(
+                get_current_working_dir().unwrap().join("bin/core/country.mmdb"),
+                decky_data_dir.join("country.mmdb"),
+            ) {
+                Ok(_) => {
+                    log::info!("Copy country.mmdb to decky data dir")
+                },
+                Err(e) => {
+                    return Err(ClashError {
+                        Message: e.to_string(),
+                        ErrorKind: ClashErrorKind::CpDbError,
+                    });
+                }
+            }
+        }
+
+        if !PathBuf::from(new_asn_db_path).is_file() {
+            match fs::copy(
+                get_current_working_dir().unwrap().join("bin/core/asn.mmdb"),
+                decky_data_dir.join("asn.mmdb"),
+            ) {
+                Ok(_) => {
+                    log::info!("Copy asn.mmdb to decky data dir")
+                },
+                Err(e) => {
+                    return Err(ClashError {
+                        Message: e.to_string(),
+                        ErrorKind: ClashErrorKind::CpDbError,
+                    });
+                }
+            }
+        }
+        
+        if !PathBuf::from(new_geosite_path).is_file() {
+            match fs::copy(
+                get_current_working_dir().unwrap().join("bin/core/geosite.dat"),
+                decky_data_dir.join("geosite.dat"),
+            ) {
+                Ok(_) => {
+                    log::info!("Copy geosite.dat to decky data dir")
+                },
+                Err(e) => {
+                    return Err(ClashError {
+                        Message: e.to_string(),
+                        ErrorKind: ClashErrorKind::CpDbError,
+                    });
+                }
+            }
+        }
+
         self.update_config_path(config_path);
         // 修改配置文件为推荐配置
         match self.change_config(skip_proxy, override_dns) {
@@ -271,16 +347,13 @@ impl Clash {
 
         //log::info!("Pre-setting network");
         //TODO: 未修改的 unwarp
-        let running_dir = get_current_working_dir()
-            .unwrap()
-            .join("bin/core/");
-        let run_config = running_dir.join("running_config.yaml");
+        let run_config = decky_data_dir.join("running_config.yaml");
         let outputs = fs::File::create("/tmp/tomoon.clash.log").unwrap();
         let errors = outputs.try_clone().unwrap();
 
         let clash = Command::new(self.path.clone())
             .arg("-d")
-            .arg(running_dir)
+            .arg(decky_data_dir)
             .arg("-f")
             .arg(run_config)
             .stdout(outputs)
@@ -470,7 +543,7 @@ impl Clash {
             }
         }
 
-        let run_config = get_current_working_dir()?.join("bin/core/running_config.yaml");
+        let run_config = get_decky_data_dir()?.join("running_config.yaml");
 
         let yaml_str = serde_yaml::to_string(&yaml)?;
         fs::write(run_config, yaml_str)?;
