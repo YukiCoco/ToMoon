@@ -73,7 +73,8 @@ jobs:
           cp -r ./tomoon-web/dist ./release/tomoon/web
           cp -r ./py_modules ./release/tomoon/py_modules
           cd ./release 
-          zip -r tomoon-${{ github.ref_name }}.zip tomoon
+          ref=$(echo ${{ github.ref_name }} | sed 's/\//-/g')
+          zip -r tomoon-${ref}.zip tomoon
           cd ..
 
       - name: Publish Artifacts
