@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs, path::PathBuf, sync::Mutex};
 
 use crate::{
-    control::{ClashError, ClashErrorKind},
+    control::{ClashError, ClashErrorKind, EnhancedMode},
     helper,
 };
 
@@ -30,6 +30,11 @@ pub struct SkipProxyParams {
 #[derive(Deserialize)]
 pub struct OverrideDNSParams {
     override_dns: bool,
+}
+
+#[derive(Deserialize)]
+pub struct EnhancedModeParams {
+    enhanced_mode: EnhancedMode,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -65,6 +70,7 @@ pub struct GetConfigResponse {
     status_code: u16,
     skip_proxy: bool,
     override_dns: bool,
+    enhanced_mode: EnhancedMode,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -156,7 +162,7 @@ pub async fn override_dns(
             let mut state = match runtime_state.write() {
                 Ok(x) => x,
                 Err(e) => {
-                    log::error!("set_enable failed to acquire state write lock: {}", e);
+                    log::error!("override_dns failed to acquire state write lock: {}", e);
                     return Err(actix_web::Error::from(ClashError {
                         Message: e.to_string(),
                         ErrorKind: ClashErrorKind::InnerError,
@@ -167,6 +173,50 @@ pub async fn override_dns(
         }
         Err(e) => {
             log::error!("Failed while toggle override dns.");
+            log::error!("Error Message:{}", e);
+            return Err(actix_web::Error::from(ClashError {
+                Message: e.to_string(),
+                ErrorKind: ClashErrorKind::ConfigNotFound,
+            }));
+        }
+    }
+    let r = OverrideDNSResponse {
+        message: "修改成功".to_string(),
+        status_code: 200,
+    };
+    Ok(HttpResponse::Ok().json(r))
+}
+
+pub async fn enhanced_mode(
+    state: web::Data<AppState>,
+    params: web::Form<EnhancedModeParams>,
+) -> Result<HttpResponse> {
+    let enhanced_mode = params.enhanced_mode.clone();
+    let runtime = state.runtime.lock().unwrap();
+    let runtime_settings;
+    let runtime_state;
+    unsafe {
+        let runtime = runtime.0.as_ref().unwrap();
+        runtime_settings = runtime.settings_clone();
+        runtime_state = runtime.state_clone();
+    }
+    match runtime_settings.write() {
+        Ok(mut x) => {
+            x.enhanced_mode = enhanced_mode;
+            let mut state = match runtime_state.write() {
+                Ok(x) => x,
+                Err(e) => {
+                    log::error!("enhanced_mode failed to acquire state write lock: {}", e);
+                    return Err(actix_web::Error::from(ClashError {
+                        Message: e.to_string(),
+                        ErrorKind: ClashErrorKind::InnerError,
+                    }));
+                }
+            };
+            state.dirty = true;
+        }
+        Err(e) => {
+            log::error!("Failed while toggle enhanced mode.");
             log::error!("Error Message:{}", e);
             return Err(actix_web::Error::from(ClashError {
                 Message: e.to_string(),
@@ -193,6 +243,7 @@ pub async fn get_config(state: web::Data<AppState>) -> Result<HttpResponse> {
             let r = GetConfigResponse {
                 skip_proxy: x.skip_proxy,
                 override_dns: x.override_dns,
+                enhanced_mode: x.enhanced_mode,
                 status_code: 200,
             };
             return Ok(HttpResponse::Ok().json(r));

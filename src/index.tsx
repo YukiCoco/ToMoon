@@ -11,8 +11,10 @@ import {
   DropdownOption,
   Navigation,
   DropdownItem,
+  SliderField,
+  NotchLabel,
 } from "decky-frontend-lib";
-import { VFC, useState } from "react";
+import { VFC, useEffect, useState } from "react";
 import { GiEgyptianBird } from "react-icons/gi";
 
 import {
@@ -25,13 +27,19 @@ import {
 import * as backend from "./backend";
 import axios from "axios";
 
+enum EnhancedMode {
+  RedirHost = 'RedirHost',
+  FakeIp = 'FakeIp',
+}
+
 let enabledGlobal = false;
 let enabledSkipProxy = false;
 let enabledOverrideDNS = false;
 let usdplReady = false;
 let subs: any[];
 let subs_option: any[];
-
+let current_sub = '';
+let enhanced_mode = EnhancedMode.FakeIp;
 
 const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
 
@@ -45,24 +53,30 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   const [clashState, setClashState] = useState(enabledGlobal);
   backend.resolve(backend.getEnabled(), setClashState);
   axios.get("http://127.0.0.1:55556/get_config").then(r => {
+    // json print r.data
+    console.log(`>>>>>>>>>>>>>>> get_config: ${JSON.stringify(r.data, null ,2)}`);
+
     if (r.data.status_code == 200) {
       enabledSkipProxy = r.data.skip_proxy;
       enabledOverrideDNS = r.data.override_dns;
+      enhanced_mode = r.data.enhanced_mode;
     }
   })
   //setInterval(refreshSubOptions, 2000);
   console.log("status :" + clashState);
-  let [options, setOptions] = useState<DropdownOption[]>(subs_option);
-  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [options, setOptions] = useState<DropdownOption[]>(subs_option);
   const [optionDropdownDisabled, setOptionDropdownDisabled] = useState(enabledGlobal);
   const [openDashboardDisabled, setOpenDashboardDisabled] = useState(!enabledGlobal);
   const [isSelectionDisabled, setIsSelectionDisabled] = useState(false);
   const [SelectionTips, setSelectionTips] = useState("Run Clash in background");
   const [skipProxyState, setSkipProxyState] = useState(enabledSkipProxy);
   const [overrideDNSState, setOverrideDNSState] = useState(enabledOverrideDNS);
+  const [currentSub, setCurrentSub] = useState<string>(current_sub);
+  const [enhancedMode, setEnhancedMode] = useState<EnhancedMode>(enhanced_mode);
 
   const update_subs = () => {
     backend.resolve(backend.getSubList(), (v: String) => {
+      console.log(`getSubList: ${v}`);
       let x: Array<any> = JSON.parse(v.toString());
       let re = new RegExp("(?<=subs\/).+\.yaml$");
       let i = 0;
@@ -82,13 +96,46 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
         }
       });
       subs_option = items;
+      setOptions(subs_option)
       console.log("Subs ready");
       setIsSelectionDisabled(i == 0);
       //console.log(sub);
     });
   }
 
-  update_subs();
+  useEffect(() => {
+    const getCurrentSub = async () => {
+      const sub = await backend.getCurrentSub();
+      setCurrentSub(sub);
+    }
+    getCurrentSub();
+    update_subs();
+  }, []);
+
+  useEffect(() => {
+    current_sub = currentSub;
+  }, [currentSub]);
+
+  const enhancedModeOptions = [
+    {mode:EnhancedMode.RedirHost, label: "Redir Host"},
+    {mode:EnhancedMode.FakeIp, label:"Fake IP"},
+  ];
+
+  const enhancedModeNotchLabels : NotchLabel[] = enhancedModeOptions.map((opt, i) => {
+    return {
+      notchIndex: i,
+      label: opt.label,
+      value: i,
+    };
+  });
+
+  const convertEnhancedMode = (value: number) => {
+    return enhancedModeOptions[value].mode;
+  }
+
+  const convertEnhancedModeValue = (value: EnhancedMode) => {
+    return enhancedModeOptions.findIndex((opt) => opt.mode === value);
+  }
 
   return (
     <div>
@@ -139,12 +186,12 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
         <PanelSectionRow>
           <DropdownItem
             disabled={optionDropdownDisabled}
-            strDefaultLabel="Select a Subscription"
+            strDefaultLabel={"Select a Subscription"}
             rgOptions={options}
-            selectedOption={selectedOption}
+            selectedOption={currentSub}
             onMenuWillOpen={() => {
               update_subs();
-              setOptions(subs_option);
+              // setOptions(subs_option);
             }}
             onChange={(x) => {
               backend.resolve(backend.setSub(x.data), () => {
@@ -209,6 +256,27 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
           >
           </ToggleField>
         </PanelSectionRow>
+        {overrideDNSState && <PanelSectionRow>
+          <SliderField
+            label={"Enhanced Mode"}
+            value={convertEnhancedModeValue(enhancedMode)} 
+            min={0}
+            max={enhancedModeNotchLabels.length - 1}
+            notchCount={enhancedModeNotchLabels.length}
+            notchLabels={enhancedModeNotchLabels}
+            notchTicksVisible={true}
+            step={1}
+            onChange={(value: number) => {
+              const _enhancedMode = convertEnhancedMode(value);
+              setEnhancedMode(_enhancedMode);
+              axios.post("http://127.0.0.1:55556/enhanced_mode", {
+                enhanced_mode: _enhancedMode
+              }, {
+                headers: { 'content-type': 'application/x-www-form-urlencoded' },
+              });
+            }}
+          />
+        </PanelSectionRow>}
       </PanelSection>
 
       <PanelSection title="Tools">
@@ -270,6 +338,7 @@ export default definePlugin((serverApi: ServerAPI) => {
       if (r.data.status_code == 200) {
         enabledSkipProxy = r.data.skip_proxy;
         enabledOverrideDNS = r.data.override_dns;
+        enhanced_mode = r.data.enhanced_mode;
       }
     });
   })();

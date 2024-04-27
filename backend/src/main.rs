@@ -54,6 +54,7 @@ async fn main() -> Result<(), std::io::Error> {
             .register("download_sub", api::download_sub(&runtime))
             .register("get_download_status", api::get_download_status(&runtime))
             .register("get_sub_list", api::get_sub_list(&runtime))
+            .register("get_current_sub", api::get_current_sub(&runtime))
             .register("delete_sub", api::delete_sub(&runtime))
             .register("set_sub", api::set_sub(&runtime))
             .register("update_subs", api::update_subs(&runtime))
@@ -88,6 +89,7 @@ async fn main() -> Result<(), std::io::Error> {
             )
             .service(web::resource("/skip_proxy").route(web::post().to(external_web::skip_proxy)))
             .service(web::resource("/override_dns").route(web::post().to(external_web::override_dns)))
+            .service(web::resource("/enhanced_mode").route(web::post().to(external_web::enhanced_mode)))
             .service(web::resource("/get_config").route(web::get().to(external_web::get_config)))
             //.service(web::resource("/manual").route(web::get().to(external_web.web_download_sub)))
             .service(

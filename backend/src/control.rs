@@ -6,6 +6,7 @@ use std::sync::{Arc, RwLock};
 use std::time::Duration;
 use std::{error, fs, thread};
 
+use serde::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Value};
 
 use super::helper;
@@ -35,6 +36,12 @@ pub enum DownloadStatus {
     Success,
     Error,
     None,
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
+pub enum EnhancedMode {
+    RedirHost,
+    FakeIp,
 }
 
 impl std::fmt::Display for DownloadStatus {
@@ -201,6 +208,11 @@ fn get_current_working_dir() -> std::io::Result<std::path::PathBuf> {
     std::env::current_dir()
 }
 
+fn get_decky_data_dir() -> std::io::Result<std::path::PathBuf> {
+    let data_dir = get_current_working_dir().unwrap().join("../../data/tomoon");
+    Ok(data_dir)
+}
+
 pub struct Clash {
     pub path: std::path::PathBuf,
     pub config: std::path::PathBuf,
@@ -214,6 +226,7 @@ pub enum ClashErrorKind {
     NetworkError,
     InnerError,
     Default,
+    CpDbError,
 }
 
 #[derive(Debug)]
@@ -256,10 +269,82 @@ impl Default for Clash {
 }
 
 impl Clash {
-    pub fn run(&mut self, config_path: &String, skip_proxy: bool, override_dns: bool) -> Result<(), ClashError> {
+    pub fn run(&mut self, config_path: &String, skip_proxy: bool, override_dns: bool, enhanced_mode: EnhancedMode) -> Result<(), ClashError> {
+        // decky 插件数据目录 
+        let decky_data_dir = get_decky_data_dir().unwrap();
+        let new_country_db_path = get_current_working_dir()
+            .unwrap()
+            .join("bin/core/country.mmdb");
+        let new_asn_db_path = get_current_working_dir()
+            .unwrap()
+            .join("bin/core/asn.mmdb");
+        let new_geosite_path = get_current_working_dir()
+            .unwrap()
+            .join("bin/core/geosite.dat");
+        let country_db_path = decky_data_dir.join("country.mmdb");
+        let asn_db_path = decky_data_dir.join("asn.mmdb");
+        let geosite_path = decky_data_dir.join("geosite.dat");
+
+        // 检查 decky_data_dir 是否存在，不存在则创建
+        if !decky_data_dir.exists() {
+            fs::create_dir_all(&decky_data_dir).unwrap();
+        }
+
+        // 检查数据库文件是否存在，不存在则复制
+        if !PathBuf::from(country_db_path.clone()).is_file() {
+            match fs::copy(
+                new_country_db_path.clone(),
+                country_db_path.clone(),
+            ) {
+                Ok(_) => {
+                    log::info!("Copy country.mmdb to decky data dir")
+                },
+                Err(e) => {
+                    return Err(ClashError {
+                        Message: e.to_string(),
+                        ErrorKind: ClashErrorKind::CpDbError,
+                    });
+                }
+            }
+        }
+
+        if !PathBuf::from(asn_db_path.clone()).is_file() {
+            match fs::copy(
+                new_asn_db_path.clone(),
+                asn_db_path.clone(),
+            ) {
+                Ok(_) => {
+                    log::info!("Copy asn.mmdb to decky data dir")
+                },
+                Err(e) => {
+                    return Err(ClashError {
+                        Message: e.to_string(),
+                        ErrorKind: ClashErrorKind::CpDbError,
+                    });
+                }
+            }
+        }
+        
+        if !PathBuf::from(geosite_path.clone()).is_file() {
+            match fs::copy(
+                new_geosite_path.clone(),
+                geosite_path.clone(),
+            ) {
+                Ok(_) => {
+                    log::info!("Copy geosite.dat to decky data dir")
+                },
+                Err(e) => {
+                    return Err(ClashError {
+                        Message: e.to_string(),
+                        ErrorKind: ClashErrorKind::CpDbError,
+                    });
+                }
+            }
+        }
+
         self.update_config_path(config_path);
         // 修改配置文件为推荐配置
-        match self.change_config(skip_proxy, override_dns) {
+        match self.change_config(skip_proxy, override_dns, enhanced_mode) {
             Ok(_) => (),
             Err(e) => {
                 return Err(ClashError {
@@ -271,16 +356,15 @@ impl Clash {
 
         //log::info!("Pre-setting network");
         //TODO: 未修改的 unwarp
-        let running_dir = get_current_working_dir()
-            .unwrap()
-            .join("bin/core/");
-        let run_config = running_dir.join("running_config.yaml");
+        let run_config = decky_data_dir.join("running_config.yaml");
         let outputs = fs::File::create("/tmp/tomoon.clash.log").unwrap();
         let errors = outputs.try_clone().unwrap();
 
+        log::info!("Starting Clash...");
+
         let clash = Command::new(self.path.clone())
             .arg("-d")
-            .arg(running_dir)
+            .arg(decky_data_dir)
             .arg("-f")
             .arg(run_config)
             .stdout(outputs)
@@ -320,11 +404,13 @@ impl Clash {
         self.config = std::path::PathBuf::from((*path).clone());
     }
 
-    pub fn change_config(&self, skip_proxy: bool, override_dns: bool) -> Result<(), Box<dyn error::Error>> {
+    pub fn change_config(&self, skip_proxy: bool, override_dns: bool, enhanced_mode: EnhancedMode) -> Result<(), Box<dyn error::Error>> {
         let path = self.config.clone();
         let config = fs::read_to_string(path)?;
         let mut yaml: serde_yaml::Value = serde_yaml::from_str(config.as_str())?;
         let yaml = yaml.as_mapping_mut().unwrap();
+
+        log::info!("Changing Clash config...");
 
         //修改 WebUI
 
@@ -389,7 +475,7 @@ impl Clash {
 
         //部分配置来自 https://www.xkww3n.cyou/2022/02/08/use-clash-dns-anti-dns-hijacking/
 
-        let dns_config = "
+        let dns_config_fakeip = "
         enable: true
         listen: 127.0.0.1:8853
         default-nameserver:
@@ -425,6 +511,31 @@ impl Clash {
             - +.stun.*.*.*.*
         ";
 
+        let dns_config_redir_host = "
+        enable: true
+        ipv6: false
+        listen: 127.0.0.1:8853
+        default-nameserver:
+            - 223.5.5.5
+            - 8.8.4.4
+        enhanced-mode: redir-host
+        nameserver:
+            - 119.29.29.29
+            - 223.5.5.5
+            - tls://223.5.5.5:853
+            - tls://223.6.6.6:853
+        fallback:
+            - https://1.0.0.1/dns-query
+            - https://public.dns.iij.jp/dns-query
+            - tls://8.8.4.4:853
+        fallback-filter:
+            geoip: false
+            ipcidr:
+            - 240.0.0.0/4
+            - 0.0.0.0/32
+            - 127.0.0.1/32
+        ";
+
         let profile_config = "
         store-selected: true
         store-fake-ip: false
@@ -450,12 +561,20 @@ impl Clash {
             Some(_) => {
                 //删除 DNS 配置
                 if override_dns {
+                    log::info!("EnhancedMode: {:?}", enhanced_mode);
                     yaml.remove("dns").unwrap();
-                    insert_config(yaml, dns_config, "dns");
+                    match enhanced_mode {
+                        EnhancedMode::FakeIp => {
+                            insert_config(yaml, dns_config_fakeip, "dns");
+                        }
+                        EnhancedMode::RedirHost => {
+                            insert_config(yaml, dns_config_redir_host, "dns");
+                        }
+                    }
                 }
             }
             None => {
-                insert_config(yaml, dns_config, "dns");
+                insert_config(yaml, dns_config_fakeip, "dns");
             }
         }
 
@@ -470,10 +589,12 @@ impl Clash {
             }
         }
 
-        let run_config = get_current_working_dir()?.join("bin/core/running_config.yaml");
+        let run_config = get_decky_data_dir()?.join("running_config.yaml");
 
         let yaml_str = serde_yaml::to_string(&yaml)?;
         fs::write(run_config, yaml_str)?;
+
+        log::info!("Clash config changed successfully");
         Ok(())
     }
 
