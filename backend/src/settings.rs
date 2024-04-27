@@ -34,7 +34,7 @@ fn default_override_dns() -> bool {
 }
 
 fn default_enhanced_mode() -> EnhancedMode {
-    EnhancedMode::RedirHost
+    EnhancedMode::FakeIp
 }
 
 fn default_current_sub() -> String {
@@ -130,7 +130,7 @@ impl Default for Settings {
             enable: false,
             skip_proxy: true,
             override_dns: true,
-            enhanced_mode: EnhancedMode::RedirHost,
+            enhanced_mode: EnhancedMode::FakeIp,
             current_sub: default_profile.to_string_lossy().to_string(),
             subscriptions: Vec::new()
         }

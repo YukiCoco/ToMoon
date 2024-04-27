@@ -39,7 +39,7 @@ let usdplReady = false;
 let subs: any[];
 let subs_option: any[];
 let current_sub = '';
-let enhanced_mode = EnhancedMode.RedirHost;
+let enhanced_mode = EnhancedMode.FakeIp;
 
 const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
 

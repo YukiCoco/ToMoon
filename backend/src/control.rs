@@ -574,7 +574,7 @@ impl Clash {
                 }
             }
             None => {
-                insert_config(yaml, dns_config_redir_host, "dns");
+                insert_config(yaml, dns_config_fakeip, "dns");
             }
         }
 
