@@ -83,7 +83,7 @@ pub fn set_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
                     }
                 }
                 if *enabled {
-                    match clash.run(&settings.current_sub, settings.skip_proxy, settings.override_dns) {
+                    match clash.run(&settings.current_sub, settings.skip_proxy, settings.override_dns, settings.enhanced_mode) {
                         Ok(_) => (),
                         Err(e) => {
                             log::error!("Run clash error: {}", e);
@@ -353,7 +353,7 @@ pub fn get_running_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -
                 return vec![status.into()];
             }
             Err(_) => {
-                log::error!("Error occured while get_download_status()");
+                log::error!("Error occured while get_running_status()");
             }
         }
         return vec![];
@@ -379,7 +379,7 @@ pub fn get_sub_list(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<
             }
             Err(e) => {
                 log::error!(
-                    "download_sub() faild to acquire runtime_setting write {}",
+                    "get_sub_list() faild to acquire runtime_setting write {}",
                     e
                 );
             }

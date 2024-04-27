@@ -89,6 +89,7 @@ async fn main() -> Result<(), std::io::Error> {
             )
             .service(web::resource("/skip_proxy").route(web::post().to(external_web::skip_proxy)))
             .service(web::resource("/override_dns").route(web::post().to(external_web::override_dns)))
+            .service(web::resource("/enhanced_mode").route(web::post().to(external_web::enhanced_mode)))
             .service(web::resource("/get_config").route(web::get().to(external_web::get_config)))
             //.service(web::resource("/manual").route(web::get().to(external_web.web_download_sub)))
             .service(

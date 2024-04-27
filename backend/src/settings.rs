@@ -3,6 +3,8 @@ use std::{path::PathBuf, fmt::Display};
 
 use crate::helper;
 
+use crate::control::EnhancedMode;
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Settings {
     #[serde(default = "default_enable")]
@@ -11,6 +13,8 @@ pub struct Settings {
     pub skip_proxy: bool,
     #[serde(default = "default_override_dns")]
     pub override_dns: bool,
+    #[serde(default = "default_enhanced_mode")]
+    pub enhanced_mode: EnhancedMode,
     #[serde(default = "default_current_sub")]
     pub current_sub: String,
     #[serde(default = "default_subscriptions")]
@@ -27,6 +31,10 @@ fn default_enable() -> bool {
 
 fn default_override_dns() -> bool {
     true
+}
+
+fn default_enhanced_mode() -> EnhancedMode {
+    EnhancedMode::RedirHost
 }
 
 fn default_current_sub() -> String {
@@ -122,6 +130,7 @@ impl Default for Settings {
             enable: false,
             skip_proxy: true,
             override_dns: true,
+            enhanced_mode: EnhancedMode::RedirHost,
             current_sub: default_profile.to_string_lossy().to_string(),
             subscriptions: Vec::new()
         }

@@ -6,7 +6,7 @@ use std::sync::{Arc, RwLock};
 use std::time::Duration;
 use std::{error, fs, thread};
 
-use serde::de;
+use serde::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Value};
 
 use super::helper;
@@ -36,6 +36,12 @@ pub enum DownloadStatus {
     Success,
     Error,
     None,
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
+pub enum EnhancedMode {
+    RedirHost,
+    FakeIp,
 }
 
 impl std::fmt::Display for DownloadStatus {
@@ -263,7 +269,7 @@ impl Default for Clash {
 }
 
 impl Clash {
-    pub fn run(&mut self, config_path: &String, skip_proxy: bool, override_dns: bool) -> Result<(), ClashError> {
+    pub fn run(&mut self, config_path: &String, skip_proxy: bool, override_dns: bool, enhanced_mode: EnhancedMode) -> Result<(), ClashError> {
         // decky 插件数据目录 
         let decky_data_dir = get_decky_data_dir().unwrap();
         let new_country_db_path = get_current_working_dir()
@@ -359,7 +365,7 @@ impl Clash {
 
         self.update_config_path(config_path);
         // 修改配置文件为推荐配置
-        match self.change_config(skip_proxy, override_dns) {
+        match self.change_config(skip_proxy, override_dns, enhanced_mode) {
             Ok(_) => (),
             Err(e) => {
                 return Err(ClashError {
@@ -374,6 +380,8 @@ impl Clash {
         let run_config = decky_data_dir.join("running_config.yaml");
         let outputs = fs::File::create("/tmp/tomoon.clash.log").unwrap();
         let errors = outputs.try_clone().unwrap();
+
+        log::info!("Starting Clash...");
 
         let clash = Command::new(self.path.clone())
             .arg("-d")
@@ -417,11 +425,13 @@ impl Clash {
         self.config = std::path::PathBuf::from((*path).clone());
     }
 
-    pub fn change_config(&self, skip_proxy: bool, override_dns: bool) -> Result<(), Box<dyn error::Error>> {
+    pub fn change_config(&self, skip_proxy: bool, override_dns: bool, enhanced_mode: EnhancedMode) -> Result<(), Box<dyn error::Error>> {
         let path = self.config.clone();
         let config = fs::read_to_string(path)?;
         let mut yaml: serde_yaml::Value = serde_yaml::from_str(config.as_str())?;
         let yaml = yaml.as_mapping_mut().unwrap();
+
+        log::info!("Changing Clash config...");
 
         //修改 WebUI
 
@@ -486,7 +496,7 @@ impl Clash {
 
         //部分配置来自 https://www.xkww3n.cyou/2022/02/08/use-clash-dns-anti-dns-hijacking/
 
-        let dns_config = "
+        let dns_config_fakeip = "
         enable: true
         listen: 127.0.0.1:8853
         default-nameserver:
@@ -522,6 +532,31 @@ impl Clash {
             - +.stun.*.*.*.*
         ";
 
+        let dns_config_redir_host = "
+        enable: true
+        ipv6: false
+        listen: 127.0.0.1:8853
+        default-nameserver:
+            - 223.5.5.5
+            - 8.8.4.4
+        enhanced-mode: redir-host
+        nameserver:
+            - 119.29.29.29
+            - 223.5.5.5
+            - tls://223.5.5.5:853
+            - tls://223.6.6.6:853
+        fallback:
+            - https://1.0.0.1/dns-query
+            - https://public.dns.iij.jp/dns-query
+            - tls://8.8.4.4:853
+        fallback-filter:
+            geoip: false
+            ipcidr:
+            - 240.0.0.0/4
+            - 0.0.0.0/32
+            - 127.0.0.1/32
+        ";
+
         let profile_config = "
         store-selected: true
         store-fake-ip: false
@@ -547,12 +582,20 @@ impl Clash {
             Some(_) => {
                 //删除 DNS 配置
                 if override_dns {
+                    log::info!("EnhancedMode: {:?}", enhanced_mode);
                     yaml.remove("dns").unwrap();
-                    insert_config(yaml, dns_config, "dns");
+                    match enhanced_mode {
+                        EnhancedMode::FakeIp => {
+                            insert_config(yaml, dns_config_fakeip, "dns");
+                        }
+                        EnhancedMode::RedirHost => {
+                            insert_config(yaml, dns_config_redir_host, "dns");
+                        }
+                    }
                 }
             }
             None => {
-                insert_config(yaml, dns_config, "dns");
+                insert_config(yaml, dns_config_redir_host, "dns");
             }
         }
 
@@ -571,6 +614,8 @@ impl Clash {
 
         let yaml_str = serde_yaml::to_string(&yaml)?;
         fs::write(run_config, yaml_str)?;
+
+        log::info!("Clash config changed successfully");
         Ok(())
     }
 
