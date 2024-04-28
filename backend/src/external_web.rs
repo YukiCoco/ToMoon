@@ -6,7 +6,7 @@ use std::{collections::HashMap, fs, path::PathBuf, sync::Mutex};
 
 use crate::{
     control::{ClashError, ClashErrorKind, EnhancedMode},
-    helper,
+    helper, settings::State,
 };
 
 pub struct Runtime(pub *const crate::control::ControlRuntime);
@@ -274,7 +274,11 @@ pub async fn download_sub(
         runtime_state = runtime.state_clone();
     }
 
-    let path: PathBuf = usdpl_back::api::dirs::home().unwrap_or("/root".into()).join(".config/tomoon/subs/");
+    let home = match runtime_state.read() {
+        Ok(state) => state.home.clone(),
+        Err(_) => State::default().home
+    };
+    let path: PathBuf = home.join(".config/tomoon/subs/");
 
     //是一个本地文件
     if let Some(local_file) = helper::get_file_path(url.clone()) {

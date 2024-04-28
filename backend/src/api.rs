@@ -3,7 +3,7 @@ use std::{fs, path::PathBuf, thread};
 use crate::{
     control::{DownloadStatus, RunningStatus},
     helper,
-    settings::Subscription,
+    settings::{State, Subscription},
 };
 
 use super::control::ControlRuntime;
@@ -572,15 +572,18 @@ pub fn get_update_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) ->
     }
 }
 
-pub fn create_debug_log() -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
+pub fn create_debug_log(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
     //let update_status = runtime.update_status_clone();
+    let home = match runtime.state_clone().read() {
+        Ok(state) => state.home.clone(),
+        Err(_) => State::default().home
+    };
     move |_| {
         let running_status = format!(
             "Clash status : {}\n",
             helper::is_clash_running()
         );
-        let tomoon_config =match fs::read_to_string(
-            usdpl_back::api::dirs::home().unwrap_or("/root".into()).join(".config/tomoon/tomoon.json")) {
+        let tomoon_config =match fs::read_to_string(home.join(".config/tomoon/tomoon.json")) {
             Ok(x) => x,
             Err(e) => {
                 format!("can not get Tomoon config, error message: {} \n", e)
