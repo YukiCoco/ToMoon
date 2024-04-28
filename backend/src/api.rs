@@ -506,7 +506,7 @@ pub fn update_subs(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<P
                         }
                         thread::spawn(move || {
                             match minreq::get(i.url.clone())
-                            .with_header("User-Agent", format!("ToMoonClash/{}",env!("CARGO_PKG_VERSION")))
+                            .with_header("User-Agent", format!("ToMoon/{} mihomo/1.18.3 Clash/v1.18.0",env!("CARGO_PKG_VERSION")))
                             .with_timeout(15)
                             .send() {
                                 Ok(response) => {
@@ -579,7 +579,8 @@ pub fn create_debug_log() -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
             "Clash status : {}\n",
             helper::is_clash_running()
         );
-        let tomoon_config = match fs::read_to_string("/home/deck/.config/tomoon/tomoon.json") {
+        let tomoon_config =match fs::read_to_string(
+            usdpl_back::api::dirs::home().unwrap_or("/root".into()).join(".config/tomoon/tomoon.json")) {
             Ok(x) => x,
             Err(e) => {
                 format!("can not get Tomoon config, error message: {} \n", e)
@@ -597,22 +598,6 @@ pub fn create_debug_log() -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
                 format!("can not get Clash log, error message: {} \n", e)
             }
         };
-        let dns_resolve_config = match fs::read_to_string("/etc/resolv.conf") {
-            Ok(x) => x,
-            Err(e) => {
-                format!("can not get /etc/resolv.conf, error message: {} \n", e)
-            }
-        };
-
-        let network_config = match fs::read_to_string("/etc/NetworkManager/conf.d/dns.conf") {
-            Ok(x) => x,
-            Err(e) => {
-                format!(
-                    "can not get /etc/NetworkManager/conf.d/dns.conf, error message: {} \n",
-                    e
-                )
-            }
-        };
 
         let log = format!(
             "
@@ -623,17 +608,11 @@ pub fn create_debug_log() -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
         {}\n
         Clash log:\n
         {}\n
-        resolv log:\n
-        {}\n
-        network log:\n
-        {}\n
         ",
             running_status,
             tomoon_config,
             tomoon_log,
             clash_log,
-            dns_resolve_config,
-            network_config
         );
         fs::write("/tmp/tomoon.debug.log", log).unwrap();
         return vec![true.into()];

@@ -382,7 +382,7 @@ pub async fn download_sub(
         match minreq::get(url.clone())
             .with_header(
                 "User-Agent",
-                format!("ToMoonClash/{}", env!("CARGO_PKG_VERSION")),
+                format!("ToMoon/{} mihomo/1.18.3 Clash/v1.18.0", env!("CARGO_PKG_VERSION")),
             )
             .with_timeout(15)
             .send()
