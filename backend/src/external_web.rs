@@ -6,7 +6,7 @@ use std::{collections::HashMap, fs, path::PathBuf, sync::Mutex};
 
 use crate::{
     control::{ClashError, ClashErrorKind, EnhancedMode},
-    helper,
+    helper, settings::State,
 };
 
 pub struct Runtime(pub *const crate::control::ControlRuntime);
@@ -274,11 +274,34 @@ pub async fn download_sub(
         runtime_state = runtime.state_clone();
     }
 
-    let path: PathBuf = usdpl_back::api::dirs::home().unwrap_or("/root".into()).join(".config/tomoon/subs/");
+    let home = match runtime_state.read() {
+        Ok(state) => state.home.clone(),
+        Err(_) => State::default().home
+    };
+    let path: PathBuf = home.join(".config/tomoon/subs/");
 
     //是一个本地文件
     if let Some(local_file) = helper::get_file_path(url.clone()) {
         let local_file = PathBuf::from(local_file);
+        let filename = (|| -> Result<String, ()> {
+            // 如果文件名可被读取则采用
+            let mut filename = String::from(
+                local_file.file_name().ok_or(())?
+                .to_str().ok_or(())?);
+            if !filename.to_lowercase().ends_with(".yaml") && !filename.to_lowercase().ends_with(".yml") {
+                filename += ".yaml";
+            }
+            Ok(filename)
+        })()
+        .unwrap_or({
+            log::warn!("The subscription does not have a proper file name.");
+            // 否则采用随机名字
+            rand::thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(5)
+            .map(char::from)
+            .collect::<String>() + ".yaml"
+        });
         if local_file.exists() {
             let file_content = match fs::read_to_string(local_file) {
                 Ok(x) => x,
@@ -299,12 +322,7 @@ pub async fn download_sub(
                 }));
             }
             //保存订阅
-            let s: String = rand::thread_rng()
-                .sample_iter(&Alphanumeric)
-                .take(5)
-                .map(char::from)
-                .collect();
-            let path = path.join(s + ".yaml");
+            let path = path.join(filename);
             if let Some(parent) = path.parent() {
                 if let Err(e) = std::fs::create_dir_all(parent) {
                     log::error!("Failed while creating sub dir.");
@@ -368,7 +386,7 @@ pub async fn download_sub(
         match minreq::get(url.clone())
             .with_header(
                 "User-Agent",
-                format!("ToMoonClash/{}", env!("CARGO_PKG_VERSION")),
+                format!("ToMoon/{} mihomo/1.18.3 Clash/v1.18.0", env!("CARGO_PKG_VERSION")),
             )
             .with_timeout(15)
             .send()
@@ -406,7 +424,7 @@ pub async fn download_sub(
                 } else {
                     filename
                 };
-                let filename = if filename.ends_with(".yaml") || filename.ends_with(".yml"){
+                let filename = if filename.to_lowercase().ends_with(".yaml") || filename.to_lowercase().ends_with(".yml") {
                     filename
                 } else {
                     filename + ".yaml"
@@ -424,6 +442,7 @@ pub async fn download_sub(
                     }
                 }
                 let path = path.to_str().unwrap();
+                log::info!("Writing to path: {}", path);
                 if let Err(e) = fs::write(path, response) {
                     log::error!("Failed while saving sub.");
                     log::error!("Error Message:{}", e);

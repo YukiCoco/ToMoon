@@ -131,26 +131,6 @@ impl ControlRuntime {
             }
         }
 
-        //保存复原脚本
-        if !Path::new("/home/deck/tomoon_recover.sh").exists() {
-            let recover_script = r#"sudo chattr -i /etc/resolv.conf
-sudo systemctl stop systemd-resolved
-sudo chmod a+w /etc/NetworkManager/conf.d/dns.conf
-sudo echo -e "[main]\ndns=auto"  > /etc/NetworkManager/conf.d/dns.conf
-sudo nmcli general reload"#;
-            match fs::write("/home/deck/tomoon_recover.sh", recover_script) {
-                Ok(_) => {
-                    log::info!("Write recover script to /home/deck/tomoon_recover.sh");
-                }
-                Err(e) => {
-                    log::error!(
-                        "Error occurred while writing recover script, Error msg: {}",
-                        e.to_string()
-                    );
-                }
-            }
-        }
-
         //save config
         thread::spawn(move || {
             let sleep_duration = Duration::from_millis(1000);

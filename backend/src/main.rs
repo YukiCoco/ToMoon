@@ -59,7 +59,7 @@ async fn main() -> Result<(), std::io::Error> {
             .register("set_sub", api::set_sub(&runtime))
             .register("update_subs", api::update_subs(&runtime))
             .register("get_update_status", api::get_update_status(&runtime))
-            .register("create_debug_log", api::create_debug_log())
+            .register("create_debug_log", api::create_debug_log(&runtime))
             .register("get_running_status", api::get_running_status(&runtime))
             .run_blocking()
             .unwrap();
