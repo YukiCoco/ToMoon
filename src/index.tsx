@@ -217,7 +217,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
         </PanelSectionRow>
         <PanelSectionRow>
           <DropdownItem
-            disabled={optionDropdownDisabled}
+            // disabled={optionDropdownDisabled}
             strDefaultLabel={"Select a Subscription"}
             rgOptions={options}
             selectedOption={currentSub}
@@ -226,7 +226,11 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
               // setOptions(subs_option);
             }}
             onChange={(x) => {
-              backend.resolve(backend.setSub(x.data), () => {
+              const setSub = async () => {
+                await backend.setSub(x.data);
+                await ApiCallBackend.reloadClashConfig();
+              }
+              backend.resolve(setSub(), () => {
                 setIsSelectionDisabled(false);
               });
             }}

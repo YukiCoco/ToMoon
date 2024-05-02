@@ -24,3 +24,5 @@ env_logger = "0.10.0"
 local-ip-address = "0.5.1"
 actix-cors = "0.6.4"
 tokio = "1.24.1"
+reqwest = { version = "0.12.4", features = ["json"] }
+# openssl = { version = "0.10", features = ["vendored"] }

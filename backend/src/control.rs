@@ -6,6 +6,9 @@ use std::sync::{Arc, RwLock};
 use std::time::Duration;
 use std::{error, fs, thread};
 
+use reqwest::Client;
+use serde_json::json;
+
 use serde::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Value};
 
@@ -349,7 +352,7 @@ impl Clash {
 
         //log::info!("Pre-setting network");
         //TODO: 未修改的 unwarp
-        let run_config = decky_data_dir.join("running_config.yaml");
+        let run_config = self.get_running_config().unwrap();
         let outputs = fs::File::create("/tmp/tomoon.clash.log").unwrap();
         let errors = outputs.try_clone().unwrap();
 
@@ -397,6 +400,38 @@ impl Clash {
         self.config = std::path::PathBuf::from((*path).clone());
     }
 
+    pub fn get_running_config(&self) -> std::io::Result<std::path::PathBuf> {
+        let decky_data_dir = get_decky_data_dir().unwrap();
+        let run_config = decky_data_dir.join("running_config.yaml");
+        Ok(run_config)
+    }
+
+    pub async fn reload_config(&self) -> Result<(), Box<dyn error::Error>> {
+        log::info!("Reloading Clash config...");
+        let run_config = self.get_running_config().unwrap();
+
+        let client = Client::new();
+        let url = "http://127.0.0.1:9090/configs?force=true";
+        let body = json!({
+            "path": run_config,
+            "payload": ""
+        });
+
+        let res = client.put(url)
+        .json(&body)
+        .send()
+        .await?;
+
+
+        if res.status().is_success() {
+            log::info!("Clash config reloaded successfully");
+        } else {
+            log::error!("Failed to reload Clash config");
+        }
+
+        Ok(())
+    }
+
     pub fn change_config(&self, 
         skip_proxy: bool,
         override_dns: bool,
@@ -405,6 +440,8 @@ impl Clash {
         dashboard_path: &String
     ) -> Result<(), Box<dyn error::Error>> {
         let path = self.config.clone();
+        log::info!("change_config path: {:?}", path);
+
         let config = fs::read_to_string(path)?;
         let mut yaml: serde_yaml::Value = serde_yaml::from_str(config.as_str())?;
         let yaml = yaml.as_mapping_mut().unwrap();
@@ -587,12 +624,18 @@ impl Clash {
             }
         }
 
-        let run_config = get_decky_data_dir()?.join("running_config.yaml");
+        let run_config = self.get_running_config()?;
 
         let yaml_str = serde_yaml::to_string(&yaml)?;
-        fs::write(run_config, yaml_str)?;
+        match fs::write(run_config, yaml_str) {
+            Ok(_) => {
+                log::info!("Clash config changed successfully");
+            }
+            Err(e) => {
+                log::error!("Error occurred while changing Clash config: {}", e);
+            }
+        }
 
-        log::info!("Clash config changed successfully");
         Ok(())
     }
 

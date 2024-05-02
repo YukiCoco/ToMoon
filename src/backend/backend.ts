@@ -191,7 +191,7 @@ export enum ApiCallMethod {
 export function apiCallMethod(name: string, params: {}, method: ApiCallMethod = ApiCallMethod.POST): Promise<any> {
   const url = `http://localhost:55556/${name}`;
   const headers = { 'content-type': 'application/x-www-form-urlencoded' };
-  
+
   if (method === ApiCallMethod.GET) {
     return axios.get(url, { headers: headers });
   } else {
@@ -200,31 +200,41 @@ export function apiCallMethod(name: string, params: {}, method: ApiCallMethod = 
 }
 
 export class ApiCallBackend {
-  public static async setDashboard(dashboard: string) {
-    return await apiCallMethod("set_dashboard", { dashboard: dashboard });
-  }
-
   public static async getConfig() {
     return await apiCallMethod("get_config", {}, ApiCallMethod.GET);
   }
 
+  // reload_clash_config
+  public static async reloadClashConfig() {
+    return await apiCallMethod("reload_clash_config", {}, ApiCallMethod.GET);
+  }
+
+  public static async setDashboard(dashboard: string) {
+    await apiCallMethod("set_dashboard", { dashboard: dashboard });
+    await ApiCallBackend.reloadClashConfig();
+  }
+
   // enhanced_mode
   public static async enhancedMode(value: EnhancedMode) {
-    return await apiCallMethod("enhanced_mode", { enhanced_mode: value });
+    await apiCallMethod("enhanced_mode", { enhanced_mode: value });
+    await ApiCallBackend.reloadClashConfig();
   }
 
   // override_dns
   public static async overrideDns(value: boolean) {
-    return await apiCallMethod("override_dns", { override_dns: value });
+    await apiCallMethod("override_dns", { override_dns: value });
+    await ApiCallBackend.reloadClashConfig();
   }
 
   // skip_proxy
   public static async skipProxy(value: boolean) {
-    return await apiCallMethod("skip_proxy", { skip_proxy: value });
+    await apiCallMethod("skip_proxy", { skip_proxy: value });
+    await ApiCallBackend.reloadClashConfig();
   }
 
   // allow_remote_access
   public static async allowRemoteAccess(value: boolean) {
-    return await apiCallMethod("allow_remote_access", { allow_remote_access: value });
+    await apiCallMethod("allow_remote_access", { allow_remote_access: value });
+    await ApiCallBackend.reloadClashConfig();
   }
 }
