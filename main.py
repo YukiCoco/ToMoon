@@ -12,7 +12,7 @@ class Plugin:
     # Asyncio-compatible long-running code, executed in a task when the plugin is loaded
     async def _main(self):
         logger = setup_logger()
-        
+
         utils.write_font_config()
 
         logger.info("Start Tomoon.")
@@ -27,6 +27,7 @@ class Plugin:
     async def _unload(self):
         logger.info("Stop Tomoon.")
         self.backend_proc.kill()
+        utils.remove_font_config()
         pass
 
     async def update_latest(self):

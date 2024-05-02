@@ -2,10 +2,9 @@ import os
 import decky_plugin
 from config import logger
 
-def write_font_config():
-    user_home = decky_plugin.DECKY_USER_HOME
-    font_config = """
+FONT_CONFIG = """
 <?xml version="1.0"?>
+<!-- ToMoon -->
 <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
 <fontconfig>
   <alias>
@@ -34,17 +33,31 @@ def write_font_config():
   </alias>
 </fontconfig>
 """
-    consf_dir = f"{user_home}/.config/fontconfig/conf.d"
-    if not os.path.exists(consf_dir):
-        logger.info(f"Creating fontconfig directory: {consf_dir}")
-        os.makedirs(consf_dir)
-    conf_path = f"{consf_dir}/75-noto-cjk.conf"
-    if not os.path.exists(conf_path):
-        logger.info(f"Creating fontconfig file: {conf_path}")
-        with open(conf_path, "w") as f:
-            f.write(font_config)
+FONT_CONF_DIR = f"{decky_plugin.DECKY_USER_HOME}/.config/fontconfig/conf.d"
+FONT_CONF_FILE = f"{FONT_CONF_DIR}/75-noto-cjk.conf"
+
+
+def write_font_config():
+    if not os.path.exists(FONT_CONF_DIR):
+        logger.info(f"Creating fontconfig directory: {FONT_CONF_DIR}")
+        os.makedirs(FONT_CONF_DIR)
+    if not os.path.exists(FONT_CONF_FILE):
+        logger.info(f"Creating fontconfig file: {FONT_CONF_FILE}")
+        with open(FONT_CONF_FILE, "w") as f:
+            f.write(FONT_CONFIG)
             f.close()
-    
+
     user = decky_plugin.DECKY_USER
     # change fontconfig owner
-    os.system(f"chown -R {user}:{user} {consf_dir}")
+    os.system(f"chown -R {user}:{user} {FONT_CONF_DIR}")
+
+
+def remove_font_config():
+    if os.path.exists(FONT_CONF_FILE):
+        # read fontconfig file, if contains '<!-- ToMoon -->' then remove it
+        with open(FONT_CONF_FILE, "r") as f:
+            content = f.read()
+            f.close()
+        if "<!-- ToMoon -->" in content:
+            logger.info(f"Removing fontconfig file: {FONT_CONF_FILE}")
+            os.remove(FONT_CONF_FILE)
