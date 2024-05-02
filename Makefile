@@ -63,10 +63,17 @@ download_yacd:
 	@echo "+ $@"
 	@mkdir -p ./tmp
 	@mkdir -p ./tmp/core
-	@wget -O ./tmp/yacd.zip https://github.com/MetaCubeX/yacd/archive/gh-pages.zip
-	@unzip ./tmp/yacd.zip -d ./tmp
-	@mv ./tmp/Yacd-meta-gh-pages ./tmp/core/web
-	@rm -f ./tmp/yacd.zip
+	@mkdir -p ./tmp/core/web
+	@wget -O ./tmp/yacd-meta.zip https://github.com/MetaCubeX/yacd/archive/gh-pages.zip
+	@unzip ./tmp/yacd-meta -d ./tmp
+	@mv ./tmp/Yacd-meta-gh-pages ./tmp/core/web/yacd-meta
+	@wget -O ./tmp/yacd.zip https://github.com/haishanh/yacd/archive/refs/heads/gh-pages.zip
+	@unzip ./tmp/yacd -d ./tmp
+	@mv ./tmp/yacd-gh-pages ./tmp/core/web/yacd
+	@wget -O metacubexd.zip https://github.com/MetaCubeX/metacubexd/archive/refs/heads/gh-pages.zip
+	@unzip metacubexd -d ./tmp
+	@mv ./tmp/metacubexd-gh-pages ./tmp/core/web/metacubexd
+	@rm -f ./tmp/yacd.zip ./tmp/yacd-meta.zip metacubexd.zip
 
 
 build-front: ## Build frontend

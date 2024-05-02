@@ -162,4 +162,10 @@ export class PyBackend {
     return (await this.serverAPI!.callPluginMethod("get_version", {}))
       .result as string;
   }
+
+  // get_dashboard_list
+  public static async getDashboardList() {
+    return (await this.serverAPI!.callPluginMethod("get_dashboard_list", {}))
+      .result as string[];
+  }
 }

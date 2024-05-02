@@ -6,6 +6,7 @@ from config import logger, setup_logger
 import update
 import decky_plugin
 import utils
+import dashboard
 
 class Plugin:
     backend_proc = None
@@ -43,3 +44,6 @@ class Plugin:
         version = update.get_latest_version()
         logger.info(f"Latest version: {version}")
         return version
+    
+    async def get_dashboard_list(self):
+        return dashboard.get_dashboard_list()

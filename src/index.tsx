@@ -26,6 +26,7 @@ import {
 
 import * as backend from "./backend";
 import axios from "axios";
+import { PyBackend } from "./backend";
 
 enum EnhancedMode {
   RedirHost = 'RedirHost',
@@ -40,6 +41,8 @@ let subs: any[];
 let subs_option: any[];
 let current_sub = '';
 let enhanced_mode = EnhancedMode.FakeIp;
+let dashboard_list : string [];
+let current_dashboard = '';
 
 const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
 
@@ -73,6 +76,8 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   const [overrideDNSState, setOverrideDNSState] = useState(enabledOverrideDNS);
   const [currentSub, setCurrentSub] = useState<string>(current_sub);
   const [enhancedMode, setEnhancedMode] = useState<EnhancedMode>(enhanced_mode);
+  const [dashboardList, setDashboardList] = useState<string[]>(dashboard_list);
+  const [currentDashboard, setCurrentDashboard] = useState<string>(current_dashboard);
 
   const update_subs = () => {
     backend.resolve(backend.getSubList(), (v: String) => {
@@ -108,13 +113,24 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
       const sub = await backend.getCurrentSub();
       setCurrentSub(sub);
     }
+
+    const getDashboardList = async () => {
+      const list = await PyBackend.getDashboardList();
+      setDashboardList(list);
+    }
+
     getCurrentSub();
+    getDashboardList();
     update_subs();
   }, []);
 
   useEffect(() => {
     current_sub = currentSub;
   }, [currentSub]);
+
+  useEffect(() => {
+    dashboard_list = dashboardList;
+  }, [dashboardList]);
 
   const enhancedModeOptions = [
     {mode:EnhancedMode.RedirHost, label: "Redir Host"},
@@ -223,6 +239,21 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
           >
             Open Dashboard
           </ButtonItem>
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <DropdownItem
+            strDefaultLabel={"Select Dashboard"}
+            rgOptions={dashboardList.map((path) => {
+              return {
+                label: path.split("/").pop(),
+                data: path,
+              }
+            })}
+            selectedOption={currentDashboard}
+            onChange={(val) => {
+              console.log(`selected dashboard: ${val.data}`);
+            }}
+          />
         </PanelSectionRow>
         <PanelSectionRow>
           <ToggleField
