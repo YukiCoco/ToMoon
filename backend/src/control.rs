@@ -407,7 +407,7 @@ impl Clash {
 
         let body_str = serde_json::to_string(&body).unwrap();
 
-        let res = match minreq::post(url)
+        let res = match minreq::put(url)
             .with_header("Content-Type", "application/json")
             .with_body(body_str)
             .send()
@@ -422,10 +422,13 @@ impl Clash {
             }
         };
 
-        if res.status_code == 200 {
+        if res.status_code >= 200 && res.status_code < 300 {
             log::info!("Clash config reloaded successfully");
         } else {
-            log::error!("Failed to reload Clash config");
+            log::error!(
+                "Failed to reload Clash config, status code: {}",
+                res.status_code
+            );
         }
 
         Ok(())
@@ -455,7 +458,7 @@ impl Clash {
             }
         };
 
-        if res.status_code == 200 {
+        if res.status_code >= 200 && res.status_code < 300 {
             log::info!("Clash restart successfully");
         } else {
             let data = res.as_str().unwrap();
