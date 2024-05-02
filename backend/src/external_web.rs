@@ -33,6 +33,11 @@ pub struct OverrideDNSParams {
 }
 
 #[derive(Deserialize)]
+pub struct AllowRemoteAccessParams {
+    allow_remote_access: bool,
+}
+
+#[derive(Deserialize)]
 pub struct EnhancedModeParams {
     enhanced_mode: EnhancedMode,
 }
@@ -179,6 +184,51 @@ pub async fn override_dns(
         }
         Err(e) => {
             log::error!("Failed while toggle override dns.");
+            log::error!("Error Message:{}", e);
+            return Err(actix_web::Error::from(ClashError {
+                Message: e.to_string(),
+                ErrorKind: ClashErrorKind::ConfigNotFound,
+            }));
+        }
+    }
+    let r = OverrideDNSResponse {
+        message: "修改成功".to_string(),
+        status_code: 200,
+    };
+    Ok(HttpResponse::Ok().json(r))
+}
+
+// allow_remote_access
+pub async fn allow_remote_access(
+    state: web::Data<AppState>,
+    params: web::Form<AllowRemoteAccessParams>,
+) -> Result<HttpResponse> {
+    let allow_remote_access = params.allow_remote_access.clone();
+    let runtime = state.runtime.lock().unwrap();
+    let runtime_settings;
+    let runtime_state;
+    unsafe {
+        let runtime = runtime.0.as_ref().unwrap();
+        runtime_settings = runtime.settings_clone();
+        runtime_state = runtime.state_clone();
+    }
+    match runtime_settings.write() {
+        Ok(mut x) => {
+            x.allow_remote_access = allow_remote_access;
+            let mut state = match runtime_state.write() {
+                Ok(x) => x,
+                Err(e) => {
+                    log::error!("allow_remote_access failed to acquire state write lock: {}", e);
+                    return Err(actix_web::Error::from(ClashError {
+                        Message: e.to_string(),
+                        ErrorKind: ClashErrorKind::InnerError,
+                    }));
+                }
+            };
+            state.dirty = true;
+        }
+        Err(e) => {
+            log::error!("Failed while toggle allow_remote_access.");
             log::error!("Error Message:{}", e);
             return Err(actix_web::Error::from(ClashError {
                 Message: e.to_string(),

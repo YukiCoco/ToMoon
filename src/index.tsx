@@ -36,8 +36,9 @@ let subs: any[];
 let subs_option: any[];
 let current_sub = '';
 let enhanced_mode = EnhancedMode.FakeIp;
-let dashboard_list : string [];
+let dashboard_list: string[];
 let current_dashboard = '';
+let allow_remote_access = false;
 
 const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
 
@@ -50,17 +51,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   }
   const [clashState, setClashState] = useState(enabledGlobal);
   backend.resolve(backend.getEnabled(), setClashState);
-  // axios.get("http://127.0.0.1:55556/get_config").then(r => {
-  //   // json print r.data
-  //   console.log(`>>>>>>>>>>>>>>> get_config: ${JSON.stringify(r.data, null ,2)}`);
 
-  //   if (r.data.status_code == 200) {
-  //     enabledSkipProxy = r.data.skip_proxy;
-  //     enabledOverrideDNS = r.data.override_dns;
-  //     enhanced_mode = r.data.enhanced_mode;
-  //     current_dashboard = r.data.dashboard;
-  //   }
-  // })
   //setInterval(refreshSubOptions, 2000);
   console.log("status :" + clashState);
   const [options, setOptions] = useState<DropdownOption[]>(subs_option);
@@ -74,6 +65,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   const [enhancedMode, setEnhancedMode] = useState<EnhancedMode>(enhanced_mode);
   const [dashboardList, setDashboardList] = useState<string[]>(dashboard_list);
   const [currentDashboard, setCurrentDashboard] = useState<string>(current_dashboard);
+  const [allowRemoteAccess, setAllowRemoteAccess] = useState(allow_remote_access);
 
   const update_subs = () => {
     backend.resolve(backend.getSubList(), (v: String) => {
@@ -112,23 +104,25 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
 
     const getDashboardList = async () => {
       const list = await PyBackend.getDashboardList();
-      console.log(`list ${JSON.stringify(list, null ,2)}`)
+      console.log(`list ${JSON.stringify(list, null, 2)}`)
       setDashboardList(list);
     }
 
     const getConfig = async () => {
       await ApiCallBackend.getConfig().then((res) => {
-        console.log(`getConfig: ${JSON.stringify(res.data, null ,2)}`);
+        console.log(`getConfig: ${JSON.stringify(res.data, null, 2)}`);
         if (res.data.status_code == 200) {
           enabledSkipProxy = res.data.skip_proxy;
           enabledOverrideDNS = res.data.override_dns;
           enhanced_mode = res.data.enhanced_mode;
           current_dashboard = res.data.dashboard;
+          allow_remote_access = res.data.allow_remote_access;
 
           setSkipProxyState(enabledSkipProxy);
           setOverrideDNSState(enabledOverrideDNS);
           setEnhancedMode(enhanced_mode);
           setCurrentDashboard(current_dashboard);
+          setAllowRemoteAccess(allow_remote_access);
         }
       });
     }
@@ -153,11 +147,11 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   }, [dashboardList]);
 
   const enhancedModeOptions = [
-    {mode:EnhancedMode.RedirHost, label: "Redir Host"},
-    {mode:EnhancedMode.FakeIp, label:"Fake IP"},
+    { mode: EnhancedMode.RedirHost, label: "Redir Host" },
+    { mode: EnhancedMode.FakeIp, label: "Fake IP" },
   ];
 
-  const enhancedModeNotchLabels : NotchLabel[] = enhancedModeOptions.map((opt, i) => {
+  const enhancedModeNotchLabels: NotchLabel[] = enhancedModeOptions.map((opt, i) => {
     return {
       notchIndex: i,
       label: opt.label,
@@ -280,6 +274,18 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
         </PanelSectionRow>
         <PanelSectionRow>
           <ToggleField
+            label="Allow Remote Access"
+            description="Allow Remote Access to Dashboard"
+            checked={allowRemoteAccess}
+            onChange={(value: boolean) => {
+              ApiCallBackend.allowRemoteAccess(value);
+              setAllowRemoteAccess(value);
+            }}
+          >
+          </ToggleField>
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <ToggleField
             label="Skip Steam Proxy"
             description="Enable for direct Steam downloads"
             checked={skipProxyState}
@@ -305,7 +311,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
         {overrideDNSState && <PanelSectionRow>
           <SliderField
             label={"Enhanced Mode"}
-            value={convertEnhancedModeValue(enhancedMode)} 
+            value={convertEnhancedModeValue(enhancedMode)}
             min={0}
             max={enhancedModeNotchLabels.length - 1}
             notchCount={enhancedModeNotchLabels.length}

@@ -222,4 +222,9 @@ export class ApiCallBackend {
   public static async skipProxy(value: boolean) {
     return await apiCallMethod("skip_proxy", { skip_proxy: value });
   }
+
+  // allow_remote_access
+  public static async allowRemoteAccess(value: boolean) {
+    return await apiCallMethod("allow_remote_access", { allow_remote_access: value });
+  }
 }

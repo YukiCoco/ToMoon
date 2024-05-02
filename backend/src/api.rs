@@ -86,7 +86,8 @@ pub fn set_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
                     match clash.run(
                         &settings.current_sub, 
                         settings.skip_proxy, 
-                        settings.override_dns, 
+                        settings.override_dns,
+                        settings.allow_remote_access,
                         settings.enhanced_mode,
                         &settings.dashboard,
                     ) {

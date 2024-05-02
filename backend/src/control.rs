@@ -253,6 +253,7 @@ impl Clash {
         config_path: &String, 
         skip_proxy: bool, 
         override_dns: bool, 
+        allow_remote_access: bool,
         enhanced_mode: EnhancedMode,
         dashboard_path: &String
     ) -> Result<(), ClashError> {
@@ -330,7 +331,13 @@ impl Clash {
 
         self.update_config_path(config_path);
         // 修改配置文件为推荐配置
-        match self.change_config(skip_proxy, override_dns, enhanced_mode, dashboard_path) {
+        match self.change_config(
+            skip_proxy, 
+            override_dns, 
+            allow_remote_access,
+            enhanced_mode, 
+            dashboard_path
+        ) {
             Ok(_) => (),
             Err(e) => {
                 return Err(ClashError {
@@ -393,6 +400,7 @@ impl Clash {
     pub fn change_config(&self, 
         skip_proxy: bool,
         override_dns: bool,
+        allow_remote_access: bool,
         enhanced_mode: EnhancedMode,
         dashboard_path: &String
     ) -> Result<(), Box<dyn error::Error>> {
@@ -403,15 +411,17 @@ impl Clash {
 
         log::info!("Changing Clash config...");
 
+        let external_ip = if allow_remote_access { "0.0.0.0" } else { "127.0.0.1" };
+
         //修改 WebUI
         match yaml.get_mut("external-controller") {
             Some(x) => {
-                *x = Value::String(String::from("127.0.0.1:9090"));
+                *x = Value::String(String::from(format!("{}:9090", external_ip)));
             }
             None => {
                 yaml.insert(
                     Value::String(String::from("external-controller")),
-                    Value::String(String::from("127.0.0.1:9090")),
+                    Value::String(String::from(format!("{}:9090", external_ip))),
                 );
             }
         }

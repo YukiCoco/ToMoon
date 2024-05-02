@@ -21,6 +21,8 @@ pub struct Settings {
     pub subscriptions: Vec<Subscription>,
     #[serde(default = "default_dashboard")]
     pub dashboard: String,
+    #[serde(default = "default_allow_remote_access")]
+    pub allow_remote_access: bool,
 }
 
 fn default_skip_proxy() -> bool {
@@ -33,6 +35,10 @@ fn default_enable() -> bool {
 
 fn default_override_dns() -> bool {
     true
+}
+
+fn default_allow_remote_access() -> bool {
+    false
 }
 
 fn default_enhanced_mode() -> EnhancedMode {
@@ -140,7 +146,8 @@ impl Default for Settings {
             enhanced_mode: EnhancedMode::FakeIp,
             current_sub: default_profile.to_string_lossy().to_string(),
             subscriptions: Vec::new(),
-            dashboard: default_dashboard()
+            dashboard: default_dashboard(),
+            allow_remote_access: default_allow_remote_access()
         }
     }
 }

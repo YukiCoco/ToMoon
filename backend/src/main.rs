@@ -92,6 +92,11 @@ async fn main() -> Result<(), std::io::Error> {
             .service(web::resource("/enhanced_mode").route(web::post().to(external_web::enhanced_mode)))
             .service(web::resource("/set_dashboard").route(web::post().to(external_web::set_dashboard)))
             .service(web::resource("/get_config").route(web::get().to(external_web::get_config)))
+            // allow_remote_access
+            .service(
+                web::resource("/allow_remote_access")
+                    .route(web::post().to(external_web::allow_remote_access)),
+            )
             //.service(web::resource("/manual").route(web::get().to(external_web.web_download_sub)))
             .service(
                 fs::Files::new("/", "./web")
