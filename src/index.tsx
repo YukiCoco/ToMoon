@@ -116,11 +116,18 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
 
     const getDashboardList = async () => {
       const list = await PyBackend.getDashboardList();
+      console.log(`list ${JSON.stringify(list, null ,2)}`)
       setDashboardList(list);
+    }
+
+    const getCurrentDashboard = async () => {
+      const dashboard = await PyBackend.getCurrentDashboard();
+      setCurrentDashboard(dashboard);
     }
 
     getCurrentSub();
     getDashboardList();
+    getCurrentDashboard();
     update_subs();
   }, []);
 
@@ -131,6 +138,10 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   useEffect(() => {
     dashboard_list = dashboardList;
   }, [dashboardList]);
+
+  useEffect(() => {
+    current_dashboard = currentDashboard;
+  }, [currentDashboard]);
 
   const enhancedModeOptions = [
     {mode:EnhancedMode.RedirHost, label: "Redir Host"},
@@ -243,7 +254,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
         <PanelSectionRow>
           <DropdownItem
             strDefaultLabel={"Select Dashboard"}
-            rgOptions={dashboardList.map((path) => {
+            rgOptions={dashboardList?.map((path) => {
               return {
                 label: path.split("/").pop(),
                 data: path,
@@ -251,7 +262,9 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
             })}
             selectedOption={currentDashboard}
             onChange={(val) => {
-              console.log(`selected dashboard: ${val.data}`);
+              console.log(`>>>>> selected dashboard: ${val.data}`);
+              setCurrentDashboard(val.data);
+              PyBackend.setDashboard(val.data);
             }}
           />
         </PanelSectionRow>

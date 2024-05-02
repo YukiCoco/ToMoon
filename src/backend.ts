@@ -168,4 +168,15 @@ export class PyBackend {
     return (await this.serverAPI!.callPluginMethod("get_dashboard_list", {}))
       .result as string[];
   }
+
+  // get_current_dashboard
+  public static async getCurrentDashboard() {
+    return (await this.serverAPI!.callPluginMethod("get_current_dashboard", {}))
+      .result as string;
+  }
+
+  // set_dashboard
+  public static async setDashboard(dashboard: string) {
+    await this.serverAPI!.callPluginMethod("set_dashboard", { dashboard });
+  }
 }
