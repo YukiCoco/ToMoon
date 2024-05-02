@@ -82,6 +82,7 @@ pub struct GetConfigResponse {
     override_dns: bool,
     enhanced_mode: EnhancedMode,
     dashboard: String,
+    allow_remote_access: bool,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -349,6 +350,7 @@ pub async fn get_config(state: web::Data<AppState>) -> Result<HttpResponse> {
                 override_dns: x.override_dns,
                 enhanced_mode: x.enhanced_mode,
                 dashboard: x.dashboard.clone(),
+                allow_remote_access: x.allow_remote_access,
                 status_code: 200,
             };
             return Ok(HttpResponse::Ok().json(r));

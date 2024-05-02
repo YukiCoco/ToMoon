@@ -21,12 +21,12 @@ import {
   Subscriptions,
   About,
   Debug,
-  VersionComponent
 } from "./pages";
 
 import * as backend from "./backend";
 import axios from "axios";
 import { ApiCallBackend, PyBackend, EnhancedMode } from "./backend";
+import { VersionComponent } from "./components";
 
 let enabledGlobal = false;
 let enabledSkipProxy = false;
@@ -388,6 +388,7 @@ export default definePlugin((serverApi: ServerAPI) => {
         enabledOverrideDNS = r.data.override_dns;
         enhanced_mode = r.data.enhanced_mode;
         current_dashboard = r.data.dashboard;
+        allow_remote_access = r.data.allow_remote_access;
       }
     });
   })();
