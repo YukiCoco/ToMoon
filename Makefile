@@ -97,7 +97,7 @@ build-front-sub:
 
 copy-file:
 	@echo "+ $@"
-	@rsync -av ./tmp/core/dashboard/ ./bin/core/dashboard/ --delete
+	@rsync -av ./tmp/core/ ./bin/core/ --delete
 
 build-back: ## Build backend
 	@echo "+ $@"

@@ -26,12 +26,7 @@ import {
 
 import * as backend from "./backend";
 import axios from "axios";
-import { PyBackend } from "./backend";
-
-enum EnhancedMode {
-  RedirHost = 'RedirHost',
-  FakeIp = 'FakeIp',
-}
+import { ApiCallBackend, PyBackend, EnhancedMode } from "./backend";
 
 let enabledGlobal = false;
 let enabledSkipProxy = false;
@@ -55,16 +50,17 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   }
   const [clashState, setClashState] = useState(enabledGlobal);
   backend.resolve(backend.getEnabled(), setClashState);
-  axios.get("http://127.0.0.1:55556/get_config").then(r => {
-    // json print r.data
-    console.log(`>>>>>>>>>>>>>>> get_config: ${JSON.stringify(r.data, null ,2)}`);
+  // axios.get("http://127.0.0.1:55556/get_config").then(r => {
+  //   // json print r.data
+  //   console.log(`>>>>>>>>>>>>>>> get_config: ${JSON.stringify(r.data, null ,2)}`);
 
-    if (r.data.status_code == 200) {
-      enabledSkipProxy = r.data.skip_proxy;
-      enabledOverrideDNS = r.data.override_dns;
-      enhanced_mode = r.data.enhanced_mode;
-    }
-  })
+  //   if (r.data.status_code == 200) {
+  //     enabledSkipProxy = r.data.skip_proxy;
+  //     enabledOverrideDNS = r.data.override_dns;
+  //     enhanced_mode = r.data.enhanced_mode;
+  //     current_dashboard = r.data.dashboard;
+  //   }
+  // })
   //setInterval(refreshSubOptions, 2000);
   console.log("status :" + clashState);
   const [options, setOptions] = useState<DropdownOption[]>(subs_option);
@@ -120,15 +116,32 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
       setDashboardList(list);
     }
 
-    const getCurrentDashboard = async () => {
-      const dashboard = await PyBackend.getCurrentDashboard();
-      setCurrentDashboard(dashboard);
+    const getConfig = async () => {
+      await ApiCallBackend.getConfig().then((res) => {
+        console.log(`getConfig: ${JSON.stringify(res.data, null ,2)}`);
+        if (res.data.status_code == 200) {
+          enabledSkipProxy = res.data.skip_proxy;
+          enabledOverrideDNS = res.data.override_dns;
+          enhanced_mode = res.data.enhanced_mode;
+          current_dashboard = res.data.dashboard;
+
+          setSkipProxyState(enabledSkipProxy);
+          setOverrideDNSState(enabledOverrideDNS);
+          setEnhancedMode(enhanced_mode);
+          setCurrentDashboard(current_dashboard);
+        }
+      });
     }
 
-    getCurrentSub();
-    getDashboardList();
-    getCurrentDashboard();
-    update_subs();
+    const loadDate = async () => {
+      await getConfig();
+
+      await getCurrentSub();
+      await getDashboardList();
+      await update_subs();
+    }
+
+    loadDate();
   }, []);
 
   useEffect(() => {
@@ -138,10 +151,6 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   useEffect(() => {
     dashboard_list = dashboardList;
   }, [dashboardList]);
-
-  useEffect(() => {
-    current_dashboard = currentDashboard;
-  }, [currentDashboard]);
 
   const enhancedModeOptions = [
     {mode:EnhancedMode.RedirHost, label: "Redir Host"},
@@ -163,6 +172,8 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   const convertEnhancedModeValue = (value: EnhancedMode) => {
     return enhancedModeOptions.findIndex((opt) => opt.mode === value);
   }
+
+  console.log(`>>>>>>> currentDashboard ${currentDashboard}`)
 
   return (
     <div>
@@ -243,8 +254,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
             layout="below"
             onClick={() => {
               Router.CloseSideMenus()
-              Navigation.NavigateToExternalWeb("http://127.0.0.1:9090/ui")
-              //Router.NavigateToExternalWeb("http://127.0.0.1:9090/ui")
+              Navigation.NavigateToExternalWeb("http://127.0.0.1:9090/ui/")
             }}
             disabled={openDashboardDisabled}
           >
@@ -253,6 +263,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
         </PanelSectionRow>
         <PanelSectionRow>
           <DropdownItem
+            label={"Dashboard"}
             strDefaultLabel={"Select Dashboard"}
             rgOptions={dashboardList?.map((path) => {
               return {
@@ -261,10 +272,9 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
               }
             })}
             selectedOption={currentDashboard}
-            onChange={(val) => {
+            onChange={async (val) => {
               console.log(`>>>>> selected dashboard: ${val.data}`);
-              setCurrentDashboard(val.data);
-              PyBackend.setDashboard(val.data);
+              await ApiCallBackend.setDashboard(val.data);
             }}
           />
         </PanelSectionRow>
@@ -274,11 +284,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
             description="Enable for direct Steam downloads"
             checked={skipProxyState}
             onChange={(value: boolean) => {
-              axios.post("http://127.0.0.1:55556/skip_proxy", {
-                skip_proxy: value
-              }, {
-                headers: { 'content-type': 'application/x-www-form-urlencoded' },
-              });
+              ApiCallBackend.skipProxy(value);
               setSkipProxyState(value);
             }}
           >
@@ -290,11 +296,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
             description="Force Clash to hijack DNS query"
             checked={overrideDNSState}
             onChange={(value: boolean) => {
-              axios.post("http://127.0.0.1:55556/override_dns", {
-                override_dns: value
-              }, {
-                headers: { 'content-type': 'application/x-www-form-urlencoded' },
-              });
+              ApiCallBackend.overrideDns(value);
               setOverrideDNSState(value);
             }}
           >
@@ -313,11 +315,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
             onChange={(value: number) => {
               const _enhancedMode = convertEnhancedMode(value);
               setEnhancedMode(_enhancedMode);
-              axios.post("http://127.0.0.1:55556/enhanced_mode", {
-                enhanced_mode: _enhancedMode
-              }, {
-                headers: { 'content-type': 'application/x-www-form-urlencoded' },
-              });
+              ApiCallBackend.enhancedMode(_enhancedMode);
             }}
           />
         </PanelSectionRow>}
@@ -383,6 +381,7 @@ export default definePlugin((serverApi: ServerAPI) => {
         enabledSkipProxy = r.data.skip_proxy;
         enabledOverrideDNS = r.data.override_dns;
         enhanced_mode = r.data.enhanced_mode;
+        current_dashboard = r.data.dashboard;
       }
     });
   })();

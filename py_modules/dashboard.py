@@ -63,8 +63,8 @@ def set_dashboard(dashboard_path):
 
 
 def set_default_dashboard(skip_if_exists=True):
-    logger.info("set_default_dashboard")
     if not skip_if_exists or not get_current_dashboard():
+        logger.info("set_default_dashboard")
         set_dashboard(defalut_dashboard)
         return True
     return False

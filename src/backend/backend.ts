@@ -1,5 +1,7 @@
 import { ServerAPI } from "decky-frontend-lib";
 import { init_usdpl, init_embedded, call_backend } from "usdpl-front";
+import axios from "axios";
+import { EnhancedMode } from ".";
 
 const USDPL_PORT: number = 55555;
 
@@ -144,7 +146,7 @@ export class PyBackend {
     const version = (
       await this.serverAPI!.callPluginMethod("get_latest_version", {})
     ).result as string;
-    
+
     const versionReg = /^\d+\.\d+\.\d+$/;
     if (!versionReg.test(version)) {
       return "";
@@ -177,6 +179,47 @@ export class PyBackend {
 
   // set_dashboard
   public static async setDashboard(dashboard: string) {
-    await this.serverAPI!.callPluginMethod("set_dashboard", { dashboard });
+    await this.serverAPI!.callPluginMethod("set_dashboard", { dashboard_path: dashboard });
+  }
+}
+
+export enum ApiCallMethod {
+  GET = "GET",
+  POST = "POST",
+}
+
+export function apiCallMethod(name: string, params: {}, method: ApiCallMethod = ApiCallMethod.POST): Promise<any> {
+  const url = `http://localhost:55556/${name}`;
+  const headers = { 'content-type': 'application/x-www-form-urlencoded' };
+  
+  if (method === ApiCallMethod.GET) {
+    return axios.get(url, { headers: headers });
+  } else {
+    return axios.post(url, params, { headers: headers });
+  }
+}
+
+export class ApiCallBackend {
+  public static async setDashboard(dashboard: string) {
+    return await apiCallMethod("set_dashboard", { dashboard: dashboard });
+  }
+
+  public static async getConfig() {
+    return await apiCallMethod("get_config", {}, ApiCallMethod.GET);
+  }
+
+  // enhanced_mode
+  public static async enhancedMode(value: EnhancedMode) {
+    return await apiCallMethod("enhanced_mode", { enhanced_mode: value });
+  }
+
+  // override_dns
+  public static async overrideDns(value: boolean) {
+    return await apiCallMethod("override_dns", { override_dns: value });
+  }
+
+  // skip_proxy
+  public static async skipProxy(value: boolean) {
+    return await apiCallMethod("skip_proxy", { skip_proxy: value });
   }
 }

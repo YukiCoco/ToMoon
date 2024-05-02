@@ -83,7 +83,13 @@ pub fn set_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
                     }
                 }
                 if *enabled {
-                    match clash.run(&settings.current_sub, settings.skip_proxy, settings.override_dns, settings.enhanced_mode) {
+                    match clash.run(
+                        &settings.current_sub, 
+                        settings.skip_proxy, 
+                        settings.override_dns, 
+                        settings.enhanced_mode,
+                        &settings.dashboard,
+                    ) {
                         Ok(_) => (),
                         Err(e) => {
                             log::error!("Run clash error: {}", e);

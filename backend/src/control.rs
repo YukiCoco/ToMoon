@@ -249,7 +249,13 @@ impl Default for Clash {
 }
 
 impl Clash {
-    pub fn run(&mut self, config_path: &String, skip_proxy: bool, override_dns: bool, enhanced_mode: EnhancedMode) -> Result<(), ClashError> {
+    pub fn run(&mut self, 
+        config_path: &String, 
+        skip_proxy: bool, 
+        override_dns: bool, 
+        enhanced_mode: EnhancedMode,
+        dashboard_path: &String
+    ) -> Result<(), ClashError> {
         // decky 插件数据目录 
         let decky_data_dir = get_decky_data_dir().unwrap();
         let new_country_db_path = get_current_working_dir()
@@ -324,7 +330,7 @@ impl Clash {
 
         self.update_config_path(config_path);
         // 修改配置文件为推荐配置
-        match self.change_config(skip_proxy, override_dns, enhanced_mode) {
+        match self.change_config(skip_proxy, override_dns, enhanced_mode, dashboard_path) {
             Ok(_) => (),
             Err(e) => {
                 return Err(ClashError {
@@ -384,7 +390,12 @@ impl Clash {
         self.config = std::path::PathBuf::from((*path).clone());
     }
 
-    pub fn change_config(&self, skip_proxy: bool, override_dns: bool, enhanced_mode: EnhancedMode) -> Result<(), Box<dyn error::Error>> {
+    pub fn change_config(&self, 
+        skip_proxy: bool,
+        override_dns: bool,
+        enhanced_mode: EnhancedMode,
+        dashboard_path: &String
+    ) -> Result<(), Box<dyn error::Error>> {
         let path = self.config.clone();
         let config = fs::read_to_string(path)?;
         let mut yaml: serde_yaml::Value = serde_yaml::from_str(config.as_str())?;
@@ -393,7 +404,6 @@ impl Clash {
         log::info!("Changing Clash config...");
 
         //修改 WebUI
-
         match yaml.get_mut("external-controller") {
             Some(x) => {
                 *x = Value::String(String::from("127.0.0.1:9090"));
@@ -427,17 +437,15 @@ impl Clash {
             }
         }
 
-        let webui_dir = get_current_working_dir()?.join("bin/core/web");
-
         match yaml.get_mut("external-ui") {
             Some(x) => {
                 //TODO: 修改 Web UI 的路径
-                *x = Value::String(String::from(webui_dir.to_str().unwrap()));
+                *x = Value::String(String::from(dashboard_path));
             }
             None => {
                 yaml.insert(
                     Value::String(String::from("external-ui")),
-                    Value::String(String::from(webui_dir.to_str().unwrap())),
+                    Value::String(String::from(dashboard_path)),
                 );
             }
         }

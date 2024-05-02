@@ -37,6 +37,11 @@ pub struct EnhancedModeParams {
     enhanced_mode: EnhancedMode,
 }
 
+#[derive(Deserialize)]
+pub struct DashboardParams {
+    dashboard: String,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct GenLinkResponse {
     status_code: u16,
@@ -71,6 +76,7 @@ pub struct GetConfigResponse {
     skip_proxy: bool,
     override_dns: bool,
     enhanced_mode: EnhancedMode,
+    dashboard: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -195,6 +201,8 @@ pub async fn enhanced_mode(
     let runtime = state.runtime.lock().unwrap();
     let runtime_settings;
     let runtime_state;
+
+    log::info!(">>>>>>  enhanced_mode: {:?}", enhanced_mode);
     unsafe {
         let runtime = runtime.0.as_ref().unwrap();
         runtime_settings = runtime.settings_clone();
@@ -231,6 +239,52 @@ pub async fn enhanced_mode(
     Ok(HttpResponse::Ok().json(r))
 }
 
+pub async fn set_dashboard(
+    state: web::Data<AppState>,
+    params: web::Form<DashboardParams>,
+) -> Result<HttpResponse> {
+    let dashboard = params.dashboard.clone();
+    let runtime = state.runtime.lock().unwrap();
+    let runtime_settings;
+    let runtime_state;
+
+    log::info!(">>>>>>  set_dashboard: {}", dashboard);
+    unsafe {
+        let runtime = runtime.0.as_ref().unwrap();
+        runtime_settings = runtime.settings_clone();
+        runtime_state = runtime.state_clone();
+    }
+    match runtime_settings.write() {
+        Ok(mut x) => {
+            x.dashboard = dashboard;
+            let mut state = match runtime_state.write() {
+                Ok(x) => x,
+                Err(e) => {
+                    log::error!("set_dashboard failed to acquire state write lock: {}", e);
+                    return Err(actix_web::Error::from(ClashError {
+                        Message: e.to_string(),
+                        ErrorKind: ClashErrorKind::InnerError,
+                    }));
+                }
+            };
+            state.dirty = true;
+        }
+        Err(e) => {
+            log::error!("Failed while set dashboard.");
+            log::error!("Error Message:{}", e);
+            return Err(actix_web::Error::from(ClashError {
+                Message: e.to_string(),
+                ErrorKind: ClashErrorKind::ConfigNotFound,
+            }));
+        }
+    }
+    let r = OverrideDNSResponse {
+        message: "修改成功".to_string(),
+        status_code: 200,
+    };
+    Ok(HttpResponse::Ok().json(r))
+}
+
 pub async fn get_config(state: web::Data<AppState>) -> Result<HttpResponse> {
     let runtime = state.runtime.lock().unwrap();
     let runtime_settings;
@@ -244,6 +298,7 @@ pub async fn get_config(state: web::Data<AppState>) -> Result<HttpResponse> {
                 skip_proxy: x.skip_proxy,
                 override_dns: x.override_dns,
                 enhanced_mode: x.enhanced_mode,
+                dashboard: x.dashboard.clone(),
                 status_code: 200,
             };
             return Ok(HttpResponse::Ok().json(r));
