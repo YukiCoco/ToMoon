@@ -5,12 +5,16 @@ import os
 from config import logger, setup_logger
 import update
 import decky_plugin
+import utils
 
 class Plugin:
     backend_proc = None
     # Asyncio-compatible long-running code, executed in a task when the plugin is loaded
     async def _main(self):
         logger = setup_logger()
+
+        utils.write_font_config()
+
         logger.info("Start Tomoon.")
         os.system('chmod -R a+x ' + decky_plugin.DECKY_PLUGIN_DIR)
         # 切换到工作目录
@@ -23,6 +27,7 @@ class Plugin:
     async def _unload(self):
         logger.info("Stop Tomoon.")
         self.backend_proc.kill()
+        utils.remove_font_config()
         pass
 
     async def update_latest(self):
