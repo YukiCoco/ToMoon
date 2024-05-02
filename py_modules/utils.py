@@ -44,3 +44,7 @@ def write_font_config():
         with open(conf_path, "w") as f:
             f.write(font_config)
             f.close()
+    
+    user = decky_plugin.DECKY_USER
+    # change fontconfig owner
+    os.system(f"chown -R {user}:{user} {consf_dir}")
