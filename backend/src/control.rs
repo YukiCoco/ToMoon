@@ -6,7 +6,6 @@ use std::sync::{Arc, RwLock};
 use std::time::Duration;
 use std::{error, fs, thread};
 
-use reqwest::Client;
 use serde_json::json;
 
 use serde::{Deserialize, Serialize};
@@ -400,23 +399,30 @@ impl Clash {
         log::info!("Reloading Clash config...");
         let run_config = self.get_running_config().unwrap();
 
-        let client = Client::new();
         let url = "http://127.0.0.1:9090/configs?force=true";
         let body = json!({
             "path": run_config,
             "payload": ""
         });
 
-        // let res = client.put(url).json(&body).send().await?;
-        let res = match client.put(url).json(&body).send().await {
+        let body_str = serde_json::to_string(&body).unwrap();
+
+        let res = match minreq::post(url)
+            .with_header("Content-Type", "application/json")
+            .with_body(body_str)
+            .send()
+        {
             Ok(x) => x,
             Err(e) => {
-                log::error!("Failed to reload Clash config: {}", e);
-                return Err(ClashError::new());
+                log::error!("Failed to restart Clash core: {}", e);
+                return Err(ClashError {
+                    Message: e.to_string(),
+                    ErrorKind: ClashErrorKind::InnerError,
+                });
             }
         };
 
-        if res.status().is_success() {
+        if res.status_code == 200 {
             log::info!("Clash config reloaded successfully");
         } else {
             log::error!("Failed to reload Clash config");
@@ -428,26 +434,32 @@ impl Clash {
     pub async fn restart_core(&self) -> Result<(), ClashError> {
         log::info!("Restarting Clash core...");
 
-        let client = Client::new();
         let url = "http://127.0.0.1:9090/restart";
         let body = json!({
             "payload": ""
         });
+        let body_str = serde_json::to_string(&body).unwrap();
 
-        let res = match client.post(url).json(&body).send().await {
+        let res = match minreq::post(url)
+            .with_header("Content-Type", "application/json")
+            .with_body(body_str)
+            .send()
+        {
             Ok(x) => x,
             Err(e) => {
-                log::error!(" >> Failed to restart Clash core: {}", e);
-                return Err(ClashError::new());
+                log::error!("Failed to restart Clash core: {}", e);
+                return Err(ClashError {
+                    Message: e.to_string(),
+                    ErrorKind: ClashErrorKind::InnerError,
+                });
             }
         };
 
-        if res.status().is_success() {
+        if res.status_code == 200 {
             log::info!("Clash restart successfully");
         } else {
-            let data = res.text().await.unwrap();
+            let data = res.as_str().unwrap();
             log::error!("Failed to restart Clash core: {}", data);
-            log::error!("Failed to restart Clash core");
         }
 
         Ok(())
