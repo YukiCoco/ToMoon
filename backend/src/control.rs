@@ -252,22 +252,21 @@ impl Default for Clash {
 }
 
 impl Clash {
-    pub fn run(&mut self, 
-        config_path: &String, 
-        skip_proxy: bool, 
-        override_dns: bool, 
+    pub fn run(
+        &mut self,
+        config_path: &String,
+        skip_proxy: bool,
+        override_dns: bool,
         allow_remote_access: bool,
         enhanced_mode: EnhancedMode,
-        dashboard_path: &String
+        dashboard_path: &String,
     ) -> Result<(), ClashError> {
-        // decky 插件数据目录 
+        // decky 插件数据目录
         let decky_data_dir = get_decky_data_dir().unwrap();
         let new_country_db_path = get_current_working_dir()
             .unwrap()
             .join("bin/core/country.mmdb");
-        let new_asn_db_path = get_current_working_dir()
-            .unwrap()
-            .join("bin/core/asn.mmdb");
+        let new_asn_db_path = get_current_working_dir().unwrap().join("bin/core/asn.mmdb");
         let new_geosite_path = get_current_working_dir()
             .unwrap()
             .join("bin/core/geosite.dat");
@@ -282,13 +281,10 @@ impl Clash {
 
         // 检查数据库文件是否存在，不存在则复制
         if !PathBuf::from(country_db_path.clone()).is_file() {
-            match fs::copy(
-                new_country_db_path.clone(),
-                country_db_path.clone(),
-            ) {
+            match fs::copy(new_country_db_path.clone(), country_db_path.clone()) {
                 Ok(_) => {
                     log::info!("Copy country.mmdb to decky data dir")
-                },
+                }
                 Err(e) => {
                     return Err(ClashError {
                         Message: e.to_string(),
@@ -299,13 +295,10 @@ impl Clash {
         }
 
         if !PathBuf::from(asn_db_path.clone()).is_file() {
-            match fs::copy(
-                new_asn_db_path.clone(),
-                asn_db_path.clone(),
-            ) {
+            match fs::copy(new_asn_db_path.clone(), asn_db_path.clone()) {
                 Ok(_) => {
                     log::info!("Copy asn.mmdb to decky data dir")
-                },
+                }
                 Err(e) => {
                     return Err(ClashError {
                         Message: e.to_string(),
@@ -314,15 +307,12 @@ impl Clash {
                 }
             }
         }
-        
+
         if !PathBuf::from(geosite_path.clone()).is_file() {
-            match fs::copy(
-                new_geosite_path.clone(),
-                geosite_path.clone(),
-            ) {
+            match fs::copy(new_geosite_path.clone(), geosite_path.clone()) {
                 Ok(_) => {
                     log::info!("Copy geosite.dat to decky data dir")
-                },
+                }
                 Err(e) => {
                     return Err(ClashError {
                         Message: e.to_string(),
@@ -335,11 +325,11 @@ impl Clash {
         self.update_config_path(config_path);
         // 修改配置文件为推荐配置
         match self.change_config(
-            skip_proxy, 
-            override_dns, 
+            skip_proxy,
+            override_dns,
             allow_remote_access,
-            enhanced_mode, 
-            dashboard_path
+            enhanced_mode,
+            dashboard_path,
         ) {
             Ok(_) => (),
             Err(e) => {
@@ -406,7 +396,7 @@ impl Clash {
         Ok(run_config)
     }
 
-    pub async fn reload_config(&self) -> Result<(), Box<dyn error::Error>> {
+    pub async fn reload_config(&self) -> Result<(), ClashError> {
         log::info!("Reloading Clash config...");
         let run_config = self.get_running_config().unwrap();
 
@@ -417,11 +407,14 @@ impl Clash {
             "payload": ""
         });
 
-        let res = client.put(url)
-        .json(&body)
-        .send()
-        .await?;
-
+        // let res = client.put(url).json(&body).send().await?;
+        let res = match client.put(url).json(&body).send().await {
+            Ok(x) => x,
+            Err(e) => {
+                log::error!("Failed to reload Clash config: {}", e);
+                return Err(ClashError::new());
+            }
+        };
 
         if res.status().is_success() {
             log::info!("Clash config reloaded successfully");
@@ -432,12 +425,41 @@ impl Clash {
         Ok(())
     }
 
-    pub fn change_config(&self, 
+    pub async fn restart_core(&self) -> Result<(), ClashError> {
+        log::info!("Restarting Clash core...");
+
+        let client = Client::new();
+        let url = "http://127.0.0.1:9090/restart";
+        let body = json!({
+            "payload": ""
+        });
+
+        let res = match client.post(url).json(&body).send().await {
+            Ok(x) => x,
+            Err(e) => {
+                log::error!(" >> Failed to restart Clash core: {}", e);
+                return Err(ClashError::new());
+            }
+        };
+
+        if res.status().is_success() {
+            log::info!("Clash restart successfully");
+        } else {
+            let data = res.text().await.unwrap();
+            log::error!("Failed to restart Clash core: {}", data);
+            log::error!("Failed to restart Clash core");
+        }
+
+        Ok(())
+    }
+
+    pub fn change_config(
+        &self,
         skip_proxy: bool,
         override_dns: bool,
         allow_remote_access: bool,
         enhanced_mode: EnhancedMode,
-        dashboard_path: &String
+        dashboard_path: &String,
     ) -> Result<(), Box<dyn error::Error>> {
         let path = self.config.clone();
         log::info!("change_config path: {:?}", path);
@@ -448,7 +470,11 @@ impl Clash {
 
         log::info!("Changing Clash config...");
 
-        let external_ip = if allow_remote_access { "0.0.0.0" } else { "127.0.0.1" };
+        let external_ip = if allow_remote_access {
+            "0.0.0.0"
+        } else {
+            "127.0.0.1"
+        };
 
         //修改 WebUI
         match yaml.get_mut("external-controller") {
@@ -474,13 +500,13 @@ impl Clash {
 
             if skip_proxy {
                 rules.insert(
-                0,
-                Value::String(String::from("DOMAIN-SUFFIX,cm.steampowered.com,DIRECT")),
-            );
-            rules.insert(
-            0,
-            Value::String(String::from("DOMAIN-SUFFIX,steamserver.net,DIRECT")),
-        );
+                    0,
+                    Value::String(String::from("DOMAIN-SUFFIX,cm.steampowered.com,DIRECT")),
+                );
+                rules.insert(
+                    0,
+                    Value::String(String::from("DOMAIN-SUFFIX,steamserver.net,DIRECT")),
+                );
             }
         }
 
@@ -638,5 +664,4 @@ impl Clash {
 
         Ok(())
     }
-
 }

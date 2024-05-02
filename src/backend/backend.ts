@@ -209,9 +209,14 @@ export class ApiCallBackend {
     return await apiCallMethod("reload_clash_config", {}, ApiCallMethod.GET);
   }
 
+  // restart_clash
+  public static async restartClash() {
+    return await apiCallMethod("restart_clash", {}, ApiCallMethod.GET);
+  }
+
   public static async setDashboard(dashboard: string) {
     await apiCallMethod("set_dashboard", { dashboard: dashboard });
-    await ApiCallBackend.reloadClashConfig();
+    await ApiCallBackend.restartClash();
   }
 
   // enhanced_mode
@@ -235,6 +240,6 @@ export class ApiCallBackend {
   // allow_remote_access
   public static async allowRemoteAccess(value: boolean) {
     await apiCallMethod("allow_remote_access", { allow_remote_access: value });
-    await ApiCallBackend.reloadClashConfig();
+    await ApiCallBackend.restartClash();
   }
 }

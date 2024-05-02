@@ -102,6 +102,11 @@ async fn main() -> Result<(), std::io::Error> {
                 web::resource("/reload_clash_config")
                     .route(web::get().to(external_web::reload_clash_config)),
             )
+            // restart_clash
+            .service(
+                web::resource("/restart_clash")
+                    .route(web::get().to(external_web::restart_clash)),
+            )
             //.service(web::resource("/manual").route(web::get().to(external_web.web_download_sub)))
             .service(
                 fs::Files::new("/", "./web")
