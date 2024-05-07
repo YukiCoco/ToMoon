@@ -2,8 +2,7 @@ import os
 import decky_plugin
 from config import logger
 
-FONT_CONFIG = """
-<?xml version="1.0"?>
+FONT_CONFIG = """<?xml version="1.0"?>
 <!-- ToMoon -->
 <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
 <fontconfig>
@@ -33,19 +32,32 @@ FONT_CONFIG = """
   </alias>
 </fontconfig>
 """
-FONT_CONF_DIR = f"{decky_plugin.DECKY_USER_HOME}/.config/fontconfig/conf.d"
-FONT_CONF_FILE = f"{FONT_CONF_DIR}/75-noto-cjk.conf"
+FONT_CONF_DIR = f"{decky_plugin.DECKY_USER_HOME}/.config/fontconfig"
+FONT_CONF_D_DIR = f"{FONT_CONF_DIR}/conf.d"
+FONT_CONF_FILE = f"{FONT_CONF_D_DIR}/76-noto-cjk.conf"
 
 
 def write_font_config():
-    if not os.path.exists(FONT_CONF_DIR):
-        logger.info(f"Creating fontconfig directory: {FONT_CONF_DIR}")
-        os.makedirs(FONT_CONF_DIR)
+    if not os.path.exists(FONT_CONF_D_DIR):
+        logger.info(f"Creating fontconfig directory: {FONT_CONF_D_DIR}")
+        os.makedirs(FONT_CONF_D_DIR)
+
     if not os.path.exists(FONT_CONF_FILE):
         logger.info(f"Creating fontconfig file: {FONT_CONF_FILE}")
         with open(FONT_CONF_FILE, "w") as f:
             f.write(FONT_CONFIG)
             f.close()
+    else:
+        logger.info(f"Fontconfig file already exists: {FONT_CONF_FILE}")
+        with open(FONT_CONF_FILE, "r") as f:
+            content = f.read()
+            f.close()
+        # if different, overwrite it
+        if content != FONT_CONFIG:
+            logger.info(f"Overwriting fontconfig file: {FONT_CONF_FILE}")
+            with open(FONT_CONF_FILE, "w") as f:
+                f.write(FONT_CONFIG)
+                f.close()
 
     user = decky_plugin.DECKY_USER
     # change fontconfig owner
