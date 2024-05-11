@@ -83,7 +83,14 @@ pub fn set_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
                     }
                 }
                 if *enabled {
-                    match clash.run(&settings.current_sub, settings.skip_proxy, settings.override_dns, settings.enhanced_mode) {
+                    match clash.run(
+                        &settings.current_sub, 
+                        settings.skip_proxy, 
+                        settings.override_dns,
+                        settings.allow_remote_access,
+                        settings.enhanced_mode,
+                        &settings.dashboard,
+                    ) {
                         Ok(_) => (),
                         Err(e) => {
                             log::error!("Run clash error: {}", e);
@@ -447,7 +454,7 @@ pub fn delete_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Pr
 }
 
 pub fn set_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Primitive> {
-    //let runtime_clash = runtime.clash_state_clone();
+    let runtime_clash = runtime.clash_state_clone();
     let runtime_state = runtime.state_clone();
     let runtime_setting = runtime.settings_clone();
     move |params: Vec<Primitive>| {
@@ -473,15 +480,15 @@ pub fn set_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Primi
                 }
             };
             // //更新到当前内存中
-            // match runtime_clash.write() {
-            //     Ok(mut x) => {
-            //         x.update_config_path(path);
-            //         log::info!("set profile path to {}", path);
-            //     }
-            //     Err(e) => {
-            //         log::error!("set_sub() failed to acquire clash write lock: {}", e);
-            //     }
-            // }
+            match runtime_clash.write() {
+                Ok(mut x) => {
+                    x.update_config_path(path);
+                    log::info!("set profile path to {}", path);
+                }
+                Err(e) => {
+                    log::error!("set_sub() failed to acquire clash write lock: {}", e);
+                }
+            }
         }
         return vec![];
     }

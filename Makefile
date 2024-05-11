@@ -63,10 +63,24 @@ download_yacd:
 	@echo "+ $@"
 	@mkdir -p ./tmp
 	@mkdir -p ./tmp/core
-	@wget -O ./tmp/yacd.zip https://github.com/MetaCubeX/yacd/archive/gh-pages.zip
+	@mkdir -p ./tmp/core/dashboard
+
+	@rm -rf ./tmp/core/dashboard/*
+	@rm -rf ./tmp/core/web
+
+	@wget -O ./tmp/yacd-meta.zip https://github.com/MetaCubeX/yacd/archive/gh-pages.zip
+	@unzip ./tmp/yacd-meta.zip -d ./tmp
+	@mv -f ./tmp/Yacd-meta-gh-pages ./tmp/core/dashboard/yacd-meta
+
+	@wget -O ./tmp/yacd.zip https://github.com/haishanh/yacd/archive/refs/heads/gh-pages.zip
 	@unzip ./tmp/yacd.zip -d ./tmp
-	@mv ./tmp/Yacd-meta-gh-pages ./tmp/core/web
-	@rm -f ./tmp/yacd.zip
+	@mv -f ./tmp/yacd-gh-pages ./tmp/core/dashboard/yacd
+
+	@wget -O ./tmp/metacubexd.zip https://github.com/MetaCubeX/metacubexd/archive/refs/heads/gh-pages.zip
+	@unzip ./tmp/metacubexd.zip -d ./tmp
+	@mv -f ./tmp/metacubexd-gh-pages ./tmp/core/dashboard/metacubexd
+
+	@rm -f ./tmp/yacd.zip ./tmp/yacd-meta.zip ./tmp/metacubexd.zip
 
 
 build-front: ## Build frontend
@@ -79,11 +93,11 @@ build-front-sub:
 	@echo "+ $@"
 	@pnpm --prefix ./tomoon-web run build
 	@mkdir -p ./web
-	@cp -r ./tomoon-web/dist/* ./web
+	@rsync -av ./tomoon-web/dist/ ./web/ --delete
 
 copy-file:
 	@echo "+ $@"
-	@cp -r ./tmp/core ./bin/
+	@rsync -av ./tmp/core/ ./bin/core/ --delete
 
 build-back: ## Build backend
 	@echo "+ $@"
@@ -108,7 +122,7 @@ deploy-steamdeck: ## Deploy plugin build to steamdeck
 		--exclude='node_modules/' \
 		--exclude='.pnpm-store/' \
 		--exclude='src/' \
-		--exclude='yacd' . \
+		--exclude='./yacd' . \
 		--exclude='tomoon-web/' \
 		--exclude='backend/' \
 		--exclude='tmp/' \
@@ -118,7 +132,7 @@ deploy-steamdeck: ## Deploy plugin build to steamdeck
 		--exclude='.env' . \
 		--exclude='Makefile' . \
 		--exclude='usdpl/' \
-		--exclude='assets/' \
+		--exclude='./assets' \
  		./ $(DECK_USER)@$(DECK_HOST):$(DECK_HOME)/homebrew/plugins/$(PLUGIN_FOLDER)/
 	@ssh $(DECK_USER)@$(DECK_HOST) -p $(DECK_PORT) -i $(DECK_KEY) \
  		'chmod -v 755 $(DECK_HOME)/homebrew/plugins/'

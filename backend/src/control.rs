@@ -6,6 +6,8 @@ use std::sync::{Arc, RwLock};
 use std::time::Duration;
 use std::{error, fs, thread};
 
+use serde_json::json;
+
 use serde::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Value};
 
@@ -249,15 +251,21 @@ impl Default for Clash {
 }
 
 impl Clash {
-    pub fn run(&mut self, config_path: &String, skip_proxy: bool, override_dns: bool, enhanced_mode: EnhancedMode) -> Result<(), ClashError> {
-        // decky 插件数据目录 
+    pub fn run(
+        &mut self,
+        config_path: &String,
+        skip_proxy: bool,
+        override_dns: bool,
+        allow_remote_access: bool,
+        enhanced_mode: EnhancedMode,
+        dashboard_path: &String,
+    ) -> Result<(), ClashError> {
+        // decky 插件数据目录
         let decky_data_dir = get_decky_data_dir().unwrap();
         let new_country_db_path = get_current_working_dir()
             .unwrap()
             .join("bin/core/country.mmdb");
-        let new_asn_db_path = get_current_working_dir()
-            .unwrap()
-            .join("bin/core/asn.mmdb");
+        let new_asn_db_path = get_current_working_dir().unwrap().join("bin/core/asn.mmdb");
         let new_geosite_path = get_current_working_dir()
             .unwrap()
             .join("bin/core/geosite.dat");
@@ -272,13 +280,10 @@ impl Clash {
 
         // 检查数据库文件是否存在，不存在则复制
         if !PathBuf::from(country_db_path.clone()).is_file() {
-            match fs::copy(
-                new_country_db_path.clone(),
-                country_db_path.clone(),
-            ) {
+            match fs::copy(new_country_db_path.clone(), country_db_path.clone()) {
                 Ok(_) => {
                     log::info!("Copy country.mmdb to decky data dir")
-                },
+                }
                 Err(e) => {
                     return Err(ClashError {
                         Message: e.to_string(),
@@ -289,13 +294,10 @@ impl Clash {
         }
 
         if !PathBuf::from(asn_db_path.clone()).is_file() {
-            match fs::copy(
-                new_asn_db_path.clone(),
-                asn_db_path.clone(),
-            ) {
+            match fs::copy(new_asn_db_path.clone(), asn_db_path.clone()) {
                 Ok(_) => {
                     log::info!("Copy asn.mmdb to decky data dir")
-                },
+                }
                 Err(e) => {
                     return Err(ClashError {
                         Message: e.to_string(),
@@ -304,15 +306,12 @@ impl Clash {
                 }
             }
         }
-        
+
         if !PathBuf::from(geosite_path.clone()).is_file() {
-            match fs::copy(
-                new_geosite_path.clone(),
-                geosite_path.clone(),
-            ) {
+            match fs::copy(new_geosite_path.clone(), geosite_path.clone()) {
                 Ok(_) => {
                     log::info!("Copy geosite.dat to decky data dir")
-                },
+                }
                 Err(e) => {
                     return Err(ClashError {
                         Message: e.to_string(),
@@ -324,7 +323,13 @@ impl Clash {
 
         self.update_config_path(config_path);
         // 修改配置文件为推荐配置
-        match self.change_config(skip_proxy, override_dns, enhanced_mode) {
+        match self.change_config(
+            skip_proxy,
+            override_dns,
+            allow_remote_access,
+            enhanced_mode,
+            dashboard_path,
+        ) {
             Ok(_) => (),
             Err(e) => {
                 return Err(ClashError {
@@ -336,7 +341,7 @@ impl Clash {
 
         //log::info!("Pre-setting network");
         //TODO: 未修改的 unwarp
-        let run_config = decky_data_dir.join("running_config.yaml");
+        let run_config = self.get_running_config().unwrap();
         let outputs = fs::File::create("/tmp/tomoon.clash.log").unwrap();
         let errors = outputs.try_clone().unwrap();
 
@@ -384,24 +389,117 @@ impl Clash {
         self.config = std::path::PathBuf::from((*path).clone());
     }
 
-    pub fn change_config(&self, skip_proxy: bool, override_dns: bool, enhanced_mode: EnhancedMode) -> Result<(), Box<dyn error::Error>> {
+    pub fn get_running_config(&self) -> std::io::Result<std::path::PathBuf> {
+        let decky_data_dir = get_decky_data_dir().unwrap();
+        let run_config = decky_data_dir.join("running_config.yaml");
+        Ok(run_config)
+    }
+
+    pub async fn reload_config(&self) -> Result<(), ClashError> {
+        log::info!("Reloading Clash config...");
+        let run_config = self.get_running_config().unwrap();
+
+        let url = "http://127.0.0.1:9090/configs?force=true";
+        let body = json!({
+            "path": run_config,
+            "payload": ""
+        });
+
+        let body_str = serde_json::to_string(&body).unwrap();
+
+        let res = match minreq::put(url)
+            .with_header("Content-Type", "application/json")
+            .with_body(body_str)
+            .send()
+        {
+            Ok(x) => x,
+            Err(e) => {
+                log::error!("Failed to restart Clash core: {}", e);
+                return Err(ClashError {
+                    Message: e.to_string(),
+                    ErrorKind: ClashErrorKind::InnerError,
+                });
+            }
+        };
+
+        if res.status_code >= 200 && res.status_code < 300 {
+            log::info!("Clash config reloaded successfully");
+        } else {
+            log::error!(
+                "Failed to reload Clash config, status code: {}",
+                res.status_code
+            );
+        }
+
+        Ok(())
+    }
+
+    pub async fn restart_core(&self) -> Result<(), ClashError> {
+        log::info!("Restarting Clash core...");
+
+        let url = "http://127.0.0.1:9090/restart";
+        let body = json!({
+            "payload": ""
+        });
+        let body_str = serde_json::to_string(&body).unwrap();
+
+        let res = match minreq::post(url)
+            .with_header("Content-Type", "application/json")
+            .with_body(body_str)
+            .send()
+        {
+            Ok(x) => x,
+            Err(e) => {
+                log::error!("Failed to restart Clash core: {}", e);
+                return Err(ClashError {
+                    Message: e.to_string(),
+                    ErrorKind: ClashErrorKind::InnerError,
+                });
+            }
+        };
+
+        if res.status_code >= 200 && res.status_code < 300 {
+            log::info!("Clash restart successfully");
+        } else {
+            let data = res.as_str().unwrap();
+            log::error!("Failed to restart Clash core: {}", data);
+        }
+
+        Ok(())
+    }
+
+    pub fn change_config(
+        &self,
+        skip_proxy: bool,
+        override_dns: bool,
+        allow_remote_access: bool,
+        enhanced_mode: EnhancedMode,
+        dashboard_path: &String,
+    ) -> Result<(), Box<dyn error::Error>> {
         let path = self.config.clone();
+        log::info!("change_config path: {:?}", path);
+
         let config = fs::read_to_string(path)?;
         let mut yaml: serde_yaml::Value = serde_yaml::from_str(config.as_str())?;
         let yaml = yaml.as_mapping_mut().unwrap();
 
         log::info!("Changing Clash config...");
 
-        //修改 WebUI
+        let external_ip = if allow_remote_access {
+            "0.0.0.0"
+        } else {
+            "127.0.0.1"
+        };
 
+        //修改 WebUI
         match yaml.get_mut("external-controller") {
             Some(x) => {
-                *x = Value::String(String::from("127.0.0.1:9090"));
+                *x = Value::String(String::from(format!("{}:9090", external_ip)));
             }
             None => {
                 yaml.insert(
                     Value::String(String::from("external-controller")),
-                    Value::String(String::from("127.0.0.1:9090")),
+                    Value::String(String::from(format!("{}:9090", external_ip))),
                 );
             }
         }
@@ -417,27 +515,25 @@ impl Clash {
 
             if skip_proxy {
                 rules.insert(
-                0,
-                Value::String(String::from("DOMAIN-SUFFIX,cm.steampowered.com,DIRECT")),
-            );
-            rules.insert(
-            0,
-            Value::String(String::from("DOMAIN-SUFFIX,steamserver.net,DIRECT")),
-        );
+                    0,
+                    Value::String(String::from("DOMAIN-SUFFIX,cm.steampowered.com,DIRECT")),
+                );
+                rules.insert(
+                    0,
+                    Value::String(String::from("DOMAIN-SUFFIX,steamserver.net,DIRECT")),
+                );
             }
         }
-
-        let webui_dir = get_current_working_dir()?.join("bin/core/web");
 
         match yaml.get_mut("external-ui") {
             Some(x) => {
                 //TODO: 修改 Web UI 的路径
-                *x = Value::String(String::from(webui_dir.to_str().unwrap()));
+                *x = Value::String(String::from(dashboard_path));
             }
             None => {
                 yaml.insert(
                     Value::String(String::from("external-ui")),
-                    Value::String(String::from(webui_dir.to_str().unwrap())),
+                    Value::String(String::from(dashboard_path)),
                 );
             }
         }
@@ -569,13 +665,18 @@ impl Clash {
             }
         }
 
-        let run_config = get_decky_data_dir()?.join("running_config.yaml");
+        let run_config = self.get_running_config()?;
 
         let yaml_str = serde_yaml::to_string(&yaml)?;
-        fs::write(run_config, yaml_str)?;
+        match fs::write(run_config, yaml_str) {
+            Ok(_) => {
+                log::info!("Clash config changed successfully");
+            }
+            Err(e) => {
+                log::error!("Error occurred while changing Clash config: {}", e);
+            }
+        }
 
-        log::info!("Clash config changed successfully");
         Ok(())
     }
-
 }

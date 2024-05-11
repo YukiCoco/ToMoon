@@ -28,10 +28,24 @@ jobs:
           wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country.mmdb
           wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat
           wget -O asn.mmdb https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-ASN.mmdb
+
           # yacd
-          wget -O yacd.zip https://github.com/MetaCubeX/yacd/archive/gh-pages.zip
+          mkdir -p dashboard
+
+          wget -O yacd-meta.zip https://github.com/MetaCubeX/yacd/archive/gh-pages.zip
+          unzip yacd-meta.zip
+          mv Yacd-meta-gh-pages dashboard/yacd-meta
+
+          wget -O yacd.zip https://github.com/haishanh/yacd/archive/refs/heads/gh-pages.zip
           unzip yacd.zip
-          mv Yacd-meta-gh-pages web
+          mv yacd-gh-pages dashboard/yacd
+
+          wget -O metacubexd.zip https://github.com/MetaCubeX/metacubexd/archive/refs/heads/gh-pages.zip
+          unzip metacubexd.zip
+          mv metacubexd-gh-pages dashboard/metacubexd
+
+          rm -f yacd-meta.zip yacd.zip metacubexd.zip
+          
 
       # build front-end start
       - uses: actions/setup-node@v4

@@ -1,7 +1,7 @@
 import { PanelSection, PanelSectionRow, Field } from "decky-frontend-lib";
 import { VFC, useEffect, useState } from "react";
 import { PyBackend } from "../backend";
-import { ActionButtonItem } from "./components/actionButtonItem";
+import { ActionButtonItem } from ".";
 
 
 export const VersionComponent: VFC = () => {

@@ -90,7 +90,23 @@ async fn main() -> Result<(), std::io::Error> {
             .service(web::resource("/skip_proxy").route(web::post().to(external_web::skip_proxy)))
             .service(web::resource("/override_dns").route(web::post().to(external_web::override_dns)))
             .service(web::resource("/enhanced_mode").route(web::post().to(external_web::enhanced_mode)))
+            .service(web::resource("/set_dashboard").route(web::post().to(external_web::set_dashboard)))
             .service(web::resource("/get_config").route(web::get().to(external_web::get_config)))
+            // allow_remote_access
+            .service(
+                web::resource("/allow_remote_access")
+                    .route(web::post().to(external_web::allow_remote_access)),
+            )
+            // reload_clash_config
+            .service(
+                web::resource("/reload_clash_config")
+                    .route(web::get().to(external_web::reload_clash_config)),
+            )
+            // restart_clash
+            .service(
+                web::resource("/restart_clash")
+                    .route(web::get().to(external_web::restart_clash)),
+            )
             //.service(web::resource("/manual").route(web::get().to(external_web.web_download_sub)))
             .service(
                 fs::Files::new("/", "./web")
