@@ -56,3 +56,6 @@ release
 clash
 .history
 web
+
+pnpm-lock.yaml
+src/usdpl

@@ -3,6 +3,7 @@
   "version": "0.2.4",
   "description": "SteamOS Network Tools Box.",
   "scripts": {
+    "preinstall": "cp -r usdpl src/",
     "build": "shx rm -rf dist && rollup -c",
     "watch": "rollup -c -w",
     "test": "echo \"Error: no test specified\" && exit 1"
