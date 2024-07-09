@@ -5,12 +5,16 @@ import Swal from 'sweetalert2'
 import axios from 'axios'
 
 function App() {
-
   const [url, setUrl] = useState("");
+  const [isSubscribed, setIsSubscribed] = useState(true);
 
   const handleUrlChange = (event) => {
-    setUrl(event.target.value)
-  }
+    setUrl(event.target.value);
+  };
+
+  const handleToggleChange = () => {
+    setIsSubscribed(!isSubscribed);
+  };
 
   return (
     <div style={{ background: '#FAFFE3', minHeight: '100vh' }} className='flex justify-center items-center'>
@@ -20,9 +24,16 @@ function App() {
             <h1 className="text-6xl tomoon-title">
               Tomoon
             </h1>
+            <div className="flex items-center gap-2">
+              <label className="switch">
+                <input type="checkbox" checked={isSubscribed} onChange={handleToggleChange} />
+                <span className="slider round"></span>
+              </label>
+              <span className="text-xl tomoon-title">订阅转换</span>
+            </div>
             <div className='w-full flex px-2'>
               <input id="input-url" className='tomoon-input grow lg:text-2xl text-xl pl-5' type="text" placeholder='Clash 订阅链接' value={url} onChange={handleUrlChange} />
-              <button className='tomoon-button text-4xl flex justify-center items-center' onClick={() => { on_download_btn_click(url) }}>
+              <button className='tomoon-button text-4xl flex justify-center items-center' onClick={() => { on_download_btn_click(url, isSubscribed) }}>
                 <svg className="tomoon-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M0.0228571 48L48 24L0.0228571 0L0 18.6667L34.2857 24L0 29.3333L0.0228571 48Z" fill="white" />
                 </svg>
@@ -32,10 +43,10 @@ function App() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-const on_download_btn_click = (url) => {
+const on_download_btn_click = (url, isSubscribed) => {
   let baseHost = '/';
   if (import.meta.env.DEV) {
     baseHost = 'http://127.0.0.1:55556/';
@@ -50,7 +61,8 @@ const on_download_btn_click = (url) => {
   });
   Swal.showLoading(null);
   axios.post(baseHost + "download_sub", {
-    link: url.trim()
+    link: url.trim(),
+    subconv: isSubscribed
   }, {
     headers: { 'content-type': 'application/x-www-form-urlencoded' },
   }).then((response) => {
