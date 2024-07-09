@@ -13,10 +13,14 @@
     background: #5A6242;
     color: #FFFFFF;
     width: 4.25rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-.tomoon-button > svg {
-    width: 4.25rem;
+.tomoon-svg {
+    width: 2rem; /* You can adjust the size here to be responsive */
+    height: 2rem; /* You can adjust the size here to be responsive */
 }
 
 .tomoon-title {
