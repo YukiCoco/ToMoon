@@ -38,6 +38,8 @@ download:
 	@$(MAKE) download_core
 	@$(MAKE) download_mmdb
 	@$(MAKE) download_yacd
+	@$(MAKE) download_rules
+	@$(MAKE) download_subconverter
 
 clean_tmp:
 	@echo "+ $@"
@@ -68,7 +70,19 @@ download_yacd:
 	@mv ./tmp/Yacd-meta-gh-pages ./tmp/core/web
 	@rm -f ./tmp/yacd.zip
 
+download_rules:
+	@echo "+ $@"
+	@bash ./assets/subconverter_rules/dl_rules.sh ./assets/subconverter_rules
 
+download_subconverter:
+	@echo "+ $@"
+	@mkdir -p ./tmp/subconverter
+	@mkdir -p ./tmp/subconverter_tmp
+	@wget -O subconverter_linux64.tar.gz https://github.com/MetaCubeX/subconverter/releases/download/Alpha/subconverter_linux64.tar.gz
+	@tar xvf subconverter_linux64.tar.gz -C ./tmp/subconverter_tmp/
+	@cp ./tmp/subconverter_tmp/subconverter/subconverter ./tmp/subconverter/
+	@rm -r ./tmp/subconverter_tmp
+	
 build-front: ## Build frontend
 	@echo "+ $@"
 	@pnpm run build
@@ -78,12 +92,15 @@ build-front: ## Build frontend
 build-front-sub:
 	@echo "+ $@"
 	@pnpm --prefix ./tomoon-web run build
-	@mkdir -p ./web
+	@mkdir -p ./web/rules
 	@cp -r ./tomoon-web/dist/* ./web
+	@cp -r ./assets/subconverter_rules/*.list  ./web/rules
+	@cp -r ./assets/subconverter_rules/ACL4SSR_Online.ini  ./web/
 
 copy-file:
 	@echo "+ $@"
 	@cp -r ./tmp/core ./bin/
+	@cp ./tmp/subconverter/subconverter ./bin/subconverter
 
 build-back: ## Build backend
 	@echo "+ $@"
@@ -118,7 +135,7 @@ deploy-steamdeck: ## Deploy plugin build to steamdeck
 		--exclude='.env' . \
 		--exclude='Makefile' . \
 		--exclude='usdpl/' \
-		--exclude='assets/' \
+		--exclude='./assets/' \
  		./ $(DECK_USER)@$(DECK_HOST):$(DECK_HOME)/homebrew/plugins/$(PLUGIN_FOLDER)/
 	@ssh $(DECK_USER)@$(DECK_HOST) -p $(DECK_PORT) -i $(DECK_KEY) \
  		'chmod -v 755 $(DECK_HOME)/homebrew/plugins/'
