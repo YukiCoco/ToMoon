@@ -2,7 +2,12 @@ use actix_web::{body::BoxBody, web, HttpResponse, Result};
 use local_ip_address::local_ip;
 use rand::{distributions::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
+use tokio::net::TcpStream;
+use tokio::time::sleep;
+use std::time::Duration;
 use std::{collections::HashMap, fs, path::PathBuf, sync::Mutex};
+use tokio::process::Command;
+use tokio::sync::mpsc;
 
 use crate::{
     control::{ClashError, ClashErrorKind, EnhancedMode},
@@ -20,6 +25,7 @@ pub struct AppState {
 #[derive(Deserialize)]
 pub struct GenLinkParams {
     link: String,
+    subconv: bool
 }
 
 #[derive(Deserialize)]
@@ -263,7 +269,8 @@ pub async fn download_sub(
     state: web::Data<AppState>,
     params: web::Form<GenLinkParams>,
 ) -> Result<HttpResponse> {
-    let url = params.link.clone();
+    let mut url = params.link.clone();
+    let subconv = params.subconv.clone();
     let runtime = state.runtime.lock().unwrap();
 
     let runtime_settings;
@@ -383,16 +390,82 @@ pub async fn download_sub(
         }
         // 是一个链接
     } else {
+        let (tx, mut rx) = mpsc::channel::<String>(32);
+
+        if subconv {
+            let base_url = "http://127.0.0.1:25500/sub";
+            let target = "clash";
+            let config = "http://127.0.0.1:55556/ACL4SSR_Online.ini";
+            
+            // 对参数进行 URL 编码
+            let encoded_url = urlencoding::encode(url.as_str());
+            let encoded_config = urlencoding::encode(config);
+            
+            // 构建请求 URL
+            url = format!(
+                "{}?target={}&url={}&insert=false&config={}&emoji=true&list=false&tfo=false&scv=true&fdn=false&expand=true&sort=false&new_name=false",
+                base_url, target, encoded_url, encoded_config
+            );
+            // 启动 subconverter
+            let subconverter_path = helper::get_current_working_dir().unwrap().join("bin/subconverter");
+            
+            // 启动一个 tokio 任务来运行 subconverter
+            tokio::spawn(async move {
+                if subconverter_path.exists() && subconverter_path.is_file() {
+                    let mut command = Command::new(subconverter_path);
+                    // 可以在这里添加命令行参数
+                    // command.arg("some_argument");
+
+                    match command.spawn() {
+                        Ok(mut child) => {
+                            log::info!("Subconverter started with PID: {}", child.id().unwrap());
+
+                            loop {
+                                tokio::select! {
+                                    Some(msg) = rx.recv() => {
+                                        if msg == "shutdown" {
+                                            // 尝试终止子进程
+                                            if let Err(e) = child.kill().await {
+                                                log::error!("Failed to kill subconverter: {}", e);
+                                            }
+                                            break;
+                                        }
+                                    }
+                                    _ = child.wait() => {
+                                        log::info!("Subconverter process exited.");
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        Err(e) => log::error!("Failed to start subconverter: {}", e),
+                    }
+                } else {
+                    log::error!("Subconverter path does not exist or is not a file: {:?}", subconverter_path);
+                }
+            });
+
+            // 主任务阻塞，直到 subconvert 端口 25500 可用
+            while TcpStream::connect("127.0.0.1:25500").await.is_err() {
+                sleep(Duration::from_secs(1)).await;
+            }
+        }
         match minreq::get(url.clone())
             .with_header(
                 "User-Agent",
                 format!("ToMoon/{} mihomo/1.18.3 Clash/v1.18.0", env!("CARGO_PKG_VERSION")),
             )
-            .with_timeout(15)
+            .with_timeout(120)
             .send()
         {
             Ok(x) => {
                 let response = x.as_str().unwrap();
+
+                // shutdown subconverter
+                if let Err(e) = tx.send("shutdown".to_string()).await {
+                    log::error!("Failed to send shutdown message: {}", e);
+                }
+
                 if !helper::check_yaml(&String::from(response)) {
                     log::error!("The downloaded subscription is not a legal profile.");
                     return Err(actix_web::Error::from(ClashError {
