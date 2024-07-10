@@ -65,6 +65,34 @@ async fn main() -> Result<(), std::io::Error> {
             .unwrap();
     });
 
+    // 启动一个 tokio 任务来运行 subconverter
+    let subconverter_path = helper::get_current_working_dir().unwrap().join("bin/subconverter");
+    tokio::spawn(async move {
+        if subconverter_path.exists() && subconverter_path.is_file() {
+            let mut command = tokio::process::Command::new(subconverter_path);
+            // 可以在这里添加命令行参数
+            // command.arg("some_argument");
+
+            match command.spawn() {
+                Ok(mut child) => {
+                    log::info!("Subconverter started with PID: {}", child.id().unwrap());
+
+                    loop {
+                        tokio::select! {
+                            _ = child.wait() => {
+                                log::info!("Subconverter process exited.");
+                                break;
+                            }
+                        }
+                    }
+                }
+                Err(e) => log::error!("Failed to start subconverter: {}", e),
+            }
+        } else {
+            log::error!("Subconverter path does not exist or is not a file: {:?}", subconverter_path);
+        }
+    });
+
     let app_state = web::Data::new(external_web::AppState {
         link_table: Mutex::new(HashMap::new()),
         runtime: Mutex::new(runtime_pr),

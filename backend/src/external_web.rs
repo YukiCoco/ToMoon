@@ -390,8 +390,6 @@ pub async fn download_sub(
         }
         // 是一个链接
     } else {
-        let (tx, mut rx) = mpsc::channel::<String>(32);
-
         if subconv {
             let base_url = "http://127.0.0.1:25500/sub";
             let target = "clash";
@@ -406,49 +404,6 @@ pub async fn download_sub(
                 "{}?target={}&url={}&insert=false&config={}&emoji=true&list=false&tfo=false&scv=true&fdn=false&expand=true&sort=false&new_name=true",
                 base_url, target, encoded_url, encoded_config
             );
-            // 启动 subconverter
-            let subconverter_path = helper::get_current_working_dir().unwrap().join("bin/subconverter");
-            
-            // 启动一个 tokio 任务来运行 subconverter
-            tokio::spawn(async move {
-                if subconverter_path.exists() && subconverter_path.is_file() {
-                    let mut command = Command::new(subconverter_path);
-                    // 可以在这里添加命令行参数
-                    // command.arg("some_argument");
-
-                    match command.spawn() {
-                        Ok(mut child) => {
-                            log::info!("Subconverter started with PID: {}", child.id().unwrap());
-
-                            loop {
-                                tokio::select! {
-                                    Some(msg) = rx.recv() => {
-                                        if msg == "shutdown" {
-                                            // 尝试终止子进程
-                                            if let Err(e) = child.kill().await {
-                                                log::error!("Failed to kill subconverter: {}", e);
-                                            }
-                                            break;
-                                        }
-                                    }
-                                    _ = child.wait() => {
-                                        log::info!("Subconverter process exited.");
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        Err(e) => log::error!("Failed to start subconverter: {}", e),
-                    }
-                } else {
-                    log::error!("Subconverter path does not exist or is not a file: {:?}", subconverter_path);
-                }
-            });
-
-            // 主任务阻塞，直到 subconvert 端口 25500 可用
-            while TcpStream::connect("127.0.0.1:25500").await.is_err() {
-                sleep(Duration::from_secs(1)).await;
-            }
         }
         match minreq::get(url.clone())
             .with_header(
@@ -460,11 +415,6 @@ pub async fn download_sub(
         {
             Ok(x) => {
                 let response = x.as_str().unwrap();
-
-                // shutdown subconverter
-                if let Err(e) = tx.send("shutdown".to_string()).await {
-                    log::error!("Failed to send shutdown message: {}", e);
-                }
 
                 if !helper::check_yaml(&String::from(response)) {
                     log::error!("The downloaded subscription is not a legal profile.");
