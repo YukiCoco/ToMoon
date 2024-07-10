@@ -17,7 +17,7 @@ jobs:
       #build tomoon start
       - uses: actions/checkout@v4
 
-      - name: Download Clash and Yacd
+      - name: Download Clash and Yacd and Subconverter
         run: |
           mkdir tmp && cd tmp
           mkdir core && cd core
@@ -32,6 +32,8 @@ jobs:
           wget -O yacd.zip https://github.com/MetaCubeX/yacd/archive/gh-pages.zip
           unzip yacd.zip
           mv Yacd-meta-gh-pages web
+          wget -O subconverter_linux64.tar.gz https://github.com/MetaCubeX/subconverter/releases/download/Alpha/subconverter_linux64.tar.gz
+          tar xvf subconverter_linux64.tar.gz
 
       # build front-end start
       - uses: actions/setup-node@v4
@@ -61,7 +63,7 @@ jobs:
 
       - name: Collect Files
         run: |
-          mkdir -p ./release/tomoon/bin/core/web
+          mkdir -p ./release/tomoon/bin/core/web/rules
           mkdir -p ./release/tomoon/dist
           cp backend/target/x86_64-unknown-linux-gnu/release/tomoon ./release/tomoon/bin/tomoon
           cp ./dist/index.js ./release/tomoon/dist/index.js
@@ -71,6 +73,9 @@ jobs:
           cp -r ./tmp/core ./release/tomoon/bin/
           cp -r ./tomoon-web/dist ./release/tomoon/web
           cp -r ./py_modules ./release/tomoon/py_modules
+          bash ./assets/subconverter_rules/dl_rules.sh ./release/tomoon/bin/core/web/rules
+          cp ./assets/subconverter_rules/ACL4SSR_Online.ini ./release/tomoon/bin/core/web/ACL4SSR_Online.ini
+          cp ./subconverter/subconverter ./release/tomoon/bin/subconverter
           cd ./release 
           zip -r tomoon.zip tomoon
           cd ..
