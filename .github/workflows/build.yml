@@ -32,6 +32,7 @@ jobs:
           wget -O yacd.zip https://github.com/MetaCubeX/yacd/archive/gh-pages.zip
           unzip yacd.zip
           mv Yacd-meta-gh-pages web
+          cd $GITHUB_WORKSPACE
           wget -O subconverter_linux64.tar.gz https://github.com/MetaCubeX/subconverter/releases/download/Alpha/subconverter_linux64.tar.gz
           tar xvf subconverter_linux64.tar.gz
 
