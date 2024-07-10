@@ -416,7 +416,6 @@ pub fn delete_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<Pr
                             Ok(_) => {}
                             Err(e) => {
                                 log::error!("delete file error: {}", e);
-                                return vec![];
                             }
                         }
                     }

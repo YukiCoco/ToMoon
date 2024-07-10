@@ -403,7 +403,7 @@ pub async fn download_sub(
             
             // 构建请求 URL
             url = format!(
-                "{}?target={}&url={}&insert=false&config={}&emoji=true&list=false&tfo=false&scv=true&fdn=false&expand=true&sort=false&new_name=false",
+                "{}?target={}&url={}&insert=false&config={}&emoji=true&list=false&tfo=false&scv=true&fdn=false&expand=true&sort=false&new_name=true",
                 base_url, target, encoded_url, encoded_config
             );
             // 启动 subconverter
@@ -489,11 +489,7 @@ pub async fn download_sub(
                 };
                 let filename = if filename.is_empty() {
                     log::warn!("The downloaded subscription does not have a file name.");
-                    rand::thread_rng()
-                        .sample_iter(&Alphanumeric)
-                        .take(5)
-                        .map(char::from)
-                        .collect()
+                    gen_random_name()
                 } else {
                     filename
                 };
@@ -502,7 +498,10 @@ pub async fn download_sub(
                 } else {
                     filename + ".yaml"
                 };
-                let path = path.join(filename);
+                let mut path = path.join(filename);
+                if fs::metadata(&path).is_ok() {
+                    path = path.parent().unwrap().join(gen_random_name() + ".yaml");
+                }
                 //保存订阅
                 if let Some(parent) = path.parent() {
                     if let Err(e) = std::fs::create_dir_all(parent) {
@@ -571,6 +570,14 @@ pub async fn download_sub(
         status_code: 200,
     };
     Ok(HttpResponse::Ok().json(r))
+}
+
+fn gen_random_name() -> String {
+    rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(5)
+        .map(char::from)
+        .collect()
 }
 
 pub async fn get_link(
