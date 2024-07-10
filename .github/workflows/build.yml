@@ -64,7 +64,7 @@ jobs:
 
       - name: Collect Files
         run: |
-          mkdir -p ./release/tomoon/bin/core/web/rules
+          mkdir -p ./release/tomoon/bin/core/web
           mkdir -p ./release/tomoon/dist
           cp backend/target/x86_64-unknown-linux-gnu/release/tomoon ./release/tomoon/bin/tomoon
           cp ./dist/index.js ./release/tomoon/dist/index.js
@@ -74,8 +74,9 @@ jobs:
           cp -r ./tmp/core ./release/tomoon/bin/
           cp -r ./tomoon-web/dist ./release/tomoon/web
           cp -r ./py_modules ./release/tomoon/py_modules
-          bash ./assets/subconverter_rules/dl_rules.sh ./release/tomoon/bin/core/web/rules
-          cp ./assets/subconverter_rules/ACL4SSR_Online.ini ./release/tomoon/bin/core/web/ACL4SSR_Online.ini
+          mkdir -p ./release/tomoon/web/rules
+          bash ./assets/subconverter_rules/dl_rules.sh ./release/tomoon/web/rules
+          cp ./assets/subconverter_rules/ACL4SSR_Online.ini ./release/tomoon/web/ACL4SSR_Online.ini
           cp ./subconverter/subconverter ./release/tomoon/bin/subconverter
           cd ./release 
           zip -r tomoon.zip tomoon
