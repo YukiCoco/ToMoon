@@ -1,10 +1,9 @@
-import logging
 import subprocess
 import asyncio
 import os
 from config import logger, setup_logger
 import update
-import decky_plugin
+import decky
 import utils
 
 class Plugin:
@@ -16,10 +15,10 @@ class Plugin:
         utils.write_font_config()
 
         logger.info("Start Tomoon.")
-        os.system('chmod -R a+x ' + decky_plugin.DECKY_PLUGIN_DIR)
+        os.system('chmod -R a+x ' + decky.DECKY_PLUGIN_DIR)
         # 切换到工作目录
-        os.chdir(decky_plugin.DECKY_PLUGIN_DIR)
-        self.backend_proc = subprocess.Popen([decky_plugin.DECKY_PLUGIN_DIR + "/bin/tomoon"])
+        os.chdir(decky.DECKY_PLUGIN_DIR)
+        self.backend_proc = subprocess.Popen([decky.DECKY_PLUGIN_DIR + "/bin/tomoon"])
         while True:
             await asyncio.sleep(1)
     

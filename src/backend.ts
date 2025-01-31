@@ -1,4 +1,4 @@
-import { ServerAPI } from "decky-frontend-lib";
+import { call } from "@decky/api";
 import { init_usdpl, init_embedded, call_backend } from "usdpl-front";
 
 const USDPL_PORT: number = 55555;
@@ -86,31 +86,37 @@ export async function getCurrentSub(): Promise<string> {
 }
 
 export class PyBackendData {
-  private serverAPI: ServerAPI | undefined;
   private current_version = "";
   private latest_version = "";
 
-  public async init(serverAPI: ServerAPI) {
-    this.serverAPI = serverAPI;
+  public async init() {
+    // await this.serverAPI!.callPluginMethod<{}, string>("get_version", {}).then(
+    //   (res) => {
+    //     if (res.success) {
+    //       console.info("current_version = " + res.result);
+    //       this.current_version = res.result;
+    //     }
+    //   }
+    // );
+    
+    const version = await call("get_version", []) as string | undefined;
+    if (version) {
+      this.current_version = version;
+    }
 
-    await this.serverAPI!.callPluginMethod<{}, string>("get_version", {}).then(
-      (res) => {
-        if (res.success) {
-          console.info("current_version = " + res.result);
-          this.current_version = res.result;
-        }
-      }
-    );
-
-    await this.serverAPI!.callPluginMethod<{}, string>(
-      "get_latest_version",
-      {}
-    ).then((res) => {
-      if (res.success) {
-        console.info("latest_version = " + res.result);
-        this.latest_version = res.result;
-      }
-    });
+    // await this.serverAPI!.callPluginMethod<{}, string>(
+    //   "get_latest_version",
+    //   {}
+    // ).then((res) => {
+    //   if (res.success) {
+    //     console.info("latest_version = " + res.result);
+    //     this.latest_version = res.result;
+    //   }
+    // });
+    const latest_version = await call("get_latest_version", []) as string | undefined;
+    if (latest_version) {
+      this.latest_version = latest_version;
+    }
   }
 
   public getCurrentVersion() {
@@ -131,19 +137,15 @@ export class PyBackendData {
 }
 
 export class PyBackend {
-  private static serverAPI: ServerAPI;
   public static data: PyBackendData;
 
-  public static async init(serverAPI: ServerAPI) {
-    this.serverAPI = serverAPI;
+  public static async init() {
     this.data = new PyBackendData();
-    this.data.init(serverAPI);
+    this.data.init();
   }
 
   public static async getLatestVersion(): Promise<string> {
-    const version = (
-      await this.serverAPI!.callPluginMethod("get_latest_version", {})
-    ).result as string;
+    const version = await call("get_latest_version", []) as string || "";
     
     const versionReg = /^\d+\.\d+\.\d+$/;
     if (!versionReg.test(version)) {
@@ -154,12 +156,14 @@ export class PyBackend {
 
   // updateLatest
   public static async updateLatest() {
-    await this.serverAPI!.callPluginMethod("update_latest", {});
+    // await this.serverAPI!.callPluginMethod("update_latest", {});
+    await call("update_latest", []);
   }
 
   // get_version
   public static async getVersion() {
-    return (await this.serverAPI!.callPluginMethod("get_version", {}))
-      .result as string;
+    // return (await this.serverAPI!.callPluginMethod("get_version", {}))
+    //   .result as string;
+    return (await call("get_version", [])) as string;
   }
 }

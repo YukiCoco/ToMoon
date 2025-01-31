@@ -1,10 +1,10 @@
-import { VFC } from "react";
-import { ButtonItem, PanelSectionRow, Navigation } from "decky-frontend-lib";
+import { FC } from "react";
+import { ButtonItem, PanelSectionRow, Navigation } from "@decky/ui";
 import { FiGithub } from "react-icons/fi";
 import { FaSteamSymbol } from "react-icons/fa"
 import { TbBrandTelegram } from "react-icons/tb"
 
-export const About: VFC = () => {
+export const About: FC = () => {
     return (
         // The outermost div is to push the content down into the visible area
         <>

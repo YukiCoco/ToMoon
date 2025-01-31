@@ -1,10 +1,10 @@
-import { VFC } from "react";
-import { ButtonItem, PanelSectionRow } from "decky-frontend-lib";
+import { FC } from "react";
+import { ButtonItem, PanelSectionRow } from "@decky/ui";
 import { VscDebug } from "react-icons/vsc"
 
 import * as backend from "../backend";
 
-export const Debug: VFC = () => {
+export const Debug: FC = () => {
     return (
         // The outermost div is to push the content down into the visible area
         <>

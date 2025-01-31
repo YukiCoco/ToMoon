@@ -4,11 +4,11 @@ import shutil
 import ssl
 import stat
 import subprocess
-
 import urllib.request
 
-from config import logger, API_URL
 import decky_plugin
+from config import API_URL, logger
+from utils import get_env
 
 
 def recursive_chmod(path, perms):
@@ -58,6 +58,7 @@ def update_latest():
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            env=get_env(),
         )
         logger.info(result.stdout)
         return result
