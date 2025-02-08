@@ -1,5 +1,5 @@
-import { ButtonItem } from "decky-frontend-lib";
-import { VFC } from "react";
+import { ButtonItem } from "@decky/ui";
+import { FC } from "react";
 import * as backend from "../../backend";
 interface appProp {
     Subscriptions: Array<any>,
@@ -8,7 +8,7 @@ interface appProp {
 }
 
 
-export const SubList: VFC<appProp> = ({ Subscriptions, UpdateSub, Refresh }) => {
+export const SubList: FC<appProp> = ({ Subscriptions, UpdateSub, Refresh }) => {
     return (
         <div>
             {

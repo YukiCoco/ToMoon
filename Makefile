@@ -28,9 +28,11 @@ init: ## Initialize project
 	@echo -e "3. Build your code with \`\033[0;36mmake build\033[0m\` or \`\033[0;36mmake docker-build\033[0m\` to build inside a docker container"
 	@echo -e "4. Deploy your plugin code to steamdeck with \`\033[0;36mmake deploy\033[0m\`"
 
-update-frontend-lib: ## Update decky-frontend-lib
+update-decky-ui: ## Update @decky/ui @decky/api
 	@echo "+ $@"
-	@pnpm update decky-frontend-lib --latest
+	@pnpm update @decky/ui --latest
+	@pnpm update @decky/api --latest
+	@pnpm update @decky/rollup --latest
 
 download:
 	@echo "+ $@"

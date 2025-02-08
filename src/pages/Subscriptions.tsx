@@ -1,5 +1,5 @@
-import { PanelSectionRow, TextField, ButtonItem } from "decky-frontend-lib";
-import { useReducer, useState, VFC } from "react";
+import { PanelSectionRow, TextField, ButtonItem } from "@decky/ui";
+import { useReducer, useState, FC } from "react";
 import { cleanPadding } from "../style";
 import { SubList } from "./components/SubList";
 import { QRCodeCanvas } from 'qrcode.react';
@@ -11,7 +11,7 @@ interface SubProp {
     Subscriptions: Array<any>,
 }
 
-export const Subscriptions: VFC<SubProp> = ({ Subscriptions }) => {
+export const Subscriptions: FC<SubProp> = ({ Subscriptions }) => {
     const [text, setText] = useState("");
     const [downloadTips, setDownloadTips] = useState("");
     const [subscriptions, updateSubscriptions] = useState(Subscriptions);

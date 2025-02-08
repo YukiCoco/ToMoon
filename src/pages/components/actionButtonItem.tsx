@@ -1,4 +1,4 @@
-import { ButtonItem, ButtonItemProps, Spinner } from "decky-frontend-lib";
+import { ButtonItem, ButtonItemProps, Spinner } from "@decky/ui";
 import { FC, useState } from "react";
 
 export interface ActionButtonItemProps extends ButtonItemProps {

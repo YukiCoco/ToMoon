@@ -1,5 +1,6 @@
 import os
-import decky_plugin
+
+import decky
 from config import logger
 
 FONT_CONFIG = """<?xml version="1.0"?>
@@ -32,7 +33,7 @@ FONT_CONFIG = """<?xml version="1.0"?>
   </alias>
 </fontconfig>
 """
-FONT_CONF_DIR = f"{decky_plugin.DECKY_USER_HOME}/.config/fontconfig"
+FONT_CONF_DIR = f"{decky.DECKY_USER_HOME}/.config/fontconfig"
 FONT_CONF_D_DIR = f"{FONT_CONF_DIR}/conf.d"
 FONT_CONF_FILE = f"{FONT_CONF_D_DIR}/76-noto-cjk.conf"
 
@@ -59,7 +60,7 @@ def write_font_config():
                 f.write(FONT_CONFIG)
                 f.close()
 
-    user = decky_plugin.DECKY_USER
+    user = decky.DECKY_USER
     # change fontconfig owner
     os.system(f"chown -R {user}:{user} {FONT_CONF_DIR}")
 
@@ -73,3 +74,9 @@ def remove_font_config():
         if "<!-- ToMoon -->" in content:
             logger.info(f"Removing fontconfig file: {FONT_CONF_FILE}")
             os.remove(FONT_CONF_FILE)
+
+
+def get_env():
+    env = os.environ.copy()
+    env["LD_LIBRARY_PATH"] = ""
+    return env

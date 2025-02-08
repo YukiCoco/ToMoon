@@ -1,10 +1,10 @@
-import { PanelSection, PanelSectionRow, Field } from "decky-frontend-lib";
-import { VFC, useEffect, useState } from "react";
+import { PanelSection, PanelSectionRow, Field } from "@decky/ui";
+import { FC, useEffect, useState } from "react";
 import { PyBackend } from "../backend";
 import { ActionButtonItem } from "./components/actionButtonItem";
 
 
-export const VersionComponent: VFC = () => {
+export const VersionComponent: FC = () => {
   const [currentVersion, _] = useState<string>(PyBackend.data.getCurrentVersion());
   const [latestVersion, setLatestVersion] = useState<string>(PyBackend.data.getLatestVersion());
 
