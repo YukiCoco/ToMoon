@@ -15,9 +15,10 @@
     "noImplicitThis": true,
     "noImplicitAny": true,
     "strict": true,
-    "suppressImplicitAnyIndexErrors": true,
     "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "types": ["react/jsx-runtime", "react-dom"]
   },
   "include": ["src"],
   "exclude": ["node_modules"]

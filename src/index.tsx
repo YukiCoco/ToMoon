@@ -4,7 +4,6 @@ import {
   PanelSection,
   PanelSectionRow,
   Router,
-  ServerAPI,
   staticClasses,
   ToggleField,
   SidebarNavigation,
@@ -13,8 +12,9 @@ import {
   DropdownItem,
   SliderField,
   NotchLabel,
-} from "decky-frontend-lib";
-import { VFC, useEffect, useState } from "react";
+} from "@decky/ui";
+import { routerHook } from "@decky/api";
+import { FC, useEffect, useState } from "react";
 import { GiEgyptianBird } from "react-icons/gi";
 
 import {
@@ -41,7 +41,7 @@ let subs_option: any[];
 let current_sub = '';
 let enhanced_mode = EnhancedMode.FakeIp;
 
-const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
+const Content: FC<{ }> = ({ }) => {
 
   if (!usdplReady) {
     return (
@@ -299,7 +299,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({ }) => {
   );
 };
 
-const DeckyPluginRouterTest: VFC = () => {
+const DeckyPluginRouterTest: FC = () => {
   return (
     <SidebarNavigation
       title="To Moon"
@@ -325,11 +325,11 @@ const DeckyPluginRouterTest: VFC = () => {
   );
 };
 
-export default definePlugin((serverApi: ServerAPI) => {
+export default definePlugin(() => {
   // init USDPL WASM and connection to back-end
   (async function () {
     await backend.initBackend();
-    await backend.PyBackend.init(serverApi);
+    await backend.PyBackend.init();
     usdplReady = true;
     backend.resolve(backend.getEnabled(), (v: boolean) => {
       enabledGlobal = v;
@@ -344,14 +344,14 @@ export default definePlugin((serverApi: ServerAPI) => {
   })();
 
 
-  serverApi.routerHook.addRoute("/tomoon-config", DeckyPluginRouterTest);
+  routerHook.addRoute("/tomoon-config", DeckyPluginRouterTest);
 
   return {
     title: <div className={staticClasses.Title}>To Moon</div>,
-    content: <Content serverAPI={serverApi} />,
+    content: <Content />,
     icon: <GiEgyptianBird />,
     onDismount() {
-      serverApi.routerHook.removeRoute("/tomoon-config");
+      routerHook.removeRoute("/tomoon-config");
     },
   };
 });
