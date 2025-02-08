@@ -22,7 +22,7 @@ jobs:
           mkdir tmp && cd tmp
           mkdir core && cd core
           # Mihomo (Clash Meta)
-          wget -O clash.gz https://github.com/MetaCubeX/mihomo/releases/download/v1.18.3/mihomo-linux-amd64-v1.18.3.gz
+          wget -O clash.gz https://github.com/MetaCubeX/mihomo/releases/download/v1.19.1/mihomo-linux-amd64-v1.19.1.gz
           gzip -d clash.gz
           # country.mmdb & geosite.dat
           wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country.mmdb

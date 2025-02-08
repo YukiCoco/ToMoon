@@ -62,3 +62,4 @@ src/usdpl
 
 #clash 配置文件
 *.list
+.pnpm-store

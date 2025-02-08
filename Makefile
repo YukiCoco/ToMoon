@@ -49,7 +49,7 @@ download_core:
 	@echo "+ $@"
 	@mkdir -p ./tmp
 	@mkdir -p ./tmp/core
-	@wget -O clash.gz https://github.com/MetaCubeX/mihomo/releases/download/v1.18.3/mihomo-linux-amd64-v1.18.3.gz
+	@wget -O clash.gz https://github.com/MetaCubeX/mihomo/releases/download/v1.19.1/mihomo-linux-amd64-v1.19.1.gz
 	@gzip -d clash.gz -c > ./tmp/core/clash
 	@rm -f clash.gz
 
