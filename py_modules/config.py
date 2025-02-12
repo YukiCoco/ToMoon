@@ -1,5 +1,6 @@
 import logging
 
+
 def setup_logger():
     logging.basicConfig(
         level=logging.INFO,
@@ -10,9 +11,12 @@ def setup_logger():
     )
     return logging.getLogger()
 
+
 logger = setup_logger()
 
 # can be changed to logging.DEBUG for debugging issues
 logger.setLevel(logging.INFO)
 
 API_URL = "https://api.github.com/repos/YukiCoco/ToMoon/releases/latest"
+
+CONFIG_KEY = "tomoon"

@@ -90,12 +90,12 @@ export class PyBackendData {
   private latest_version = "";
 
   public async init() {
-    const version = await call("get_version") as string || "";
+    const version = ((await call("get_version")) as string) || "";
     if (version) {
       this.current_version = version;
     }
 
-    const latest_version = await call("get_latest_version") as string || "";
+    const latest_version = ((await call("get_latest_version")) as string) || "";
     if (latest_version) {
       this.latest_version = latest_version;
     }
@@ -127,8 +127,8 @@ export class PyBackend {
   }
 
   public static async getLatestVersion(): Promise<string> {
-    const version = await call("get_latest_version") as string || "";
-    
+    const version = ((await call("get_latest_version")) as string) || "";
+
     const versionReg = /^\d+\.\d+\.\d+$/;
     if (!versionReg.test(version)) {
       return "";
@@ -138,11 +138,54 @@ export class PyBackend {
 
   // updateLatest
   public static async updateLatest() {
-    await call("update_latest");
+    // await this.serverAPI!.callPluginMethod("update_latest", {});
+    await call("update_latest", []);
   }
 
   // get_version
   public static async getVersion() {
-    return (await call("get_version")) as string;
+    // return (await this.serverAPI!.callPluginMethod("get_version", {}))
+    //   .result as string;
+    return (await call("get_version", [])) as string;
+  }
+
+  // get_dashboard_list
+  public static async getDashboardList() {
+    return (await call("get_dashboard_list")) as string[];
+  }
+
+  // get_config_value
+  public static async getConfigValue(key: string) {
+    return await call<[key: string], string | undefined>(
+      "get_config_value",
+      key
+    );
+  }
+
+  // set_config_value
+  public static async setConfigValue(key: string, value: string) {
+    return await call<[key: string, value: string], boolean>(
+      "set_config_value",
+      key,
+      value
+    );
+  }
+
+  private static async getDefalutDashboard() {
+    const dashboardList = await this.getDashboardList();
+    return dashboardList.find((x) =>
+      (x.split("/").pop() || "").includes("yacd-meta")
+    ) || dashboardList[0];
+  }
+
+  public static async getCurrentDashboard() {
+    return (
+      (await this.getConfigValue("current_dashboard")) ||
+      (await this.getDefalutDashboard())
+    );
+  }
+
+  public static async setCurrentDashboard(dashboard: string) {
+    return await this.setConfigValue("current_dashboard", dashboard);
   }
 }
