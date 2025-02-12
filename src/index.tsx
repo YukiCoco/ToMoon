@@ -409,6 +409,7 @@ export default definePlugin(() => {
         enabledSkipProxy = r.data.skip_proxy;
         enabledOverrideDNS = r.data.override_dns;
         enhanced_mode = r.data.enhanced_mode;
+        allow_remote_access = r.data.allow_remote_access;
       }
     });
   })();

@@ -83,6 +83,7 @@ pub struct GetConfigResponse {
     skip_proxy: bool,
     override_dns: bool,
     enhanced_mode: EnhancedMode,
+    allow_remote_access: bool,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -304,6 +305,7 @@ pub async fn get_config(state: web::Data<AppState>) -> Result<HttpResponse> {
                 skip_proxy: x.skip_proxy,
                 override_dns: x.override_dns,
                 enhanced_mode: x.enhanced_mode,
+                allow_remote_access: x.allow_remote_access,
                 status_code: 200,
             };
             return Ok(HttpResponse::Ok().json(r));
