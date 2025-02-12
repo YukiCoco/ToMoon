@@ -266,13 +266,14 @@ const Content: FC<{}> = ({}) => {
               if (currentDashboard_name) {
                 switch (currentDashboard_name) {
                   case "metacubexd":
+                  case "zashboard":
                     page = "setup";
                     break;
                   default:
                     page = "proxies";
                     break;
                 }
-                param = `/${currentDashboard_name}/#/${page}?hostname=127.0.0.1&port=9090&secret=`;
+                param = `/${currentDashboard_name}/#/${page}?hostname=127.0.0.1&port=9090&secret=tomoon`;
               }
               Navigation.NavigateToExternalWeb(
                 "http://127.0.0.1:9090/ui" + param

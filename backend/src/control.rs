@@ -648,6 +648,18 @@ impl Clash {
             }
         }
 
+        // 如果设置了 secret， 更改 secret 为 "tomoon"
+        let secret_config = "tomoon";
+        match yaml.get("secret") {
+            Some(_) => {
+                yaml.remove("secret").unwrap();
+                insert_config(yaml, secret_config, "secret");
+            }
+            None => {
+                // insert_config(yaml, secret_config, "secret");
+            }
+        }
+
         // 保存上次的配置
         match yaml.get("profile") {
             Some(_) => {
