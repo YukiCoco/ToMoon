@@ -501,19 +501,38 @@ pub async fn reload_clash_config(state: web::Data<AppState>) -> Result<HttpRespo
 pub async fn get_config(state: web::Data<AppState>) -> Result<HttpResponse> {
     let runtime = state.runtime.lock().unwrap();
     let runtime_settings;
+    let clash_state;
     unsafe {
         let runtime = runtime.0.as_ref().unwrap();
         runtime_settings = runtime.settings_clone();
+        clash_state = runtime.clash_state_clone();
     }
+
+    let clash = match clash_state.read() {
+        Ok(x) => x,
+        Err(e) => {
+            log::error!("read clash_state failed: {}", e);
+            return Err(actix_web::Error::from(ClashError {
+                Message: e.to_string(),
+                ErrorKind: ClashErrorKind::InnerError,
+            }));
+        }
+    };
+
     match runtime_settings.read() {
         Ok(x) => {
+            let secret = match clash.get_running_secret() {
+                Ok(s) => s,
+                Err(_) => x.secret.clone(),
+            };
+
             let r = GetConfigResponse {
                 skip_proxy: x.skip_proxy,
                 override_dns: x.override_dns,
-                enhanced_mode: x.enhanced_mode,
                 allow_remote_access: x.allow_remote_access,
+                enhanced_mode: x.enhanced_mode,
                 dashboard: x.dashboard.clone(),
-                secret: x.secret.clone(),
+                secret: secret,
                 status_code: 200,
             };
             return Ok(HttpResponse::Ok().json(r));

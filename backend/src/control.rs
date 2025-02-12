@@ -669,17 +669,17 @@ impl Clash {
             }
         }
 
-        // 如果设置了 secret， 更改 secret 为 "tomoon"
-        let secret_config = "tomoon";
-        match yaml.get("secret") {
-            Some(_) => {
-                yaml.remove("secret").unwrap();
-                insert_config(yaml, secret_config, "secret");
-            }
-            None => {
-                // insert_config(yaml, secret_config, "secret");
-            }
-        }
+        // // 如果设置了 secret， 更改 secret 为 "tomoon"
+        // let secret_config = "tomoon";
+        // match yaml.get("secret") {
+        //     Some(_) => {
+        //         yaml.remove("secret").unwrap();
+        //         insert_config(yaml, secret_config, "secret");
+        //     }
+        //     None => {
+        //         insert_config(yaml, secret_config, "secret");
+        //     }
+        // }
 
         // 保存上次的配置
         match yaml.get("profile") {
@@ -707,5 +707,18 @@ impl Clash {
 
         log::info!("Clash config changed successfully");
         Ok(())
+    }
+
+    pub fn get_running_secret(&self) -> Result<String, Box<dyn error::Error>> {
+        let path = self.get_running_config()?;
+        let content = std::fs::read_to_string(path)?;
+        let yaml: serde_yaml::Value = serde_yaml::from_str(&content)?;
+        
+        match yaml.get("secret") {
+            Some(secret) => {
+                Ok(secret.as_str().unwrap_or("").to_string())
+            }
+            None => Ok("".to_string()),
+        }
     }
 }

@@ -36,6 +36,7 @@ let enhanced_mode = EnhancedMode.FakeIp;
 let dashboard_list: string[];
 let current_dashboard = "";
 let allow_remote_access = false;
+let _secret = "";
 
 const Content: FC<{}> = ({}) => {
   if (!usdplReady) {
@@ -60,6 +61,7 @@ const Content: FC<{}> = ({}) => {
     useState<string>(current_dashboard);
   const [allowRemoteAccess, setAllowRemoteAccess] =
     useState(allow_remote_access);
+  const [secret, setSecret] = useState<string>(_secret);
 
   const update_subs = () => {
     backend.resolve(backend.getSubList(), (v: String) => {
@@ -90,6 +92,27 @@ const Content: FC<{}> = ({}) => {
     });
   };
 
+  const getConfig = async () => {
+    await ApiCallBackend.getConfig().then((res) => {
+      console.log(
+        `~~~~~~~~~~~~~~~~~~~ getConfig: ${JSON.stringify(res.data, null, 2)}`
+      );
+      if (res.data.status_code == 200) {
+        enabledSkipProxy = res.data.skip_proxy;
+        enabledOverrideDNS = res.data.override_dns;
+        enhanced_mode = res.data.enhanced_mode;
+        allow_remote_access = res.data.allow_remote_access;
+        _secret = res.data.secret;
+
+        setSkipProxyState(enabledSkipProxy);
+        setOverrideDNSState(enabledOverrideDNS);
+        setEnhancedMode(enhanced_mode);
+        setAllowRemoteAccess(allow_remote_access);
+        setSecret(_secret);
+      }
+    });
+  };
+
   useEffect(() => {
     const getCurrentSub = async () => {
       const sub = await backend.getCurrentSub();
@@ -106,25 +129,6 @@ const Content: FC<{}> = ({}) => {
     const getCurrentDashboard = async () => {
       const dashboard = await PyBackend.getCurrentDashboard();
       setCurrentDashboard(dashboard);
-    };
-
-    const getConfig = async () => {
-      await ApiCallBackend.getConfig().then((res) => {
-        console.log(
-          `~~~~~~~~~~~~~~~~~~~ getConfig: ${JSON.stringify(res.data, null, 2)}`
-        );
-        if (res.data.status_code == 200) {
-          enabledSkipProxy = res.data.skip_proxy;
-          enabledOverrideDNS = res.data.override_dns;
-          enhanced_mode = res.data.enhanced_mode;
-          allow_remote_access = res.data.allow_remote_access;
-
-          setSkipProxyState(enabledSkipProxy);
-          setOverrideDNSState(enabledOverrideDNS);
-          setEnhancedMode(enhanced_mode);
-          setAllowRemoteAccess(allow_remote_access);
-        }
-      });
     };
 
     const loadDate = async () => {
@@ -206,6 +210,7 @@ const Content: FC<{}> = ({}) => {
                         break;
                       case "Success":
                         setSelectionTips("Clash is running.");
+                        getConfig();
                         break;
                     }
                     if (v != "Loading") {
@@ -264,20 +269,22 @@ const Content: FC<{}> = ({}) => {
               const currentDashboard_name =
                 currentDashboard.split("/").pop() || "yacd-meta";
               if (currentDashboard_name) {
-                switch (currentDashboard_name) {
-                  case "metacubexd":
-                  case "zashboard":
-                    page = "setup";
-                    break;
-                  default:
-                    page = "proxies";
-                    break;
+                param = `/${currentDashboard_name}/#`;
+                if (secret) {
+                  switch (currentDashboard_name) {
+                    case "metacubexd":
+                    case "zashboard":
+                      page = "setup";
+                      break;
+                    default:
+                      page = "proxies";
+                      break;
+                  }
+                  param += `/${page}?hostname=127.0.0.1&port=9090&secret=${secret}`;
                 }
-                param = `/${currentDashboard_name}/#/${page}?hostname=127.0.0.1&port=9090&secret=tomoon`;
               }
               Navigation.NavigateToExternalWeb(
                 "http://127.0.0.1:9090/ui" + param
-                // `http://127.0.0.1:9090/ui/${currentDashboard_name}/#`
               );
             }}
             disabled={openDashboardDisabled}
