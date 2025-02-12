@@ -17,24 +17,55 @@ jobs:
       #build tomoon start
       - uses: actions/checkout@v4
 
+      - name: Install Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget unzip upx
+
       - name: Download Clash and Yacd and Subconverter
         run: |
           mkdir tmp && cd tmp
           mkdir core && cd core
           # Mihomo (Clash Meta)
-          wget -O clash.gz https://github.com/MetaCubeX/mihomo/releases/download/v1.19.1/mihomo-linux-amd64-v1.19.1.gz
+          LATEST_URL=$(curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | grep "browser_download_url.*linux-amd64-v.*gz\"" | cut -d '"' -f 4)
+          wget -O clash.gz $LATEST_URL
           gzip -d clash.gz
+
+          # upx
+          chmod +x clash
+          upx clash
+
           # country.mmdb & geosite.dat
           wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country.mmdb
           wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat
           wget -O asn.mmdb https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-ASN.mmdb
+          
+          # dashboard
+          mkdir web
           # yacd
-          wget -O yacd.zip https://github.com/MetaCubeX/yacd/archive/gh-pages.zip
+          wget -O yacd.zip https://github.com/haishanh/yacd/archive/refs/heads/gh-pages.zip
           unzip yacd.zip
-          mv Yacd-meta-gh-pages web
+          mv yacd-gh-pages web/yacd
+          # yacd-meta
+          wget -O yacd-meta.zip https://github.com/MetaCubeX/yacd/archive/gh-pages.zip
+          unzip yacd-meta.zip
+          mv Yacd-meta-gh-pages web/yacd-meta
+          # metacubexd
+          wget -O metacubexd.zip https://github.com/MetaCubeX/metacubexd/archive/refs/heads/gh-pages.zip
+          unzip metacubexd.zip
+          mv metacubexd-gh-pages web/metacubexd
+          # zashboard
+          wget -O zashboard.zip https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip
+          unzip zashboard.zip
+          mv dist web/zashboard
+          
           cd $GITHUB_WORKSPACE
           wget -O subconverter_linux64.tar.gz https://github.com/MetaCubeX/subconverter/releases/download/Alpha/subconverter_linux64.tar.gz
           tar xvf subconverter_linux64.tar.gz
+
+          # upx
+          chmod +x subconverter/subconverter
+          upx subconverter/subconverter
 
       # build front-end start
       - uses: actions/setup-node@v4

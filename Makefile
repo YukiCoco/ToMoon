@@ -63,9 +63,7 @@ download_core:
 upx_core: ## Compress core/clash with UPX
 	@echo "+ $@"
 	@chmod +x ./tmp/core/clash
-	@mv ./tmp/core/clash ./tmp/core/clash.orig
-	@upx ./tmp/core/clash.orig -o ./tmp/core/clash && \
-		rm -f ./tmp/core/clash.orig
+	@upx ./tmp/core/clash
 
 download_mmdb:
 	@echo "+ $@"
@@ -130,9 +128,7 @@ download_subconverter:
 upx_subconverter: ## Compress subconverter with UPX
 	@echo "+ $@"
 	@chmod +x ./tmp/subconverter/subconverter
-	@mv ./tmp/subconverter/subconverter ./tmp/subconverter/subconverter.orig
-	@upx ./tmp/subconverter/subconverter.orig -o ./tmp/subconverter/subconverter && \
-		rm -f ./tmp/subconverter/subconverter.orig
+	@upx ./tmp/subconverter/subconverter
 	
 build-front: ## Build frontend
 	@echo "+ $@"
