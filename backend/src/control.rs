@@ -389,15 +389,51 @@ impl Clash {
     }
 
     pub async fn reload_config(&self) -> Result<(), ClashError> {
-        log::info!("Reloading Clash config...");
         let run_config = self.get_running_config().unwrap();
+        log::info!("Reloading Clash config, config: {}", run_config.display());
 
-        let url = "http://127.0.0.1:9090/configs?force=true";
+        let url = "http://127.0.0.1:9090/configs?reload=true";
         let body = json!({
             "path": run_config,
             "payload": ""
         });
 
+        let body_str = serde_json::to_string(&body).unwrap();
+
+        let res = match minreq::put(url)
+            .with_header("Content-Type", "application/json")
+            .with_body(body_str)
+            .send()
+        {
+            Ok(x) => x,
+            Err(e) => {
+                log::error!("Failed to restart Clash core: {}", e);
+                return Err(ClashError {
+                    Message: e.to_string(),
+                    ErrorKind: ClashErrorKind::InnerError,
+                });
+            }
+        };
+
+        if res.status_code == 200 || res.status_code == 204 {
+            log::info!("Clash config reloaded successfully");
+        } else {
+            log::error!(
+                "Failed to reload Clash config, status_code {}",
+                res.status_code
+            );
+        }
+
+        Ok(())
+    }
+
+    pub async fn restart_core(&self) -> Result<(), ClashError> {
+        log::info!("Restarting Clash core...");
+
+        let url = "http://127.0.0.1:9090/restart";
+        let body = json!({
+            "payload": ""
+        });
         let body_str = serde_json::to_string(&body).unwrap();
 
         let res = match minreq::post(url)
@@ -416,9 +452,10 @@ impl Clash {
         };
 
         if res.status_code == 200 {
-            log::info!("Clash config reloaded successfully");
+            log::info!("Clash restart successfully");
         } else {
-            log::error!("Failed to reload Clash config");
+            let data = res.as_str().unwrap();
+            log::error!("Failed to restart Clash core: {}", data);
         }
 
         Ok(())

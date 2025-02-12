@@ -223,11 +223,16 @@ export function apiCallMethod(
     }
   };
 
-  // 对于非重载配置的请求，在请求完成后自动触发配置重载
-  if (name !== "reload_clash_config") {
+  const ignore_list = ["get_config", "reload_clash_config", "restart_clash"];
+
+  // 在请求完成后自动触发配置重载
+  if (!ignore_list.includes(name)) {
     return makeRequest().then(async (response) => {
       // 在原始请求完成后触发配置重载
-      await apiCallMethod("reload_clash_config", {}, ApiCallMethod.GET);
+      if (response.status === 200) {
+        console.log(`^^^^^^^^^^^ apiCallMethod: ${name} done`);
+        apiCallMethod("reload_clash_config", {}, ApiCallMethod.GET);
+      }
       return response; // 返回原始请求的响应
     });
   }
@@ -243,6 +248,11 @@ export class ApiCallBackend {
 
   public static async reloadClashConfig() {
     return await apiCallMethod("reload_clash_config", {}, ApiCallMethod.GET);
+  }
+
+  // restart_clash
+  public static async restartClash() {
+    return await apiCallMethod("restart_clash", {}, ApiCallMethod.GET);
   }
 
   // enhanced_mode
@@ -262,6 +272,8 @@ export class ApiCallBackend {
 
   // allow_remote_access
   public static async allowRemoteAccess(value: boolean) {
-    return await apiCallMethod("allow_remote_access", { allow_remote_access: value });
+    return await apiCallMethod("allow_remote_access", {
+      allow_remote_access: value,
+    });
   }
 }

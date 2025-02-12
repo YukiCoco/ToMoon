@@ -23,7 +23,7 @@ import * as backend from "./backend/backend";
 import axios from "axios";
 
 import { ApiCallBackend, PyBackend, EnhancedMode } from "./backend";
-import { VersionComponent } from "./components";
+import { ActionButtonItem, VersionComponent } from "./components";
 
 let enabledGlobal = false;
 let enabledSkipProxy = false;
@@ -110,7 +110,9 @@ const Content: FC<{}> = ({}) => {
 
     const getConfig = async () => {
       await ApiCallBackend.getConfig().then((res) => {
-        console.log(`getConfig: ${JSON.stringify(res.data, null, 2)}`);
+        console.log(
+          `~~~~~~~~~~~~~~~~~~~ getConfig: ${JSON.stringify(res.data, null, 2)}`
+        );
         if (res.data.status_code == 200) {
           enabledSkipProxy = res.data.skip_proxy;
           enabledOverrideDNS = res.data.override_dns;
@@ -234,7 +236,7 @@ const Content: FC<{}> = ({}) => {
               const setSub = async () => {
                 await backend.setSub(x.data);
                 await ApiCallBackend.reloadClashConfig();
-              }
+              };
               backend.resolve(setSub(), () => {
                 setIsSelectionDisabled(false);
               });
@@ -351,6 +353,17 @@ const Content: FC<{}> = ({}) => {
             />
           </PanelSectionRow>
         )}
+        <PanelSectionRow>
+          <ActionButtonItem
+            disabled={!clashState}
+            layout="below"
+            onClick={() => {
+              ApiCallBackend.restartClash();
+            }}
+          >
+            Restart Core
+          </ActionButtonItem>
+        </PanelSectionRow>
       </PanelSection>
 
       <PanelSection title="Tools">
@@ -408,12 +421,12 @@ export default definePlugin(() => {
     backend.resolve(backend.getEnabled(), (v: boolean) => {
       enabledGlobal = v;
     });
-    axios.get("http://127.0.0.1:55556/get_config").then((r) => {
-      if (r.data.status_code == 200) {
-        enabledSkipProxy = r.data.skip_proxy;
-        enabledOverrideDNS = r.data.override_dns;
-        enhanced_mode = r.data.enhanced_mode;
-        allow_remote_access = r.data.allow_remote_access;
+    ApiCallBackend.getConfig().then((res) => {
+      if (res.data.status_code == 200) {
+        enabledSkipProxy = res.data.skip_proxy;
+        enabledOverrideDNS = res.data.override_dns;
+        enhanced_mode = res.data.enhanced_mode;
+        allow_remote_access = res.data.allow_remote_access;
       }
     });
   })();
