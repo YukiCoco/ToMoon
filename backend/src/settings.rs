@@ -21,6 +21,10 @@ pub struct Settings {
     pub subscriptions: Vec<Subscription>,
     #[serde(default = "default_allow_remote_access")]
     pub allow_remote_access: bool,
+    #[serde(default = "default_dashboard")]
+    pub dashboard: String,
+    #[serde(default = "default_secret")]
+    pub secret: String,
 }
 
 fn default_skip_proxy() -> bool {
@@ -41,6 +45,14 @@ fn default_allow_remote_access() -> bool {
 
 fn default_enhanced_mode() -> EnhancedMode {
     EnhancedMode::FakeIp
+}
+
+fn default_dashboard() -> String {
+    "yacd-meta".to_string()
+}
+
+fn default_secret() -> String {
+    "".to_string()
 }
 
 fn default_current_sub() -> String {
@@ -143,7 +155,9 @@ impl Default for Settings {
             enhanced_mode: EnhancedMode::FakeIp,
             current_sub: default_profile.to_string_lossy().to_string(),
             subscriptions: Vec::new(),
-            allow_remote_access: default_allow_remote_access()
+            allow_remote_access: default_allow_remote_access(),
+            dashboard: default_dashboard(),
+            secret: default_secret(),
         }
     }
 }

@@ -49,6 +49,11 @@ pub struct EnhancedModeParams {
     enhanced_mode: EnhancedMode,
 }
 
+#[derive(Deserialize)]
+pub struct DashboardParams {
+    dashboard: String,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct GenLinkResponse {
     status_code: u16,
@@ -63,6 +68,18 @@ pub struct SkipProxyResponse {
 
 #[derive(Serialize, Deserialize)]
 pub struct OverrideDNSResponse {
+    status_code: u16,
+    message: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct AllowRemoteAccessResponse {
+    status_code: u16,
+    message: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DashboardResponse {
     status_code: u16,
     message: String,
 }
@@ -84,6 +101,8 @@ pub struct GetConfigResponse {
     override_dns: bool,
     enhanced_mode: EnhancedMode,
     allow_remote_access: bool,
+    dashboard: String,
+    secret: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -292,33 +311,122 @@ pub async fn enhanced_mode(
     Ok(HttpResponse::Ok().json(r))
 }
 
-pub async fn get_config(state: web::Data<AppState>) -> Result<HttpResponse> {
+// set_dashboard
+pub async fn set_dashboard(
+    state: web::Data<AppState>,
+    params: web::Form<DashboardParams>,
+) -> Result<HttpResponse> {
+    let dashboard = params.dashboard.clone();
     let runtime = state.runtime.lock().unwrap();
     let runtime_settings;
+    let runtime_state;
     unsafe {
         let runtime = runtime.0.as_ref().unwrap();
         runtime_settings = runtime.settings_clone();
+        runtime_state = runtime.state_clone();
     }
-    match runtime_settings.read() {
-        Ok(x) => {
-            let r = GetConfigResponse {
-                skip_proxy: x.skip_proxy,
-                override_dns: x.override_dns,
-                enhanced_mode: x.enhanced_mode,
-                allow_remote_access: x.allow_remote_access,
-                status_code: 200,
+
+    match runtime_settings.write() {
+        Ok(mut x) => {
+            x.dashboard = dashboard;
+            let mut state = match runtime_state.write() {
+                Ok(x) => x,
+                Err(e) => {
+                    log::error!("set_dashboard failed to acquire state write lock: {}", e);
+                    return Err(actix_web::Error::from(ClashError {
+                        Message: e.to_string(),
+                        ErrorKind: ClashErrorKind::InnerError,
+                    }));
+                }
             };
-            return Ok(HttpResponse::Ok().json(r));
+            state.dirty = true;
         }
         Err(e) => {
-            log::error!("Failed while geting skip Steam proxy.");
+            log::error!("Failed while set dashboard.");
             log::error!("Error Message:{}", e);
             return Err(actix_web::Error::from(ClashError {
                 Message: e.to_string(),
                 ErrorKind: ClashErrorKind::ConfigNotFound,
             }));
         }
+    }
+    let r = DashboardResponse {
+        message: "修改成功".to_string(),
+        status_code: 200,
     };
+    Ok(HttpResponse::Ok().json(r))
+}
+
+pub async fn restart_clash(state: web::Data<AppState>) -> Result<HttpResponse> {
+    let runtime = state.runtime.lock().unwrap();
+    // let runtime_settings;
+    let clash_state;
+    unsafe {
+        let runtime = runtime.0.as_ref().unwrap();
+        // runtime_settings = runtime.settings_clone();
+        clash_state = runtime.clash_state_clone();
+    }
+
+    let clash = match clash_state.write() {
+        Ok(x) => x,
+        Err(e) => {
+            log::error!("read clash_state failed to acquire state write lock: {}", e);
+            return Err(actix_web::Error::from(ClashError {
+                Message: e.to_string(),
+                ErrorKind: ClashErrorKind::InnerError,
+            }));
+        }
+    };
+
+    // let settings = match runtime_settings.write() {
+    //     Ok(x) => x,
+    //     Err(e) => {
+    //         log::error!(
+    //             "read runtime_settings failed to acquire state write lock: {}",
+    //             e
+    //         );
+    //         return Err(actix_web::Error::from(ClashError {
+    //             Message: e.to_string(),
+    //             ErrorKind: ClashErrorKind::InnerError,
+    //         }));
+    //     }
+    // };
+
+    // match clash.change_config(
+    //     settings.skip_proxy,
+    //     settings.override_dns,
+    //     settings.allow_remote_access,
+    //     settings.enhanced_mode,
+    //     settings.dashboard.clone(),
+    // ) {
+    //     Ok(_) => {}
+    //     Err(e) => {
+    //         log::error!("Failed while change clash config.");
+    //         log::error!("Error Message:{}", e);
+    //         return Err(actix_web::Error::from(ClashError {
+    //             Message: e.to_string(),
+    //             ErrorKind: ClashErrorKind::InnerError,
+    //         }));
+    //     }
+    // }
+
+    match clash.restart_core().await {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!("Failed while restart clash.");
+            log::error!("Error Message:{}", e);
+            return Err(actix_web::Error::from(ClashError {
+                Message: e.to_string(),
+                ErrorKind: ClashErrorKind::InnerError,
+            }));
+        }
+    }
+
+    let r = GenLinkResponse {
+        message: "重启成功".to_string(),
+        status_code: 200,
+    };
+    Ok(HttpResponse::Ok().json(r))
 }
 
 pub async fn reload_clash_config(state: web::Data<AppState>) -> Result<HttpResponse> {
@@ -354,10 +462,11 @@ pub async fn reload_clash_config(state: web::Data<AppState>) -> Result<HttpRespo
     };
 
     match clash.change_config(
-                        settings.skip_proxy, 
-                        settings.override_dns,
-                        settings.allow_remote_access,
-                        settings.enhanced_mode
+        settings.skip_proxy,
+        settings.override_dns,
+        settings.allow_remote_access,
+        settings.enhanced_mode,
+        settings.dashboard.clone(),
     ) {
         Ok(_) => {}
         Err(e) => {
@@ -381,7 +490,7 @@ pub async fn reload_clash_config(state: web::Data<AppState>) -> Result<HttpRespo
             }));
         }
     }
-    
+
     let r = GenLinkResponse {
         message: "重载成功".to_string(),
         status_code: 200,
@@ -389,75 +498,35 @@ pub async fn reload_clash_config(state: web::Data<AppState>) -> Result<HttpRespo
     Ok(HttpResponse::Ok().json(r))
 }
 
-pub async fn restart_clash(state: web::Data<AppState>) -> Result<HttpResponse> {
+pub async fn get_config(state: web::Data<AppState>) -> Result<HttpResponse> {
     let runtime = state.runtime.lock().unwrap();
     let runtime_settings;
-    let clash_state;
     unsafe {
         let runtime = runtime.0.as_ref().unwrap();
         runtime_settings = runtime.settings_clone();
-        clash_state = runtime.clash_state_clone();
     }
-
-    let clash = match clash_state.write() {
-        Ok(x) => x,
-        Err(e) => {
-            log::error!("read clash_state failed to acquire state write lock: {}", e);
-            return Err(actix_web::Error::from(ClashError {
-                Message: e.to_string(),
-                ErrorKind: ClashErrorKind::InnerError,
-            }));
+    match runtime_settings.read() {
+        Ok(x) => {
+            let r = GetConfigResponse {
+                skip_proxy: x.skip_proxy,
+                override_dns: x.override_dns,
+                enhanced_mode: x.enhanced_mode,
+                allow_remote_access: x.allow_remote_access,
+                dashboard: x.dashboard.clone(),
+                secret: x.secret.clone(),
+                status_code: 200,
+            };
+            return Ok(HttpResponse::Ok().json(r));
         }
-    };
-
-    let settings = match runtime_settings.write() {
-        Ok(x) => x,
         Err(e) => {
-            log::error!(
-                "read runtime_settings failed to acquire state write lock: {}",
-                e
-            );
-            return Err(actix_web::Error::from(ClashError {
-                Message: e.to_string(),
-                ErrorKind: ClashErrorKind::InnerError,
-            }));
-        }
-    };
-
-    match clash.change_config(
-        settings.skip_proxy,
-        settings.override_dns,
-        settings.allow_remote_access,
-        settings.enhanced_mode
-    ) {
-        Ok(_) => {}
-        Err(e) => {
-            log::error!("Failed while change clash config.");
+            log::error!("Failed while geting skip Steam proxy.");
             log::error!("Error Message:{}", e);
             return Err(actix_web::Error::from(ClashError {
                 Message: e.to_string(),
-                ErrorKind: ClashErrorKind::InnerError,
+                ErrorKind: ClashErrorKind::ConfigNotFound,
             }));
         }
-    }
-
-    match clash.restart_core().await {
-        Ok(_) => {}
-        Err(e) => {
-            log::error!("Failed while restart clash.");
-            log::error!("Error Message:{}", e);
-            return Err(actix_web::Error::from(ClashError {
-                Message: e.to_string(),
-                ErrorKind: ClashErrorKind::InnerError,
-            }));
-        }
-    }
-
-    let r = GenLinkResponse {
-        message: "重启成功".to_string(),
-        status_code: 200,
     };
-    Ok(HttpResponse::Ok().json(r))
 }
 
 pub async fn download_sub(

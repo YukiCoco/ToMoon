@@ -276,4 +276,9 @@ export class ApiCallBackend {
       allow_remote_access: value,
     });
   }
+
+  // set_dashboard
+  public static async setDashboard(value: String) {
+    return await apiCallMethod("set_dashboard", { dashboard: value });
+  }
 }

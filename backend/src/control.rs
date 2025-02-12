@@ -258,6 +258,7 @@ impl Clash {
         override_dns: bool,
         allow_remote_access: bool,
         enhanced_mode: EnhancedMode,
+        dashboard: String,
     ) -> Result<(), ClashError> {
         // decky 插件数据目录
         let decky_data_dir = get_decky_data_dir().unwrap();
@@ -322,7 +323,13 @@ impl Clash {
 
         self.update_config_path(config_path);
         // 修改配置文件为推荐配置
-        match self.change_config(skip_proxy, override_dns, allow_remote_access, enhanced_mode) {
+        match self.change_config(
+            skip_proxy,
+            override_dns,
+            allow_remote_access,
+            enhanced_mode,
+            dashboard,
+        ) {
             Ok(_) => (),
             Err(e) => {
                 return Err(ClashError {
@@ -467,6 +474,7 @@ impl Clash {
         override_dns: bool,
         allow_remote_access: bool,
         enhanced_mode: EnhancedMode,
+        dashboard: String,
     ) -> Result<(), Box<dyn error::Error>> {
         let path = self.config.clone();
         log::info!("change_config path: {:?}", path);
@@ -528,6 +536,19 @@ impl Clash {
                 yaml.insert(
                     Value::String(String::from("external-ui")),
                     Value::String(String::from(webui_dir.to_str().unwrap())),
+                );
+            }
+        }
+
+        //  修改 dashboard 名称
+        match yaml.get_mut("external-ui-name") {
+            Some(x) => {
+                *x = Value::String(String::from(dashboard));
+            }
+            None => {
+                yaml.insert(
+                    Value::String(String::from("external-ui-name")),
+                    Value::String(String::from(dashboard)),
                 );
             }
         }

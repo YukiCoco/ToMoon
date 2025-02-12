@@ -277,6 +277,7 @@ const Content: FC<{}> = ({}) => {
               }
               Navigation.NavigateToExternalWeb(
                 "http://127.0.0.1:9090/ui" + param
+                // `http://127.0.0.1:9090/ui/${currentDashboard_name}/#`
               );
             }}
             disabled={openDashboardDisabled}
@@ -299,6 +300,7 @@ const Content: FC<{}> = ({}) => {
               console.log(`>>>>>>>>>>>>>>>> selected dashboard: ${val.data}`);
               current_dashboard = val.data;
               PyBackend.setCurrentDashboard(val.data);
+              ApiCallBackend.setDashboard(val.data.split("/").pop());
             }}
           />
         </PanelSectionRow>

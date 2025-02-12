@@ -66,7 +66,9 @@ async fn main() -> Result<(), std::io::Error> {
     });
 
     // 启动一个 tokio 任务来运行 subconverter
-    let subconverter_path = helper::get_current_working_dir().unwrap().join("bin/subconverter");
+    let subconverter_path = helper::get_current_working_dir()
+        .unwrap()
+        .join("bin/subconverter");
     tokio::spawn(async move {
         if subconverter_path.exists() && subconverter_path.is_file() {
             let mut command = tokio::process::Command::new(subconverter_path);
@@ -89,7 +91,10 @@ async fn main() -> Result<(), std::io::Error> {
                 Err(e) => log::error!("Failed to start subconverter: {}", e),
             }
         } else {
-            log::error!("Subconverter path does not exist or is not a file: {:?}", subconverter_path);
+            log::error!(
+                "Subconverter path does not exist or is not a file: {:?}",
+                subconverter_path
+            );
         }
     });
 
@@ -116,8 +121,12 @@ async fn main() -> Result<(), std::io::Error> {
                     .route(web::get().to(external_web::get_local_web_address)),
             )
             .service(web::resource("/skip_proxy").route(web::post().to(external_web::skip_proxy)))
-            .service(web::resource("/override_dns").route(web::post().to(external_web::override_dns)))
-            .service(web::resource("/enhanced_mode").route(web::post().to(external_web::enhanced_mode)))
+            .service(
+                web::resource("/override_dns").route(web::post().to(external_web::override_dns)),
+            )
+            .service(
+                web::resource("/enhanced_mode").route(web::post().to(external_web::enhanced_mode)),
+            )
             .service(web::resource("/get_config").route(web::get().to(external_web::get_config)))
             //.service(web::resource("/manual").route(web::get().to(external_web.web_download_sub)))
             // allow_remote_access
@@ -132,9 +141,13 @@ async fn main() -> Result<(), std::io::Error> {
             )
             // restart_clash
             .service(
-                web::resource("/restart_clash")
-                    .route(web::get().to(external_web::restart_clash)),
+                web::resource("/restart_clash").route(web::get().to(external_web::restart_clash)),
             )
+            // set_dashboard
+            .service(
+                web::resource("/set_dashboard").route(web::post().to(external_web::set_dashboard)),
+            )
+            // web
             .service(
                 fs::Files::new("/", "./web")
                     .index_file("index.html")
