@@ -114,6 +114,8 @@ download_zashboard:
 
 download_rules:
 	@echo "+ $@"
+	@mkdir -p ./assets/subconverter_rules
+	@rm -rf ./assets/subconverter_rules/*.list*
 	@bash ./assets/subconverter_rules/dl_rules.sh ./assets/subconverter_rules
 
 download_subconverter:
