@@ -2,16 +2,17 @@ use actix_web::{body::BoxBody, web, HttpResponse, Result};
 use local_ip_address::local_ip;
 use rand::{distributions::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
-use tokio::net::TcpStream;
-use tokio::time::sleep;
 use std::time::Duration;
 use std::{collections::HashMap, fs, path::PathBuf, sync::Mutex};
+use tokio::net::TcpStream;
 use tokio::process::Command;
 use tokio::sync::mpsc;
+use tokio::time::sleep;
 
 use crate::{
     control::{ClashError, ClashErrorKind, EnhancedMode},
-    helper, settings::State,
+    helper,
+    settings::State,
 };
 
 pub struct Runtime(pub *const crate::control::ControlRuntime);
@@ -25,12 +26,17 @@ pub struct AppState {
 #[derive(Deserialize)]
 pub struct GenLinkParams {
     link: String,
-    subconv: bool
+    subconv: bool,
 }
 
 #[derive(Deserialize)]
 pub struct SkipProxyParams {
     skip_proxy: bool,
+}
+
+#[derive(Deserialize)]
+pub struct AllowRemoteAccessParams {
+    allow_remote_access: bool,
 }
 
 #[derive(Deserialize)]
@@ -41,6 +47,11 @@ pub struct OverrideDNSParams {
 #[derive(Deserialize)]
 pub struct EnhancedModeParams {
     enhanced_mode: EnhancedMode,
+}
+
+#[derive(Deserialize)]
+pub struct DashboardParams {
+    dashboard: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -61,6 +72,18 @@ pub struct OverrideDNSResponse {
     message: String,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct AllowRemoteAccessResponse {
+    status_code: u16,
+    message: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DashboardResponse {
+    status_code: u16,
+    message: String,
+}
+
 #[derive(Deserialize)]
 pub struct GetLinkParams {
     code: u16,
@@ -77,6 +100,9 @@ pub struct GetConfigResponse {
     skip_proxy: bool,
     override_dns: bool,
     enhanced_mode: EnhancedMode,
+    allow_remote_access: bool,
+    dashboard: String,
+    secret: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -193,6 +219,54 @@ pub async fn override_dns(
     Ok(HttpResponse::Ok().json(r))
 }
 
+// allow_remote_access
+pub async fn allow_remote_access(
+    state: web::Data<AppState>,
+    params: web::Form<AllowRemoteAccessParams>,
+) -> Result<HttpResponse> {
+    let allow_remote_access = params.allow_remote_access.clone();
+    let runtime = state.runtime.lock().unwrap();
+    let runtime_settings;
+    let runtime_state;
+    unsafe {
+        let runtime = runtime.0.as_ref().unwrap();
+        runtime_settings = runtime.settings_clone();
+        runtime_state = runtime.state_clone();
+    }
+    match runtime_settings.write() {
+        Ok(mut x) => {
+            x.allow_remote_access = allow_remote_access;
+            let mut state = match runtime_state.write() {
+                Ok(x) => x,
+                Err(e) => {
+                    log::error!(
+                        "allow_remote_access failed to acquire state write lock: {}",
+                        e
+                    );
+                    return Err(actix_web::Error::from(ClashError {
+                        Message: e.to_string(),
+                        ErrorKind: ClashErrorKind::InnerError,
+                    }));
+                }
+            };
+            state.dirty = true;
+        }
+        Err(e) => {
+            log::error!("Failed while toggle allow_remote_access.");
+            log::error!("Error Message:{}", e);
+            return Err(actix_web::Error::from(ClashError {
+                Message: e.to_string(),
+                ErrorKind: ClashErrorKind::ConfigNotFound,
+            }));
+        }
+    }
+    let r = OverrideDNSResponse {
+        message: "修改成功".to_string(),
+        status_code: 200,
+    };
+    Ok(HttpResponse::Ok().json(r))
+}
+
 pub async fn enhanced_mode(
     state: web::Data<AppState>,
     params: web::Form<EnhancedModeParams>,
@@ -237,19 +311,228 @@ pub async fn enhanced_mode(
     Ok(HttpResponse::Ok().json(r))
 }
 
-pub async fn get_config(state: web::Data<AppState>) -> Result<HttpResponse> {
+// set_dashboard
+pub async fn set_dashboard(
+    state: web::Data<AppState>,
+    params: web::Form<DashboardParams>,
+) -> Result<HttpResponse> {
+    let dashboard = params.dashboard.clone();
     let runtime = state.runtime.lock().unwrap();
     let runtime_settings;
+    let runtime_state;
     unsafe {
         let runtime = runtime.0.as_ref().unwrap();
         runtime_settings = runtime.settings_clone();
+        runtime_state = runtime.state_clone();
     }
+
+    match runtime_settings.write() {
+        Ok(mut x) => {
+            x.dashboard = dashboard;
+            let mut state = match runtime_state.write() {
+                Ok(x) => x,
+                Err(e) => {
+                    log::error!("set_dashboard failed to acquire state write lock: {}", e);
+                    return Err(actix_web::Error::from(ClashError {
+                        Message: e.to_string(),
+                        ErrorKind: ClashErrorKind::InnerError,
+                    }));
+                }
+            };
+            state.dirty = true;
+        }
+        Err(e) => {
+            log::error!("Failed while set dashboard.");
+            log::error!("Error Message:{}", e);
+            return Err(actix_web::Error::from(ClashError {
+                Message: e.to_string(),
+                ErrorKind: ClashErrorKind::ConfigNotFound,
+            }));
+        }
+    }
+    let r = DashboardResponse {
+        message: "修改成功".to_string(),
+        status_code: 200,
+    };
+    Ok(HttpResponse::Ok().json(r))
+}
+
+pub async fn restart_clash(state: web::Data<AppState>) -> Result<HttpResponse> {
+    let runtime = state.runtime.lock().unwrap();
+    // let runtime_settings;
+    let clash_state;
+    unsafe {
+        let runtime = runtime.0.as_ref().unwrap();
+        // runtime_settings = runtime.settings_clone();
+        clash_state = runtime.clash_state_clone();
+    }
+
+    let clash = match clash_state.write() {
+        Ok(x) => x,
+        Err(e) => {
+            log::error!("read clash_state failed to acquire state write lock: {}", e);
+            return Err(actix_web::Error::from(ClashError {
+                Message: e.to_string(),
+                ErrorKind: ClashErrorKind::InnerError,
+            }));
+        }
+    };
+
+    // let settings = match runtime_settings.write() {
+    //     Ok(x) => x,
+    //     Err(e) => {
+    //         log::error!(
+    //             "read runtime_settings failed to acquire state write lock: {}",
+    //             e
+    //         );
+    //         return Err(actix_web::Error::from(ClashError {
+    //             Message: e.to_string(),
+    //             ErrorKind: ClashErrorKind::InnerError,
+    //         }));
+    //     }
+    // };
+
+    // match clash.change_config(
+    //     settings.skip_proxy,
+    //     settings.override_dns,
+    //     settings.allow_remote_access,
+    //     settings.enhanced_mode,
+    //     settings.dashboard.clone(),
+    // ) {
+    //     Ok(_) => {}
+    //     Err(e) => {
+    //         log::error!("Failed while change clash config.");
+    //         log::error!("Error Message:{}", e);
+    //         return Err(actix_web::Error::from(ClashError {
+    //             Message: e.to_string(),
+    //             ErrorKind: ClashErrorKind::InnerError,
+    //         }));
+    //     }
+    // }
+
+    match clash.restart_core().await {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!("Failed while restart clash.");
+            log::error!("Error Message:{}", e);
+            return Err(actix_web::Error::from(ClashError {
+                Message: e.to_string(),
+                ErrorKind: ClashErrorKind::InnerError,
+            }));
+        }
+    }
+
+    let r = GenLinkResponse {
+        message: "重启成功".to_string(),
+        status_code: 200,
+    };
+    Ok(HttpResponse::Ok().json(r))
+}
+
+pub async fn reload_clash_config(state: web::Data<AppState>) -> Result<HttpResponse> {
+    let runtime = state.runtime.lock().unwrap();
+    let runtime_settings;
+    let clash_state;
+    unsafe {
+        let runtime = runtime.0.as_ref().unwrap();
+        runtime_settings = runtime.settings_clone();
+        clash_state = runtime.clash_state_clone();
+    }
+
+    let clash = match clash_state.write() {
+        Ok(x) => x,
+        Err(e) => {
+            log::error!("read clash_state failed: {}", e);
+            return Err(actix_web::Error::from(ClashError {
+                Message: e.to_string(),
+                ErrorKind: ClashErrorKind::InnerError,
+            }));
+        }
+    };
+
+    let settings = match runtime_settings.write() {
+        Ok(x) => x,
+        Err(e) => {
+            log::error!("read runtime_settings failed: {}", e);
+            return Err(actix_web::Error::from(ClashError {
+                Message: e.to_string(),
+                ErrorKind: ClashErrorKind::InnerError,
+            }));
+        }
+    };
+
+    match clash.change_config(
+        settings.skip_proxy,
+        settings.override_dns,
+        settings.allow_remote_access,
+        settings.enhanced_mode,
+        settings.dashboard.clone(),
+    ) {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!("Failed while change clash config.");
+            log::error!("Error Message:{}", e);
+            return Err(actix_web::Error::from(ClashError {
+                Message: e.to_string(),
+                ErrorKind: ClashErrorKind::InnerError,
+            }));
+        }
+    }
+
+    match clash.reload_config().await {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!("Failed while reload clash config.");
+            log::error!("Error Message:{}", e);
+            return Err(actix_web::Error::from(ClashError {
+                Message: e.to_string(),
+                ErrorKind: ClashErrorKind::InnerError,
+            }));
+        }
+    }
+
+    let r = GenLinkResponse {
+        message: "重载成功".to_string(),
+        status_code: 200,
+    };
+    Ok(HttpResponse::Ok().json(r))
+}
+
+pub async fn get_config(state: web::Data<AppState>) -> Result<HttpResponse> {
+    let runtime = state.runtime.lock().unwrap();
+    let runtime_settings;
+    let clash_state;
+    unsafe {
+        let runtime = runtime.0.as_ref().unwrap();
+        runtime_settings = runtime.settings_clone();
+        clash_state = runtime.clash_state_clone();
+    }
+
+    let clash = match clash_state.read() {
+        Ok(x) => x,
+        Err(e) => {
+            log::error!("read clash_state failed: {}", e);
+            return Err(actix_web::Error::from(ClashError {
+                Message: e.to_string(),
+                ErrorKind: ClashErrorKind::InnerError,
+            }));
+        }
+    };
+
     match runtime_settings.read() {
         Ok(x) => {
+            let secret = match clash.get_running_secret() {
+                Ok(s) => s,
+                Err(_) => x.secret.clone(),
+            };
+
             let r = GetConfigResponse {
                 skip_proxy: x.skip_proxy,
                 override_dns: x.override_dns,
+                allow_remote_access: x.allow_remote_access,
                 enhanced_mode: x.enhanced_mode,
+                dashboard: x.dashboard.clone(),
+                secret: secret,
                 status_code: 200,
             };
             return Ok(HttpResponse::Ok().json(r));
@@ -283,7 +566,7 @@ pub async fn download_sub(
 
     let home = match runtime_state.read() {
         Ok(state) => state.home.clone(),
-        Err(_) => State::default().home
+        Err(_) => State::default().home,
     };
     let path: PathBuf = home.join(".config/tomoon/subs/");
 
@@ -292,10 +575,10 @@ pub async fn download_sub(
         let local_file = PathBuf::from(local_file);
         let filename = (|| -> Result<String, ()> {
             // 如果文件名可被读取则采用
-            let mut filename = String::from(
-                local_file.file_name().ok_or(())?
-                .to_str().ok_or(())?);
-            if !filename.to_lowercase().ends_with(".yaml") && !filename.to_lowercase().ends_with(".yml") {
+            let mut filename = String::from(local_file.file_name().ok_or(())?.to_str().ok_or(())?);
+            if !filename.to_lowercase().ends_with(".yaml")
+                && !filename.to_lowercase().ends_with(".yml")
+            {
                 filename += ".yaml";
             }
             Ok(filename)
@@ -304,10 +587,11 @@ pub async fn download_sub(
             log::warn!("The subscription does not have a proper file name.");
             // 否则采用随机名字
             rand::thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(5)
-            .map(char::from)
-            .collect::<String>() + ".yaml"
+                .sample_iter(&Alphanumeric)
+                .take(5)
+                .map(char::from)
+                .collect::<String>()
+                + ".yaml"
         });
         if local_file.exists() {
             let file_content = match fs::read_to_string(local_file) {
@@ -394,11 +678,11 @@ pub async fn download_sub(
             let base_url = "http://127.0.0.1:25500/sub";
             let target = "clash";
             let config = "http://127.0.0.1:55556/ACL4SSR_Online.ini";
-            
+
             // 对参数进行 URL 编码
             let encoded_url = urlencoding::encode(url.as_str());
             let encoded_config = urlencoding::encode(config);
-            
+
             // 构建请求 URL
             url = format!(
                 "{}?target={}&url={}&insert=false&config={}&emoji=true&list=false&tfo=false&scv=true&fdn=false&expand=true&sort=false&new_name=true",
@@ -408,7 +692,10 @@ pub async fn download_sub(
         match minreq::get(url.clone())
             .with_header(
                 "User-Agent",
-                format!("ToMoon/{} mihomo/1.18.3 Clash/v1.18.0", env!("CARGO_PKG_VERSION")),
+                format!(
+                    "ToMoon/{} mihomo/1.18.3 Clash/v1.18.0",
+                    env!("CARGO_PKG_VERSION")
+                ),
             )
             .with_timeout(120)
             .send()
@@ -426,15 +713,20 @@ pub async fn download_sub(
                 let filename = x.headers.get("content-disposition");
                 let filename = match filename {
                     Some(x) => {
-                        let filename = x
-                            .split("filename=").collect::<Vec<&str>>()[1]
-                            .split(";").collect::<Vec<&str>>()[0]
+                        let filename = x.split("filename=").collect::<Vec<&str>>()[1]
+                            .split(";")
+                            .collect::<Vec<&str>>()[0]
                             .replace("\"", "");
                         filename.to_string()
                     }
                     None => {
                         let slash_split = *url.split("/").collect::<Vec<&str>>().last().unwrap();
-                        slash_split.split("?").collect::<Vec<&str>>().first().unwrap().to_string()
+                        slash_split
+                            .split("?")
+                            .collect::<Vec<&str>>()
+                            .first()
+                            .unwrap()
+                            .to_string()
                     }
                 };
                 let filename = if filename.is_empty() {
@@ -443,7 +735,9 @@ pub async fn download_sub(
                 } else {
                     filename
                 };
-                let filename = if filename.to_lowercase().ends_with(".yaml") || filename.to_lowercase().ends_with(".yml") {
+                let filename = if filename.to_lowercase().ends_with(".yaml")
+                    || filename.to_lowercase().ends_with(".yml")
+                {
                     filename
                 } else {
                     filename + ".yaml"

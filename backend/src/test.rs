@@ -72,7 +72,7 @@ mod tests {
     fn test_yaml() {
         println!("{}", std::env::current_dir().unwrap().to_str().unwrap());
         let mut clash = control::Clash::default();
-        clash.change_config(true, true);
+        clash.change_config(true, true, true, true);
     }
 
     #[test]

@@ -11,7 +11,9 @@ help: ## Display list of tasks with descriptions
 
 vendor: ## Install project dependencies
 	@echo "+ $@"
+	@cp -r usdpl src/
 	@pnpm i
+	@cd tomoon-web && pnpm i
 
 env: ## Create default .env file
 	@echo "+ $@"
@@ -38,10 +40,12 @@ download:
 	@echo "+ $@"
 	@$(MAKE) clean_tmp
 	@$(MAKE) download_core
+	@$(MAKE) upx_core
 	@$(MAKE) download_mmdb
-	@$(MAKE) download_yacd
+	@$(MAKE) download_dashboard
 	@$(MAKE) download_rules
 	@$(MAKE) download_subconverter
+	@$(MAKE) upx_subconverter
 
 clean_tmp:
 	@echo "+ $@"
@@ -51,9 +55,17 @@ download_core:
 	@echo "+ $@"
 	@mkdir -p ./tmp
 	@mkdir -p ./tmp/core
-	@wget -O clash.gz https://github.com/MetaCubeX/mihomo/releases/download/v1.19.1/mihomo-linux-amd64-v1.19.1.gz
-	@gzip -d clash.gz -c > ./tmp/core/clash
-	@rm -f clash.gz
+	@echo "Fetching latest release info from GitHub..."
+	@LATEST_URL=$$(curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | grep "browser_download_url.*linux-amd64-v.*gz\"" | cut -d '"' -f 4) && \
+	echo "Downloading from: $$LATEST_URL" && \
+		wget -O clash.gz $$LATEST_URL && \
+		gzip -d clash.gz -c > ./tmp/core/clash && \
+		rm -f clash.gz
+
+upx_core: ## Compress core/clash with UPX
+	@echo "+ $@"
+	@chmod +x ./tmp/core/clash
+	@upx ./tmp/core/clash
 
 download_mmdb:
 	@echo "+ $@"
@@ -63,17 +75,50 @@ download_mmdb:
 	@wget -O ./tmp/core/geosite.dat https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat
 	@wget -O ./tmp/core/asn.mmdb https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-ASN.mmdb
 
-download_yacd:
+download_dashboard:
 	@echo "+ $@"
 	@mkdir -p ./tmp
 	@mkdir -p ./tmp/core
-	@wget -O ./tmp/yacd.zip https://github.com/MetaCubeX/yacd/archive/gh-pages.zip
-	@unzip ./tmp/yacd.zip -d ./tmp
-	@mv ./tmp/Yacd-meta-gh-pages ./tmp/core/web
-	@rm -f ./tmp/yacd.zip
+	@mkdir -p ./tmp/core/web
+	@rm -rf ./tmp/core/web/*
+
+	$(MAKE) download_yacd
+	$(MAKE) download_yacd_meta
+	$(MAKE) download_metacubexd
+	$(MAKE) download_zashboard
+
+	@echo "clean tmp"
+	@rm -f ./tmp/*.zip
+
+download_yacd:
+	@echo "+ $@"
+	@wget -O ./tmp/yacd.zip https://github.com/haishanh/yacd/archive/refs/heads/gh-pages.zip
+	@unzip -o ./tmp/yacd.zip -d ./tmp
+	@mv ./tmp/yacd-gh-pages ./tmp/core/web/yacd
+
+download_yacd_meta:
+	@echo "+ $@"
+	@wget -O ./tmp/yacd-meta.zip https://github.com/MetaCubeX/yacd/archive/gh-pages.zip
+	@unzip -o ./tmp/yacd-meta.zip -d ./tmp
+	@mv ./tmp/Yacd-meta-gh-pages ./tmp/core/web/yacd-meta
+
+download_metacubexd:
+	@echo "+ $@"
+	@wget -O ./tmp/metacubexd.zip https://github.com/MetaCubeX/metacubexd/archive/refs/heads/gh-pages.zip
+	@unzip -o ./tmp/metacubexd.zip -d ./tmp
+	@mv ./tmp/metacubexd-gh-pages ./tmp/core/web/metacubexd
+
+download_zashboard:
+	@echo "+ $@"
+	@wget -O ./tmp/zashboard.zip https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip
+	@unzip -o ./tmp/zashboard.zip -d ./tmp
+	@mv ./tmp/dist ./tmp/core/web/zashboard
+
 
 download_rules:
 	@echo "+ $@"
+	@mkdir -p ./assets/subconverter_rules
+	@rm -rf ./assets/subconverter_rules/*.list*
 	@bash ./assets/subconverter_rules/dl_rules.sh ./assets/subconverter_rules
 
 download_subconverter:
@@ -84,6 +129,11 @@ download_subconverter:
 	@tar xvf subconverter_linux64.tar.gz -C ./tmp/subconverter_tmp/
 	@cp ./tmp/subconverter_tmp/subconverter/subconverter ./tmp/subconverter/
 	@rm -r ./tmp/subconverter_tmp
+
+upx_subconverter: ## Compress subconverter with UPX
+	@echo "+ $@"
+	@chmod +x ./tmp/subconverter/subconverter
+	@upx ./tmp/subconverter/subconverter
 	
 build-front: ## Build frontend
 	@echo "+ $@"
@@ -101,7 +151,9 @@ build-front-sub:
 
 copy-file:
 	@echo "+ $@"
-	@cp -r ./tmp/core ./bin/
+	@mkdir -p ./bin
+	@rm -rf ./bin/core
+	@cp -rv ./tmp/core ./bin/
 	@cp ./tmp/subconverter/subconverter ./bin/subconverter
 
 build-back: ## Build backend
@@ -127,7 +179,6 @@ deploy-steamdeck: ## Deploy plugin build to steamdeck
 		--exclude='node_modules/' \
 		--exclude='.pnpm-store/' \
 		--exclude='src/' \
-		--exclude='yacd' . \
 		--exclude='tomoon-web/' \
 		--exclude='backend/' \
 		--exclude='tmp/' \
