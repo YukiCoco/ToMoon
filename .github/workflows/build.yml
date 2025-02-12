@@ -58,7 +58,10 @@ jobs:
           wget -O zashboard.zip https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip
           unzip zashboard.zip
           mv dist web/zashboard
-          
+
+          echo "clean zips"
+          rm -f *.zip
+
           cd $GITHUB_WORKSPACE
           wget -O subconverter_linux64.tar.gz https://github.com/MetaCubeX/subconverter/releases/download/Alpha/subconverter_linux64.tar.gz
           tar xvf subconverter_linux64.tar.gz
@@ -92,6 +95,10 @@ jobs:
           directory: ./backend
           args: --target x86_64-unknown-linux-gnu --release
           use-cross: false
+
+      - name: upx tomoon
+        run: |
+          upx ./backend/target/x86_64-unknown-linux-gnu/release/tomoon
 
       - name: Collect Files
         run: |
