@@ -20,7 +20,6 @@ import { GiEgyptianBird } from "react-icons/gi";
 import { Subscriptions, About, Debug } from "./pages";
 
 import * as backend from "./backend/backend";
-import axios from "axios";
 
 import { ApiCallBackend, PyBackend, EnhancedMode } from "./backend";
 import { ActionButtonItem, VersionComponent } from "./components";
@@ -38,7 +37,7 @@ let current_dashboard = "";
 let allow_remote_access = false;
 let _secret = "";
 
-const Content: FC<{}> = ({}) => {
+const Content: FC<{}> = ({ }) => {
   if (!usdplReady) {
     return <PanelSection>Init...</PanelSection>;
   }
@@ -271,6 +270,7 @@ const Content: FC<{}> = ({}) => {
               if (currentDashboard_name) {
                 param = `/${currentDashboard_name}/#`;
                 if (secret) {
+                  // secret 不为空时，使用完整的参数，但是不同 dashboard 使用不同的 page
                   switch (currentDashboard_name) {
                     case "metacubexd":
                     case "zashboard":
@@ -281,6 +281,9 @@ const Content: FC<{}> = ({}) => {
                       break;
                   }
                   param += `/${page}?hostname=127.0.0.1&port=9090&secret=${secret}`;
+                } else if (currentDashboard_name == "metacubexd") {
+                  // 即使没有设置 secret，metacubexd 也会有奇怪的跳转问题，加上host和port
+                  param += `/${page}?hostname=127.0.0.1&port=9090`;
                 }
               }
               Navigation.NavigateToExternalWeb(
