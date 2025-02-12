@@ -199,6 +199,13 @@ export enum ApiCallMethod {
   POST = "POST",
 }
 
+/**
+ * 调用后端 API 的通用方法
+ * @param name API 端点名称
+ * @param params 请求参数
+ * @param method 请求方法，默认为 POST
+ * @returns Promise<any> API 调用的响应
+ */
 export function apiCallMethod(
   name: string,
   params: {},
@@ -207,16 +214,35 @@ export function apiCallMethod(
   const url = `http://localhost:55556/${name}`;
   const headers = { "content-type": "application/x-www-form-urlencoded" };
 
-  if (method === ApiCallMethod.GET) {
-    return axios.get(url, { headers: headers });
-  } else {
-    return axios.post(url, params, { headers: headers });
+  // 封装请求逻辑，根据 method 参数决定使用 GET 还是 POST
+  const makeRequest = () => {
+    if (method === ApiCallMethod.GET) {
+      return axios.get(url, { headers: headers });
+    } else {
+      return axios.post(url, params, { headers: headers });
+    }
+  };
+
+  // 对于非重载配置的请求，在请求完成后自动触发配置重载
+  if (name !== "reload_clash_config") {
+    return makeRequest().then(async (response) => {
+      // 在原始请求完成后触发配置重载
+      await apiCallMethod("reload_clash_config", {}, ApiCallMethod.GET);
+      return response; // 返回原始请求的响应
+    });
   }
+
+  // 如果是重载配置请求，直接执行并返回结果
+  return makeRequest();
 }
 
 export class ApiCallBackend {
   public static async getConfig() {
     return await apiCallMethod("get_config", {}, ApiCallMethod.GET);
+  }
+
+  public static async reloadClashConfig() {
+    return await apiCallMethod("reload_clash_config", {}, ApiCallMethod.GET);
   }
 
   // enhanced_mode

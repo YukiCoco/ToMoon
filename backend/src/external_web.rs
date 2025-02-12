@@ -321,6 +321,74 @@ pub async fn get_config(state: web::Data<AppState>) -> Result<HttpResponse> {
     };
 }
 
+pub async fn reload_clash_config(state: web::Data<AppState>) -> Result<HttpResponse> {
+    let runtime = state.runtime.lock().unwrap();
+    let runtime_settings;
+    let clash_state;
+    unsafe {
+        let runtime = runtime.0.as_ref().unwrap();
+        runtime_settings = runtime.settings_clone();
+        clash_state = runtime.clash_state_clone();
+    }
+
+    let clash = match clash_state.write() {
+        Ok(x) => x,
+        Err(e) => {
+            log::error!("read clash_state failed: {}", e);
+            return Err(actix_web::Error::from(ClashError {
+                Message: e.to_string(),
+                ErrorKind: ClashErrorKind::InnerError,
+            }));
+        }
+    };
+
+    let settings = match runtime_settings.write() {
+        Ok(x) => x,
+        Err(e) => {
+            log::error!("read runtime_settings failed: {}", e);
+            return Err(actix_web::Error::from(ClashError {
+                Message: e.to_string(),
+                ErrorKind: ClashErrorKind::InnerError,
+            }));
+        }
+    };
+
+    match clash.change_config(
+                        settings.skip_proxy, 
+                        settings.override_dns,
+                        settings.allow_remote_access,
+                        settings.enhanced_mode
+    ) {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!("Failed while change clash config.");
+            log::error!("Error Message:{}", e);
+            return Err(actix_web::Error::from(ClashError {
+                Message: e.to_string(),
+                ErrorKind: ClashErrorKind::InnerError,
+            }));
+        }
+    }
+
+    match clash.reload_config().await {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!("Failed while reload clash config.");
+            log::error!("Error Message:{}", e);
+            return Err(actix_web::Error::from(ClashError {
+                Message: e.to_string(),
+                ErrorKind: ClashErrorKind::InnerError,
+            }));
+        }
+    }
+    
+    let r = GenLinkResponse {
+        message: "重载成功".to_string(),
+        status_code: 200,
+    };
+    Ok(HttpResponse::Ok().json(r))
+}
+
 pub async fn download_sub(
     state: web::Data<AppState>,
     params: web::Form<GenLinkParams>,

@@ -125,6 +125,11 @@ async fn main() -> Result<(), std::io::Error> {
                 web::resource("/allow_remote_access")
                     .route(web::post().to(external_web::allow_remote_access)),
             )
+            // reload_clash_config
+            .service(
+                web::resource("/reload_clash_config")
+                    .route(web::get().to(external_web::reload_clash_config)),
+            )
             .service(
                 fs::Files::new("/", "./web")
                     .index_file("index.html")

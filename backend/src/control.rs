@@ -12,6 +12,8 @@ use serde_yaml::{Mapping, Value};
 use super::helper;
 use super::settings::{Settings, State};
 
+use serde_json::json;
+
 pub struct ControlRuntime {
     settings: Arc<RwLock<Settings>>,
     state: Arc<RwLock<State>>,
@@ -320,7 +322,7 @@ impl Clash {
 
         self.update_config_path(config_path);
         // 修改配置文件为推荐配置
-        match self.change_config(skip_proxy, override_dns, enhanced_mode) {
+        match self.change_config(skip_proxy, override_dns, allow_remote_access, enhanced_mode) {
             Ok(_) => (),
             Err(e) => {
                 return Err(ClashError {
@@ -332,7 +334,7 @@ impl Clash {
 
         //log::info!("Pre-setting network");
         //TODO: 未修改的 unwarp
-        let run_config = decky_data_dir.join("running_config.yaml");
+        let run_config = self.get_running_config().unwrap();
         let outputs = fs::File::create("/tmp/tomoon.clash.log").unwrap();
         let errors = outputs.try_clone().unwrap();
 
@@ -380,29 +382,79 @@ impl Clash {
         self.config = std::path::PathBuf::from((*path).clone());
     }
 
+    pub fn get_running_config(&self) -> std::io::Result<std::path::PathBuf> {
+        let decky_data_dir = get_decky_data_dir().unwrap();
+        let run_config = decky_data_dir.join("running_config.yaml");
+        Ok(run_config)
+    }
+
+    pub async fn reload_config(&self) -> Result<(), ClashError> {
+        log::info!("Reloading Clash config...");
+        let run_config = self.get_running_config().unwrap();
+
+        let url = "http://127.0.0.1:9090/configs?force=true";
+        let body = json!({
+            "path": run_config,
+            "payload": ""
+        });
+
+        let body_str = serde_json::to_string(&body).unwrap();
+
+        let res = match minreq::post(url)
+            .with_header("Content-Type", "application/json")
+            .with_body(body_str)
+            .send()
+        {
+            Ok(x) => x,
+            Err(e) => {
+                log::error!("Failed to restart Clash core: {}", e);
+                return Err(ClashError {
+                    Message: e.to_string(),
+                    ErrorKind: ClashErrorKind::InnerError,
+                });
+            }
+        };
+
+        if res.status_code == 200 {
+            log::info!("Clash config reloaded successfully");
+        } else {
+            log::error!("Failed to reload Clash config");
+        }
+
+        Ok(())
+    }
+
     pub fn change_config(
         &self,
         skip_proxy: bool,
         override_dns: bool,
+        allow_remote_access: bool,
         enhanced_mode: EnhancedMode,
     ) -> Result<(), Box<dyn error::Error>> {
         let path = self.config.clone();
+        log::info!("change_config path: {:?}", path);
+
         let config = fs::read_to_string(path)?;
         let mut yaml: serde_yaml::Value = serde_yaml::from_str(config.as_str())?;
         let yaml = yaml.as_mapping_mut().unwrap();
 
         log::info!("Changing Clash config...");
 
-        //修改 WebUI
+        let external_ip = if allow_remote_access {
+            "0.0.0.0"
+        } else {
+            "127.0.0.1"
+        };
 
+        //修改 WebUI
         match yaml.get_mut("external-controller") {
             Some(x) => {
-                *x = Value::String(String::from("127.0.0.1:9090"));
+                *x = Value::String(String::from(format!("{}:9090", external_ip)));
             }
             None => {
                 yaml.insert(
                     Value::String(String::from("external-controller")),
-                    Value::String(String::from("127.0.0.1:9090")),
+                    Value::String(String::from(format!("{}:9090", external_ip))),
                 );
             }
         }
@@ -570,10 +622,18 @@ impl Clash {
             }
         }
 
-        let run_config = get_decky_data_dir()?.join("running_config.yaml");
+        let run_config = self.get_running_config()?;
 
         let yaml_str = serde_yaml::to_string(&yaml)?;
-        fs::write(run_config, yaml_str)?;
+
+        match fs::write(run_config, yaml_str) {
+            Ok(_) => {
+                log::info!("Clash config changed successfully");
+            }
+            Err(e) => {
+                log::error!("Error occurred while changing Clash config: {}", e);
+            }
+        }
 
         log::info!("Clash config changed successfully");
         Ok(())
