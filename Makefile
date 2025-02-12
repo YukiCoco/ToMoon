@@ -11,7 +11,9 @@ help: ## Display list of tasks with descriptions
 
 vendor: ## Install project dependencies
 	@echo "+ $@"
+	@cp -r usdpl src/
 	@pnpm i
+	@cd tomoon-web && pnpm i
 
 env: ## Create default .env file
 	@echo "+ $@"
@@ -83,6 +85,7 @@ download_dashboard:
 	$(MAKE) download_yacd
 	$(MAKE) download_yacd_meta
 	$(MAKE) download_metacubexd
+	$(MAKE) download_zashboard
 
 	@echo "clean tmp"
 	@rm -f ./tmp/*.zip
