@@ -120,6 +120,11 @@ async fn main() -> Result<(), std::io::Error> {
             .service(web::resource("/enhanced_mode").route(web::post().to(external_web::enhanced_mode)))
             .service(web::resource("/get_config").route(web::get().to(external_web::get_config)))
             //.service(web::resource("/manual").route(web::get().to(external_web.web_download_sub)))
+            // allow_remote_access
+            .service(
+                web::resource("/allow_remote_access")
+                    .route(web::post().to(external_web::allow_remote_access)),
+            )
             .service(
                 fs::Files::new("/", "./web")
                     .index_file("index.html")

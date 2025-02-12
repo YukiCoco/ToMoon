@@ -1,5 +1,7 @@
 import { call } from "@decky/api";
 import { init_usdpl, init_embedded, call_backend } from "usdpl-front";
+import axios from "axios";
+import { EnhancedMode } from ".";
 
 const USDPL_PORT: number = 55555;
 
@@ -173,9 +175,11 @@ export class PyBackend {
 
   private static async getDefalutDashboard() {
     const dashboardList = await this.getDashboardList();
-    return dashboardList.find((x) =>
-      (x.split("/").pop() || "").includes("yacd-meta")
-    ) || dashboardList[0];
+    return (
+      dashboardList.find((x) =>
+        (x.split("/").pop() || "").includes("yacd-meta")
+      ) || dashboardList[0]
+    );
   }
 
   public static async getCurrentDashboard() {
@@ -187,5 +191,51 @@ export class PyBackend {
 
   public static async setCurrentDashboard(dashboard: string) {
     return await this.setConfigValue("current_dashboard", dashboard);
+  }
+}
+
+export enum ApiCallMethod {
+  GET = "GET",
+  POST = "POST",
+}
+
+export function apiCallMethod(
+  name: string,
+  params: {},
+  method: ApiCallMethod = ApiCallMethod.POST
+): Promise<any> {
+  const url = `http://localhost:55556/${name}`;
+  const headers = { "content-type": "application/x-www-form-urlencoded" };
+
+  if (method === ApiCallMethod.GET) {
+    return axios.get(url, { headers: headers });
+  } else {
+    return axios.post(url, params, { headers: headers });
+  }
+}
+
+export class ApiCallBackend {
+  public static async getConfig() {
+    return await apiCallMethod("get_config", {}, ApiCallMethod.GET);
+  }
+
+  // enhanced_mode
+  public static async enhancedMode(value: EnhancedMode) {
+    return await apiCallMethod("enhanced_mode", { enhanced_mode: value });
+  }
+
+  // override_dns
+  public static async overrideDns(value: boolean) {
+    return await apiCallMethod("override_dns", { override_dns: value });
+  }
+
+  // skip_proxy
+  public static async skipProxy(value: boolean) {
+    return await apiCallMethod("skip_proxy", { skip_proxy: value });
+  }
+
+  // allow_remote_access
+  public static async allowRemoteAccess(value: boolean) {
+    return await apiCallMethod("allow_remote_access", { allow_remote_access: value });
   }
 }

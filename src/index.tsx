@@ -17,16 +17,13 @@ import { routerHook } from "@decky/api";
 import { FC, useEffect, useState } from "react";
 import { GiEgyptianBird } from "react-icons/gi";
 
-import { Subscriptions, About, Debug, VersionComponent } from "./pages";
+import { Subscriptions, About, Debug } from "./pages";
 
-import * as backend from "./backend";
+import * as backend from "./backend/backend";
 import axios from "axios";
-import { PyBackend } from "./backend";
 
-enum EnhancedMode {
-  RedirHost = "RedirHost",
-  FakeIp = "FakeIp",
-}
+import { ApiCallBackend, PyBackend, EnhancedMode } from "./backend";
+import { VersionComponent } from "./components";
 
 let enabledGlobal = false;
 let enabledSkipProxy = false;
@@ -38,6 +35,7 @@ let current_sub = "";
 let enhanced_mode = EnhancedMode.FakeIp;
 let dashboard_list: string[];
 let current_dashboard = "";
+let allow_remote_access = false;
 
 const Content: FC<{}> = ({}) => {
   if (!usdplReady) {
@@ -45,20 +43,6 @@ const Content: FC<{}> = ({}) => {
   }
   const [clashState, setClashState] = useState(enabledGlobal);
   backend.resolve(backend.getEnabled(), setClashState);
-  axios.get("http://127.0.0.1:55556/get_config").then((r) => {
-    // json print r.data
-    // console.log(
-    //   `>>>>>>>>>>>>>>> get_config: ${JSON.stringify(r.data, null, 2)}`
-    // );
-
-    if (r.data.status_code == 200) {
-      enabledSkipProxy = r.data.skip_proxy;
-      enabledOverrideDNS = r.data.override_dns;
-      enhanced_mode = r.data.enhanced_mode;
-    }
-  });
-  //setInterval(refreshSubOptions, 2000);
-  // console.log("status :" + clashState);
   const [options, setOptions] = useState<DropdownOption[]>(subs_option);
   const [optionDropdownDisabled, setOptionDropdownDisabled] =
     useState(enabledGlobal);
@@ -74,6 +58,8 @@ const Content: FC<{}> = ({}) => {
   const [dashboardList, setDashboardList] = useState<string[]>(dashboard_list);
   const [currentDashboard, setCurrentDashboard] =
     useState<string>(current_dashboard);
+  const [allowRemoteAccess, setAllowRemoteAccess] =
+    useState(allow_remote_access);
 
   const update_subs = () => {
     backend.resolve(backend.getSubList(), (v: String) => {
@@ -122,10 +108,33 @@ const Content: FC<{}> = ({}) => {
       setCurrentDashboard(dashboard);
     };
 
-    getCurrentSub();
-    getDashboardList();
-    getCurrentDashboard();
-    update_subs();
+    const getConfig = async () => {
+      await ApiCallBackend.getConfig().then((res) => {
+        console.log(`getConfig: ${JSON.stringify(res.data, null, 2)}`);
+        if (res.data.status_code == 200) {
+          enabledSkipProxy = res.data.skip_proxy;
+          enabledOverrideDNS = res.data.override_dns;
+          enhanced_mode = res.data.enhanced_mode;
+          allow_remote_access = res.data.allow_remote_access;
+
+          setSkipProxyState(enabledSkipProxy);
+          setOverrideDNSState(enabledOverrideDNS);
+          setEnhancedMode(enhanced_mode);
+          setAllowRemoteAccess(allow_remote_access);
+        }
+      });
+    };
+
+    const loadDate = async () => {
+      await getConfig();
+
+      getCurrentSub();
+      getDashboardList();
+      getCurrentDashboard();
+      update_subs();
+    };
+
+    loadDate();
   }, []);
 
   useEffect(() => {
@@ -288,21 +297,22 @@ const Content: FC<{}> = ({}) => {
         </PanelSectionRow>
         <PanelSectionRow>
           <ToggleField
+            label="Allow Remote Access"
+            description="Allow Remote Access to Dashboard"
+            checked={allowRemoteAccess}
+            onChange={(value: boolean) => {
+              ApiCallBackend.allowRemoteAccess(value);
+              setAllowRemoteAccess(value);
+            }}
+          ></ToggleField>
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <ToggleField
             label="Skip Steam Proxy"
             description="Enable for direct Steam downloads"
             checked={skipProxyState}
             onChange={(value: boolean) => {
-              axios.post(
-                "http://127.0.0.1:55556/skip_proxy",
-                {
-                  skip_proxy: value,
-                },
-                {
-                  headers: {
-                    "content-type": "application/x-www-form-urlencoded",
-                  },
-                }
-              );
+              ApiCallBackend.skipProxy(value);
               setSkipProxyState(value);
             }}
           ></ToggleField>
@@ -313,17 +323,7 @@ const Content: FC<{}> = ({}) => {
             description="Force Clash to hijack DNS query"
             checked={overrideDNSState}
             onChange={(value: boolean) => {
-              axios.post(
-                "http://127.0.0.1:55556/override_dns",
-                {
-                  override_dns: value,
-                },
-                {
-                  headers: {
-                    "content-type": "application/x-www-form-urlencoded",
-                  },
-                }
-              );
+              ApiCallBackend.overrideDns(value);
               setOverrideDNSState(value);
             }}
           ></ToggleField>
@@ -342,17 +342,7 @@ const Content: FC<{}> = ({}) => {
               onChange={(value: number) => {
                 const _enhancedMode = convertEnhancedMode(value);
                 setEnhancedMode(_enhancedMode);
-                axios.post(
-                  "http://127.0.0.1:55556/enhanced_mode",
-                  {
-                    enhanced_mode: _enhancedMode,
-                  },
-                  {
-                    headers: {
-                      "content-type": "application/x-www-form-urlencoded",
-                    },
-                  }
-                );
+                ApiCallBackend.enhancedMode(_enhancedMode);
               }}
             />
           </PanelSectionRow>

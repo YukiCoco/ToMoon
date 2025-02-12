@@ -83,7 +83,13 @@ pub fn set_clash_status(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
                     }
                 }
                 if *enabled {
-                    match clash.run(&settings.current_sub, settings.skip_proxy, settings.override_dns, settings.enhanced_mode) {
+                    match clash.run(
+                        &settings.current_sub,
+                        settings.skip_proxy,
+                        settings.override_dns,
+                        settings.allow_remote_access,
+                        settings.enhanced_mode,
+                    ) {
                         Ok(_) => (),
                         Err(e) => {
                             log::error!("Run clash error: {}", e);
@@ -190,7 +196,9 @@ pub fn download_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<
                                     }
                                 };
                                 if !helper::check_yaml(&file_content) {
-                                    log::error!("The downloaded subscription is not a legal profile.");
+                                    log::error!(
+                                        "The downloaded subscription is not a legal profile."
+                                    );
                                     update_status(DownloadStatus::Error);
                                     return;
                                 }
@@ -249,14 +257,19 @@ pub fn download_sub(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<
                             // 是一个链接
                         } else {
                             match minreq::get(url.clone())
-                                .with_header("User-Agent", format!("ToMoonClash/{}",env!("CARGO_PKG_VERSION")))
+                                .with_header(
+                                    "User-Agent",
+                                    format!("ToMoonClash/{}", env!("CARGO_PKG_VERSION")),
+                                )
                                 .with_timeout(15)
                                 .send()
                             {
                                 Ok(x) => {
                                     let response = x.as_str().unwrap();
                                     if !helper::check_yaml(&String::from(response)) {
-                                        log::error!("The downloaded subscription is not a legal profile.");
+                                        log::error!(
+                                            "The downloaded subscription is not a legal profile."
+                                        );
                                         update_status(DownloadStatus::Error);
                                         return;
                                     }
@@ -505,9 +518,16 @@ pub fn update_subs(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<P
                         }
                         thread::spawn(move || {
                             match minreq::get(i.url.clone())
-                            .with_header("User-Agent", format!("ToMoon/{} mihomo/1.18.3 Clash/v1.18.0",env!("CARGO_PKG_VERSION")))
-                            .with_timeout(15)
-                            .send() {
+                                .with_header(
+                                    "User-Agent",
+                                    format!(
+                                        "ToMoon/{} mihomo/1.18.3 Clash/v1.18.0",
+                                        env!("CARGO_PKG_VERSION")
+                                    ),
+                                )
+                                .with_timeout(15)
+                                .send()
+                            {
                                 Ok(response) => {
                                     let response = match response.as_str() {
                                         Ok(x) => x,
@@ -517,7 +537,9 @@ pub fn update_subs(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<P
                                         }
                                     };
                                     if !helper::check_yaml(&response.to_string()) {
-                                        log::error!("The downloaded subscription is not a legal profile.");
+                                        log::error!(
+                                            "The downloaded subscription is not a legal profile."
+                                        );
                                         return;
                                     }
                                     match fs::write(i.path.clone(), response) {
@@ -532,7 +554,7 @@ pub fn update_subs(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> Vec<P
                                             return;
                                         }
                                     }
-                                },
+                                }
                                 Err(e) => {
                                     log::error!("Error occurred while download sub {}", i.url);
                                     log::error!("Error Message : {}", e);
@@ -575,14 +597,11 @@ pub fn create_debug_log(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
     //let update_status = runtime.update_status_clone();
     let home = match runtime.state_clone().read() {
         Ok(state) => state.home.clone(),
-        Err(_) => State::default().home
+        Err(_) => State::default().home,
     };
     move |_| {
-        let running_status = format!(
-            "Clash status : {}\n",
-            helper::is_clash_running()
-        );
-        let tomoon_config =match fs::read_to_string(home.join(".config/tomoon/tomoon.json")) {
+        let running_status = format!("Clash status : {}\n", helper::is_clash_running());
+        let tomoon_config = match fs::read_to_string(home.join(".config/tomoon/tomoon.json")) {
             Ok(x) => x,
             Err(e) => {
                 format!("can not get Tomoon config, error message: {} \n", e)
@@ -611,10 +630,7 @@ pub fn create_debug_log(runtime: &ControlRuntime) -> impl Fn(Vec<Primitive>) -> 
         Clash log:\n
         {}\n
         ",
-            running_status,
-            tomoon_config,
-            tomoon_log,
-            clash_log,
+            running_status, tomoon_config, tomoon_log, clash_log,
         );
         fs::write("/tmp/tomoon.debug.log", log).unwrap();
         return vec![true.into()];

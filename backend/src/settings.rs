@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::{path::PathBuf, fmt::Display};
+use std::{fmt::Display, path::PathBuf};
 
 use crate::helper;
 
@@ -19,6 +19,8 @@ pub struct Settings {
     pub current_sub: String,
     #[serde(default = "default_subscriptions")]
     pub subscriptions: Vec<Subscription>,
+    #[serde(default = "default_allow_remote_access")]
+    pub allow_remote_access: bool,
 }
 
 fn default_skip_proxy() -> bool {
@@ -33,12 +35,18 @@ fn default_override_dns() -> bool {
     true
 }
 
+fn default_allow_remote_access() -> bool {
+    false
+}
+
 fn default_enhanced_mode() -> EnhancedMode {
     EnhancedMode::FakeIp
 }
 
 fn default_current_sub() -> String {
-    let default_profile = helper::get_current_working_dir().unwrap().join("bin/core/config.yaml");
+    let default_profile = helper::get_current_working_dir()
+        .unwrap()
+        .join("bin/core/config.yaml");
     default_profile.to_string_lossy().to_string()
 }
 
@@ -48,8 +56,8 @@ fn default_subscriptions() -> Vec<Subscription> {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Subscription {
-    pub path : String,
-    pub url : String
+    pub path: String,
+    pub url: String,
 }
 
 #[derive(Debug)]
@@ -68,12 +76,13 @@ impl Display for JsonError {
 }
 
 impl Subscription {
-    pub fn new(path: String, url: String) -> Self
-    {
-        Self { path: path, url: url }
+    pub fn new(path: String, url: String) -> Self {
+        Self {
+            path: path,
+            url: url,
+        }
     }
 }
-
 
 #[derive(Debug)]
 pub struct State {
@@ -86,9 +95,9 @@ impl State {
         let def = Self::default();
         if cfg!(debug_assertions) {
             return Self {
-            home: "./tmp".into(),
-            dirty: true,
-        }
+                home: "./tmp".into(),
+                dirty: true,
+            };
         }
         Self {
             home: usdpl_back::api::dirs::home().unwrap_or(def.home),
@@ -105,7 +114,6 @@ impl Default for State {
         }
     }
 }
-
 
 impl Settings {
     pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), JsonError> {
@@ -125,14 +133,17 @@ impl Settings {
 
 impl Default for Settings {
     fn default() -> Self {
-        let default_profile = helper::get_current_working_dir().unwrap().join("bin/core/config.yaml");
+        let default_profile = helper::get_current_working_dir()
+            .unwrap()
+            .join("bin/core/config.yaml");
         Self {
             enable: false,
             skip_proxy: true,
             override_dns: true,
             enhanced_mode: EnhancedMode::FakeIp,
             current_sub: default_profile.to_string_lossy().to_string(),
-            subscriptions: Vec::new()
+            subscriptions: Vec::new(),
+            allow_remote_access: default_allow_remote_access()
         }
     }
 }

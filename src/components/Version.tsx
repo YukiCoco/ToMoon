@@ -1,7 +1,7 @@
 import { PanelSection, PanelSectionRow, Field } from "@decky/ui";
 import { FC, useEffect, useState } from "react";
-import { PyBackend } from "../backend";
-import { ActionButtonItem } from "./components/actionButtonItem";
+import { PyBackend } from "../backend/backend";
+import { ActionButtonItem } from ".";
 
 
 export const VersionComponent: FC = () => {

@@ -249,15 +249,20 @@ impl Default for Clash {
 }
 
 impl Clash {
-    pub fn run(&mut self, config_path: &String, skip_proxy: bool, override_dns: bool, enhanced_mode: EnhancedMode) -> Result<(), ClashError> {
-        // decky 插件数据目录 
+    pub fn run(
+        &mut self,
+        config_path: &String,
+        skip_proxy: bool,
+        override_dns: bool,
+        allow_remote_access: bool,
+        enhanced_mode: EnhancedMode,
+    ) -> Result<(), ClashError> {
+        // decky 插件数据目录
         let decky_data_dir = get_decky_data_dir().unwrap();
         let new_country_db_path = get_current_working_dir()
             .unwrap()
             .join("bin/core/country.mmdb");
-        let new_asn_db_path = get_current_working_dir()
-            .unwrap()
-            .join("bin/core/asn.mmdb");
+        let new_asn_db_path = get_current_working_dir().unwrap().join("bin/core/asn.mmdb");
         let new_geosite_path = get_current_working_dir()
             .unwrap()
             .join("bin/core/geosite.dat");
@@ -272,13 +277,10 @@ impl Clash {
 
         // 检查数据库文件是否存在，不存在则复制
         if !PathBuf::from(country_db_path.clone()).is_file() {
-            match fs::copy(
-                new_country_db_path.clone(),
-                country_db_path.clone(),
-            ) {
+            match fs::copy(new_country_db_path.clone(), country_db_path.clone()) {
                 Ok(_) => {
                     log::info!("Copy country.mmdb to decky data dir")
-                },
+                }
                 Err(e) => {
                     return Err(ClashError {
                         Message: e.to_string(),
@@ -289,13 +291,10 @@ impl Clash {
         }
 
         if !PathBuf::from(asn_db_path.clone()).is_file() {
-            match fs::copy(
-                new_asn_db_path.clone(),
-                asn_db_path.clone(),
-            ) {
+            match fs::copy(new_asn_db_path.clone(), asn_db_path.clone()) {
                 Ok(_) => {
                     log::info!("Copy asn.mmdb to decky data dir")
-                },
+                }
                 Err(e) => {
                     return Err(ClashError {
                         Message: e.to_string(),
@@ -304,15 +303,12 @@ impl Clash {
                 }
             }
         }
-        
+
         if !PathBuf::from(geosite_path.clone()).is_file() {
-            match fs::copy(
-                new_geosite_path.clone(),
-                geosite_path.clone(),
-            ) {
+            match fs::copy(new_geosite_path.clone(), geosite_path.clone()) {
                 Ok(_) => {
                     log::info!("Copy geosite.dat to decky data dir")
-                },
+                }
                 Err(e) => {
                     return Err(ClashError {
                         Message: e.to_string(),
@@ -384,7 +380,12 @@ impl Clash {
         self.config = std::path::PathBuf::from((*path).clone());
     }
 
-    pub fn change_config(&self, skip_proxy: bool, override_dns: bool, enhanced_mode: EnhancedMode) -> Result<(), Box<dyn error::Error>> {
+    pub fn change_config(
+        &self,
+        skip_proxy: bool,
+        override_dns: bool,
+        enhanced_mode: EnhancedMode,
+    ) -> Result<(), Box<dyn error::Error>> {
         let path = self.config.clone();
         let config = fs::read_to_string(path)?;
         let mut yaml: serde_yaml::Value = serde_yaml::from_str(config.as_str())?;
@@ -417,13 +418,13 @@ impl Clash {
 
             if skip_proxy {
                 rules.insert(
-                0,
-                Value::String(String::from("DOMAIN-SUFFIX,cm.steampowered.com,DIRECT")),
-            );
-            rules.insert(
-            0,
-            Value::String(String::from("DOMAIN-SUFFIX,steamserver.net,DIRECT")),
-        );
+                    0,
+                    Value::String(String::from("DOMAIN-SUFFIX,cm.steampowered.com,DIRECT")),
+                );
+                rules.insert(
+                    0,
+                    Value::String(String::from("DOMAIN-SUFFIX,steamserver.net,DIRECT")),
+                );
             }
         }
 
@@ -577,5 +578,4 @@ impl Clash {
         log::info!("Clash config changed successfully");
         Ok(())
     }
-
 }
