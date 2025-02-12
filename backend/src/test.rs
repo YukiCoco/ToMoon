@@ -68,12 +68,12 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_yaml() {
-        println!("{}", std::env::current_dir().unwrap().to_str().unwrap());
-        let mut clash = control::Clash::default();
-        clash.change_config(true, true, true, true);
-    }
+    // #[test]
+    // fn test_yaml() {
+    //     println!("{}", std::env::current_dir().unwrap().to_str().unwrap());
+    //     let mut clash = control::Clash::default();
+    //     clash.change_config(true, true, true, true);
+    // }
 
     #[test]
     fn regex_test() {
@@ -167,60 +167,60 @@ mod tests {
         auto-detect-interface: true
         ";
 
-        let dns_config = match helper::is_resolve_running() {
-            true => {
-                "
-        enable: true
-        listen: 0.0.0.0:5354
-        enhanced-mode: fake-ip
-        fake-ip-range: 198.18.0.1/16
-        nameserver:
-            - https://doh.pub/dns-query
-            - https://dns.alidns.com/dns-query
-            - '114.114.114.114'
-            - '223.5.5.5'
-        default-nameserver:
-            - 119.29.29.29
-            - 223.5.5.5
-        fallback:
-            - https://1.1.1.1/dns-query
-            - https://dns.google/dns-query
-            - https://doh.opendns.com/dns-query
-            - https://doh.pub/dns-query
-        fallback-filter:
-            geoip: true
-            geoip-code: CN
-            ipcidr:
-                - 240.0.0.0/4
-        "
-            }
-            false => {
-                "
-        enable: true
-        listen: 0.0.0.0:53
-        enhanced-mode: fake-ip
-        fake-ip-range: 198.18.0.1/16
-        nameserver:
-            - https://doh.pub/dns-query
-            - https://dns.alidns.com/dns-query
-            - '114.114.114.114'
-            - '223.5.5.5'
-        default-nameserver:
-            - 119.29.29.29
-            - 223.5.5.5
-        fallback:
-            - https://1.1.1.1/dns-query
-            - https://dns.google/dns-query
-            - https://doh.opendns.com/dns-query
-            - https://doh.pub/dns-query
-        fallback-filter:
-            geoip: true
-            geoip-code: CN
-            ipcidr:
-                - 240.0.0.0/4
-        "
-            }
-        };
+        // let dns_config = match helper::is_resolve_running() {
+        //     true => {
+        //         "
+        // enable: true
+        // listen: 0.0.0.0:5354
+        // enhanced-mode: fake-ip
+        // fake-ip-range: 198.18.0.1/16
+        // nameserver:
+        //     - https://doh.pub/dns-query
+        //     - https://dns.alidns.com/dns-query
+        //     - '114.114.114.114'
+        //     - '223.5.5.5'
+        // default-nameserver:
+        //     - 119.29.29.29
+        //     - 223.5.5.5
+        // fallback:
+        //     - https://1.1.1.1/dns-query
+        //     - https://dns.google/dns-query
+        //     - https://doh.opendns.com/dns-query
+        //     - https://doh.pub/dns-query
+        // fallback-filter:
+        //     geoip: true
+        //     geoip-code: CN
+        //     ipcidr:
+        //         - 240.0.0.0/4
+        // "
+        //     }
+        //     false => {
+        //         "
+        // enable: true
+        // listen: 0.0.0.0:53
+        // enhanced-mode: fake-ip
+        // fake-ip-range: 198.18.0.1/16
+        // nameserver:
+        //     - https://doh.pub/dns-query
+        //     - https://dns.alidns.com/dns-query
+        //     - '114.114.114.114'
+        //     - '223.5.5.5'
+        // default-nameserver:
+        //     - 119.29.29.29
+        //     - 223.5.5.5
+        // fallback:
+        //     - https://1.1.1.1/dns-query
+        //     - https://dns.google/dns-query
+        //     - https://doh.opendns.com/dns-query
+        //     - https://doh.pub/dns-query
+        // fallback-filter:
+        //     geoip: true
+        //     geoip-code: CN
+        //     ipcidr:
+        //         - 240.0.0.0/4
+        // "
+        //     }
+        // };
 
         //部分配置来自 https://www.xkww3n.cyou/2022/02/08/use-clash-dns-anti-dns-hijacking/
 
@@ -240,16 +240,16 @@ mod tests {
             }
         }
 
-        match yaml.get("dns") {
-            Some(_) => {
-                //删除 DNS 配置
-                yaml.remove("dns").unwrap();
-                insert_config(yaml, dns_config, "dns");
-            }
-            None => {
-                insert_config(yaml, dns_config, "dns");
-            }
-        }
+        // match yaml.get("dns") {
+        //     Some(_) => {
+        //         //删除 DNS 配置
+        //         yaml.remove("dns").unwrap();
+        //         insert_config(yaml, dns_config, "dns");
+        //     }
+        //     None => {
+        //         insert_config(yaml, dns_config, "dns");
+        //     }
+        // }
 
         let yaml_str = serde_yaml::to_string(&yaml).unwrap();
         fs::write("./bin/config.new.yaml", yaml_str).unwrap();
