@@ -6,6 +6,7 @@ import { QRCodeCanvas } from "qrcode.react";
 
 import * as backend from "../backend/backend";
 import axios from "axios";
+import { localizationManager, localizeStrEnum } from "../i18n";
 
 interface SubProp {
   Subscriptions: Array<any>;
@@ -128,7 +129,7 @@ export const Subscriptions: FC<SubProp> = ({ Subscriptions }) => {
         </div>
         <div id="subscription-download-textfiled" style={cleanPadding}>
           <TextField
-            label="Subscription Link"
+            label={localizationManager.getString(localizeStrEnum.SUBSCRIPTIONS_LINK)}
             value={text}
             onChange={(e) => setText(e?.target.value)}
             description={downloadTips}
@@ -145,7 +146,7 @@ export const Subscriptions: FC<SubProp> = ({ Subscriptions }) => {
             checkStatusHandler = setInterval(refreshDownloadStatus, 500);
           }}
         >
-          Download
+          {localizationManager.getString(localizeStrEnum.DOWNLOAD)}
         </ButtonItem>
         <ButtonItem
           layout="below"
@@ -159,7 +160,7 @@ export const Subscriptions: FC<SubProp> = ({ Subscriptions }) => {
           }}
           disabled={updateBtnDisable}
         >
-          Update All
+          {localizationManager.getString(localizeStrEnum.UPDATE_ALL)}
         </ButtonItem>
       </PanelSectionRow>
       <PanelSectionRow>

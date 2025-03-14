@@ -17,6 +17,7 @@
     "strict": true,
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
+    "resolveJsonModule":true,
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "types": ["react/jsx-runtime", "react-dom"]
   },

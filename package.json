@@ -45,6 +45,7 @@
   "dependencies": {
     "@decky/api": "^1.1.2",
     "axios": "^1.7.9",
+    "i18next": "^23.15.1",
     "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
     "react-icons": "^5.4.0",
