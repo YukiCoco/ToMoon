@@ -1,4 +1,4 @@
-import { defaultLocale, localizeMap, localizeStrEnum } from "./localizeMap";
+import { defaultLocale, localizeMap, LocalizeStrKey } from "./localizeMap";
 
 import i18n, { Resource } from "i18next";
 
@@ -37,7 +37,7 @@ export class localizationManager {
   }
 
   public static getString(
-    defaultString: localizeStrEnum,
+    defaultString: LocalizeStrKey,
     variables?: Record<string, unknown>
   ) {
     console.log(">>>>>>>>>> getString: " + defaultString);

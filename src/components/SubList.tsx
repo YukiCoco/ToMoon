@@ -1,7 +1,7 @@
 import { ButtonItem } from "@decky/ui";
 import { FC } from "react";
 import * as backend from "../backend/backend";
-import { localizationManager, localizeStrEnum } from "../i18n";
+import { localizationManager, L } from "../i18n";
 interface appProp {
   Subscriptions: Array<any>;
   UpdateSub: any;
@@ -28,7 +28,7 @@ export const SubList: FC<appProp> = ({ Subscriptions, UpdateSub, Refresh }) => {
                 Refresh();
               }}
             >
-              {localizationManager.getString(localizeStrEnum.DELETE)}
+              {localizationManager.getString(L.DELETE)}
             </ButtonItem>
           </div>
         );

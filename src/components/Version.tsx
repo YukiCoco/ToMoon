@@ -2,7 +2,7 @@ import { PanelSection, PanelSectionRow, Field } from "@decky/ui";
 import { FC, useEffect, useState } from "react";
 import { PyBackend } from "../backend/backend";
 import { ActionButtonItem } from ".";
-import { localizationManager, localizeStrEnum } from "../i18n";
+import { localizationManager, L } from "../i18n";
 
 export const VersionComponent: FC = () => {
   const [currentVersion, _] = useState<string>(
@@ -21,20 +21,15 @@ export const VersionComponent: FC = () => {
     getData();
   });
 
-  let uptButtonText = localizationManager.getString(
-    localizeStrEnum.REINSTALL_PLUGIN
-  );
+  let uptButtonText = localizationManager.getString(L.REINSTALL_PLUGIN);
 
   if (currentVersion !== latestVersion && Boolean(latestVersion)) {
     uptButtonText =
-      localizationManager.getString(localizeStrEnum.UPDATE_TO) +
-      ` ${latestVersion}`;
+      localizationManager.getString(L.UPDATE_TO) + ` ${latestVersion}`;
   }
 
   return (
-    <PanelSection
-      title={localizationManager.getString(localizeStrEnum.VERSION)}
-    >
+    <PanelSection title={localizationManager.getString(L.VERSION)}>
       <PanelSectionRow>
         <ActionButtonItem
           layout="below"
@@ -48,9 +43,7 @@ export const VersionComponent: FC = () => {
       <PanelSectionRow>
         <Field
           focusable
-          label={localizationManager.getString(
-            localizeStrEnum.INSTALLED_VERSION
-          )}
+          label={localizationManager.getString(L.INSTALLED_VERSION)}
         >
           {currentVersion}
         </Field>
@@ -59,9 +52,7 @@ export const VersionComponent: FC = () => {
         <PanelSectionRow>
           <Field
             focusable
-            label={localizationManager.getString(
-              localizeStrEnum.LATEST_VERSION
-            )}
+            label={localizationManager.getString(L.LATEST_VERSION)}
           >
             {latestVersion}
           </Field>

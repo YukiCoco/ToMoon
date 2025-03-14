@@ -23,7 +23,7 @@ import * as backend from "./backend/backend";
 
 import { ApiCallBackend, PyBackend, EnhancedMode } from "./backend";
 import { ActionButtonItem, VersionComponent } from "./components";
-import { localizationManager, localizeStrEnum } from "./i18n";
+import { localizationManager, L } from "./i18n";
 
 let enabledGlobal = false;
 let enabledSkipProxy = false;
@@ -52,7 +52,7 @@ const Content: FC<{}> = ({}) => {
   );
   const [isSelectionDisabled, setIsSelectionDisabled] = useState(false);
   const [SelectionTips, setSelectionTips] = useState(
-    localizationManager.getString(localizeStrEnum.ENABLE_CLASH_DESC)
+    localizationManager.getString(L.ENABLE_CLASH_DESC)
   );
   const [skipProxyState, setSkipProxyState] = useState(enabledSkipProxy);
   const [overrideDNSState, setOverrideDNSState] = useState(enabledOverrideDNS);
@@ -182,20 +182,16 @@ const Content: FC<{}> = ({}) => {
 
   return (
     <div>
-      <PanelSection
-        title={localizationManager.getString(localizeStrEnum.SERVICE)}
-      >
+      <PanelSection title={localizationManager.getString(L.SERVICE)}>
         <PanelSectionRow>
           <ToggleField
-            label={localizationManager.getString(localizeStrEnum.ENABLE_CLASH)}
+            label={localizationManager.getString(L.ENABLE_CLASH)}
             description={SelectionTips}
             checked={clashState}
             onChange={(value: boolean) => {
               setIsSelectionDisabled(true);
               setSelectionTips(
-                localizationManager.getString(
-                  localizeStrEnum.ENABLE_CLASH_LOADING
-                )
+                localizationManager.getString(L.ENABLE_CLASH_LOADING)
               );
               backend.resolve(backend.setEnabled(value), (v: boolean) => {
                 enabledGlobal = v;
@@ -209,23 +205,19 @@ const Content: FC<{}> = ({}) => {
                     switch (v) {
                       case "Loading":
                         setSelectionTips(
-                          localizationManager.getString(
-                            localizeStrEnum.ENABLE_CLASH_LOADING
-                          )
+                          localizationManager.getString(L.ENABLE_CLASH_LOADING)
                         );
                         break;
                       case "Failed":
                         setSelectionTips(
-                          localizationManager.getString(
-                            localizeStrEnum.ENABLE_CLASH_FAILED
-                          )
+                          localizationManager.getString(L.ENABLE_CLASH_FAILED)
                         );
                         setClashState(false);
                         break;
                       case "Success":
                         setSelectionTips(
                           localizationManager.getString(
-                            localizeStrEnum.ENABLE_CLASH_IS_RUNNING
+                            L.ENABLE_CLASH_IS_RUNNING
                           )
                         );
                         getConfig();
@@ -238,9 +230,7 @@ const Content: FC<{}> = ({}) => {
                 }, 500);
               } else {
                 setSelectionTips(
-                  localizationManager.getString(
-                    localizeStrEnum.ENABLE_CLASH_DESC
-                  )
+                  localizationManager.getString(L.ENABLE_CLASH_DESC)
                 );
               }
               setOptionDropdownDisabled(value);
@@ -253,7 +243,7 @@ const Content: FC<{}> = ({}) => {
           <DropdownItem
             // disabled={optionDropdownDisabled}
             strDefaultLabel={localizationManager.getString(
-              localizeStrEnum.SELECT_SUBSCRIPTION
+              L.SELECT_SUBSCRIPTION
             )}
             rgOptions={options}
             selectedOption={currentSub}
@@ -280,9 +270,7 @@ const Content: FC<{}> = ({}) => {
               Router.Navigate("/tomoon-config");
             }}
           >
-            {localizationManager.getString(
-              localizeStrEnum.MANAGE_SUBSCRIPTIONS
-            )}
+            {localizationManager.getString(L.MANAGE_SUBSCRIPTIONS)}
           </ButtonItem>
         </PanelSectionRow>
         <PanelSectionRow>
@@ -319,17 +307,13 @@ const Content: FC<{}> = ({}) => {
             }}
             disabled={openDashboardDisabled}
           >
-            {localizationManager.getString(localizeStrEnum.OPEN_DASHBOARD)}
+            {localizationManager.getString(L.OPEN_DASHBOARD)}
           </ButtonItem>
         </PanelSectionRow>
         <PanelSectionRow>
           <DropdownItem
-            label={localizationManager.getString(
-              localizeStrEnum.SELECT_DASHBOARD
-            )}
-            strDefaultLabel={localizationManager.getString(
-              localizeStrEnum.SELECT_DASHBOARD
-            )}
+            label={localizationManager.getString(L.SELECT_DASHBOARD)}
+            strDefaultLabel={localizationManager.getString(L.SELECT_DASHBOARD)}
             rgOptions={(dashboardList || []).map((path) => {
               return {
                 label: path.split("/").pop(),
@@ -347,11 +331,9 @@ const Content: FC<{}> = ({}) => {
         </PanelSectionRow>
         <PanelSectionRow>
           <ToggleField
-            label={localizationManager.getString(
-              localizeStrEnum.ALLOW_REMOTE_ACCESS
-            )}
+            label={localizationManager.getString(L.ALLOW_REMOTE_ACCESS)}
             description={localizationManager.getString(
-              localizeStrEnum.ALLOW_REMOTE_ACCESS_DESC
+              L.ALLOW_REMOTE_ACCESS_DESC
             )}
             checked={allowRemoteAccess}
             onChange={(value: boolean) => {
@@ -362,10 +344,8 @@ const Content: FC<{}> = ({}) => {
         </PanelSectionRow>
         <PanelSectionRow>
           <ToggleField
-            label={localizationManager.getString(localizeStrEnum.SKIP_PROXY)}
-            description={localizationManager.getString(
-              localizeStrEnum.SKIP_PROXY_DESC
-            )}
+            label={localizationManager.getString(L.SKIP_PROXY)}
+            description={localizationManager.getString(L.SKIP_PROXY_DESC)}
             checked={skipProxyState}
             onChange={(value: boolean) => {
               ApiCallBackend.skipProxy(value);
@@ -375,10 +355,8 @@ const Content: FC<{}> = ({}) => {
         </PanelSectionRow>
         <PanelSectionRow>
           <ToggleField
-            label={localizationManager.getString(localizeStrEnum.OVERRIDE_DNS)}
-            description={localizationManager.getString(
-              localizeStrEnum.OVERRIDE_DNS_DESC
-            )}
+            label={localizationManager.getString(L.OVERRIDE_DNS)}
+            description={localizationManager.getString(L.OVERRIDE_DNS_DESC)}
             checked={overrideDNSState}
             onChange={(value: boolean) => {
               ApiCallBackend.overrideDns(value);
@@ -389,9 +367,7 @@ const Content: FC<{}> = ({}) => {
         {overrideDNSState && (
           <PanelSectionRow>
             <SliderField
-              label={localizationManager.getString(
-                localizeStrEnum.ENHANCED_MODE
-              )}
+              label={localizationManager.getString(L.ENHANCED_MODE)}
               value={convertEnhancedModeValue(enhancedMode)}
               min={0}
               max={enhancedModeNotchLabels.length - 1}
@@ -415,14 +391,12 @@ const Content: FC<{}> = ({}) => {
               ApiCallBackend.restartClash();
             }}
           >
-            {localizationManager.getString(localizeStrEnum.RESTART_CORE)}
+            {localizationManager.getString(L.RESTART_CORE)}
           </ActionButtonItem>
         </PanelSectionRow>
       </PanelSection>
 
-      <PanelSection
-        title={localizationManager.getString(localizeStrEnum.TOOLS)}
-      >
+      <PanelSection title={localizationManager.getString(L.TOOLS)}>
         <PanelSectionRow>
           <ButtonItem
             layout="below"
@@ -433,7 +407,7 @@ const Content: FC<{}> = ({}) => {
               });
             }}
           >
-            {localizationManager.getString(localizeStrEnum.RESET_NETWORK)}
+            {localizationManager.getString(L.RESET_NETWORK)}
           </ButtonItem>
         </PanelSectionRow>
       </PanelSection>
@@ -449,17 +423,17 @@ const DeckyPluginRouterTest: FC = () => {
       showTitle
       pages={[
         {
-          title: localizationManager.getString(localizeStrEnum.SUBSCRIPTIONS),
+          title: localizationManager.getString(L.SUBSCRIPTIONS),
           content: <Subscriptions Subscriptions={subs} />,
           route: "/tomoon-config/subscriptions",
         },
         {
-          title: localizationManager.getString(localizeStrEnum.ABOUT),
+          title: localizationManager.getString(L.ABOUT),
           content: <About />,
           route: "/tomoon-config/about",
         },
         {
-          title: localizationManager.getString(localizeStrEnum.DEBUG),
+          title: localizationManager.getString(L.DEBUG),
           content: <Debug />,
           route: "/tomoon-config/debug",
         },

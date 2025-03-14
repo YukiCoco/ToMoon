@@ -9,7 +9,6 @@ import * as bulgarian from "./bulgarian.json";
 import * as italian from "./italian.json";
 import * as french from "./french.json";
 
-
 export interface LanguageProps {
   label: string;
   strings: any;
@@ -84,42 +83,60 @@ export const localizeMap: { [key: string]: LanguageProps } = {
   },
 };
 
-export enum localizeStrEnum {
-  SERVICE = "SERVICE",
-  TOOLS = "TOOLS",
-  VERSION = "VERSION",
-  ABOUT = "ABOUT",
-  DEBUG = "DEBUG",
+// 创建一个类型安全的常量生成函数
+function createLocalizeConstants<T extends readonly string[]>(keys: T) {
+  return keys.reduce((obj, key) => {
+    obj[key as keyof typeof obj] = key;
+    return obj;
+  }, {} as { [K in T[number]]: K });
+}
+
+// 定义所有键名
+const I18N_KEYS = [
+  "SERVICE",
+  "TOOLS",
+  "VERSION",
+  "ABOUT",
+  "DEBUG",
 
   // Subscriptions manager
-  SUBSCRIPTIONS = "SUBSCRIPTIONS",
-  SUBSCRIPTIONS_LINK = "SUBSCRIPTIONS_LINK",
-  SELECT_SUBSCRIPTION = "SELECT_SUBSCRIPTION",
-  DOWNLOAD = "DOWNLOAD",
-  UPDATE_ALL = "UPDATE_ALL",
-  DELETE = "DELETE",
+  "SUBSCRIPTIONS",
+  "SUBSCRIPTIONS_LINK",
+  "SELECT_SUBSCRIPTION",
+  "DOWNLOAD",
+  "UPDATE_ALL",
+  "DELETE",
 
   // QAM
-  ENABLE_CLASH = "ENABLE_CLASH",
-  ENABLE_CLASH_DESC = "ENABLE_CLASH_DESC",
-  ENABLE_CLASH_FAILED = "ENABLE_CLASH_FAILED",
-  ENABLE_CLASH_LOADING = "ENABLE_CLASH_LOADING",
-  ENABLE_CLASH_IS_RUNNING = "ENABLE_CLASH_IS_RUNNING",
-  MANAGE_SUBSCRIPTIONS = "MANAGE_SUBSCRIPTIONS",
-  OPEN_DASHBOARD = "OPEN_DASHBOARD",
-  SELECT_DASHBOARD = "SELECT_DASHBOARD",
-  ALLOW_REMOTE_ACCESS = "ALLOW_REMOTE_ACCESS",
-  ALLOW_REMOTE_ACCESS_DESC = "ALLOW_REMOTE_ACCESS_DESC",
-  SKIP_PROXY = "SKIP_PROXY",
-  SKIP_PROXY_DESC = "SKIP_PROXY_DESC",
-  OVERRIDE_DNS = "OVERRIDE_DNS",
-  OVERRIDE_DNS_DESC = "OVERRIDE_DNS_DESC",
-  ENHANCED_MODE = "ENHANCED_MODE",
-  ENHANCED_MODE_DESC = "ENHANCED_MODE_DESC",
-  RESTART_CORE = "RESTART_CORE",
-  RESET_NETWORK = "RESET_NETWORK",
-  REINSTALL_PLUGIN = "REINSTALL_PLUGIN",
-  UPDATE_TO = "UPDATE_TO",
-  INSTALLED_VERSION = "INSTALLED_VERSION",
-  LATEST_VERSION = "LATEST_VERSION",
-}
+  "ENABLE_CLASH",
+  "ENABLE_CLASH_DESC",
+  "ENABLE_CLASH_FAILED",
+  "ENABLE_CLASH_LOADING",
+  "ENABLE_CLASH_IS_RUNNING",
+  "MANAGE_SUBSCRIPTIONS",
+  "OPEN_DASHBOARD",
+  "SELECT_DASHBOARD",
+  "ALLOW_REMOTE_ACCESS",
+  "ALLOW_REMOTE_ACCESS_DESC",
+  "SKIP_PROXY",
+  "SKIP_PROXY_DESC",
+  "OVERRIDE_DNS",
+  "OVERRIDE_DNS_DESC",
+  "ENHANCED_MODE",
+  "ENHANCED_MODE_DESC",
+  "RESTART_CORE",
+  "RESET_NETWORK",
+  "REINSTALL_PLUGIN",
+  "UPDATE_TO",
+  "INSTALLED_VERSION",
+  "LATEST_VERSION",
+] as const;
+
+// 创建常量对象并导出
+export const L = createLocalizeConstants(I18N_KEYS);
+
+// 导出类型
+export type LocalizeStrKey = keyof typeof L;
+
+// 为了向后兼容，保留 localizeStrEnum 名称
+// export const localizeStrEnum = L;
