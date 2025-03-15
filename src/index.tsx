@@ -23,6 +23,7 @@ import * as backend from "./backend/backend";
 
 import { ApiCallBackend, PyBackend, EnhancedMode } from "./backend";
 import { ActionButtonItem, VersionComponent } from "./components";
+import { localizationManager, L } from "./i18n";
 
 let enabledGlobal = false;
 let enabledSkipProxy = false;
@@ -37,7 +38,7 @@ let current_dashboard = "";
 let allow_remote_access = false;
 let _secret = "";
 
-const Content: FC<{}> = ({ }) => {
+const Content: FC<{}> = ({}) => {
   if (!usdplReady) {
     return <PanelSection>Init...</PanelSection>;
   }
@@ -50,7 +51,9 @@ const Content: FC<{}> = ({ }) => {
     !enabledGlobal
   );
   const [isSelectionDisabled, setIsSelectionDisabled] = useState(false);
-  const [SelectionTips, setSelectionTips] = useState("Run Clash in background");
+  const [SelectionTips, setSelectionTips] = useState(
+    localizationManager.getString(L.ENABLE_CLASH_DESC)
+  );
   const [skipProxyState, setSkipProxyState] = useState(enabledSkipProxy);
   const [overrideDNSState, setOverrideDNSState] = useState(enabledOverrideDNS);
   const [currentSub, setCurrentSub] = useState<string>(current_sub);
@@ -179,15 +182,17 @@ const Content: FC<{}> = ({ }) => {
 
   return (
     <div>
-      <PanelSection title="Service">
+      <PanelSection title={localizationManager.getString(L.SERVICE)}>
         <PanelSectionRow>
           <ToggleField
-            label="Enable Clash"
+            label={localizationManager.getString(L.ENABLE_CLASH)}
             description={SelectionTips}
             checked={clashState}
             onChange={(value: boolean) => {
               setIsSelectionDisabled(true);
-              setSelectionTips("Loading ...");
+              setSelectionTips(
+                localizationManager.getString(L.ENABLE_CLASH_LOADING)
+              );
               backend.resolve(backend.setEnabled(value), (v: boolean) => {
                 enabledGlobal = v;
                 setIsSelectionDisabled(false);
@@ -199,16 +204,22 @@ const Content: FC<{}> = ({ }) => {
                     // console.log(v);
                     switch (v) {
                       case "Loading":
-                        setSelectionTips("Loading ...");
+                        setSelectionTips(
+                          localizationManager.getString(L.ENABLE_CLASH_LOADING)
+                        );
                         break;
                       case "Failed":
                         setSelectionTips(
-                          "Failed to start, please check /tmp/tomoon.log"
+                          localizationManager.getString(L.ENABLE_CLASH_FAILED)
                         );
                         setClashState(false);
                         break;
                       case "Success":
-                        setSelectionTips("Clash is running.");
+                        setSelectionTips(
+                          localizationManager.getString(
+                            L.ENABLE_CLASH_IS_RUNNING
+                          )
+                        );
                         getConfig();
                         break;
                     }
@@ -218,7 +229,9 @@ const Content: FC<{}> = ({ }) => {
                   });
                 }, 500);
               } else {
-                setSelectionTips("Run Clash in background");
+                setSelectionTips(
+                  localizationManager.getString(L.ENABLE_CLASH_DESC)
+                );
               }
               setOptionDropdownDisabled(value);
               setOpenDashboardDisabled(!value);
@@ -229,7 +242,9 @@ const Content: FC<{}> = ({ }) => {
         <PanelSectionRow>
           <DropdownItem
             // disabled={optionDropdownDisabled}
-            strDefaultLabel={"Select a Subscription"}
+            strDefaultLabel={localizationManager.getString(
+              L.SELECT_SUBSCRIPTION
+            )}
             rgOptions={options}
             selectedOption={currentSub}
             onMenuWillOpen={() => {
@@ -255,7 +270,7 @@ const Content: FC<{}> = ({ }) => {
               Router.Navigate("/tomoon-config");
             }}
           >
-            Manage Subscriptions
+            {localizationManager.getString(L.MANAGE_SUBSCRIPTIONS)}
           </ButtonItem>
         </PanelSectionRow>
         <PanelSectionRow>
@@ -292,13 +307,13 @@ const Content: FC<{}> = ({ }) => {
             }}
             disabled={openDashboardDisabled}
           >
-            Open Dashboard
+            {localizationManager.getString(L.OPEN_DASHBOARD)}
           </ButtonItem>
         </PanelSectionRow>
         <PanelSectionRow>
           <DropdownItem
-            label={"Select Dashboard"}
-            strDefaultLabel={"Select Dashboard"}
+            label={localizationManager.getString(L.SELECT_DASHBOARD)}
+            strDefaultLabel={localizationManager.getString(L.SELECT_DASHBOARD)}
             rgOptions={(dashboardList || []).map((path) => {
               return {
                 label: path.split("/").pop(),
@@ -316,8 +331,10 @@ const Content: FC<{}> = ({ }) => {
         </PanelSectionRow>
         <PanelSectionRow>
           <ToggleField
-            label="Allow Remote Access"
-            description="Allow Remote Access to Dashboard"
+            label={localizationManager.getString(L.ALLOW_REMOTE_ACCESS)}
+            description={localizationManager.getString(
+              L.ALLOW_REMOTE_ACCESS_DESC
+            )}
             checked={allowRemoteAccess}
             onChange={(value: boolean) => {
               ApiCallBackend.allowRemoteAccess(value);
@@ -327,8 +344,8 @@ const Content: FC<{}> = ({ }) => {
         </PanelSectionRow>
         <PanelSectionRow>
           <ToggleField
-            label="Skip Steam Proxy"
-            description="Enable for direct Steam downloads"
+            label={localizationManager.getString(L.SKIP_PROXY)}
+            description={localizationManager.getString(L.SKIP_PROXY_DESC)}
             checked={skipProxyState}
             onChange={(value: boolean) => {
               ApiCallBackend.skipProxy(value);
@@ -338,8 +355,8 @@ const Content: FC<{}> = ({ }) => {
         </PanelSectionRow>
         <PanelSectionRow>
           <ToggleField
-            label="Override DNS Config"
-            description="Force Clash to hijack DNS query"
+            label={localizationManager.getString(L.OVERRIDE_DNS)}
+            description={localizationManager.getString(L.OVERRIDE_DNS_DESC)}
             checked={overrideDNSState}
             onChange={(value: boolean) => {
               ApiCallBackend.overrideDns(value);
@@ -350,7 +367,7 @@ const Content: FC<{}> = ({ }) => {
         {overrideDNSState && (
           <PanelSectionRow>
             <SliderField
-              label={"Enhanced Mode"}
+              label={localizationManager.getString(L.ENHANCED_MODE)}
               value={convertEnhancedModeValue(enhancedMode)}
               min={0}
               max={enhancedModeNotchLabels.length - 1}
@@ -374,12 +391,12 @@ const Content: FC<{}> = ({ }) => {
               ApiCallBackend.restartClash();
             }}
           >
-            Restart Core
+            {localizationManager.getString(L.RESTART_CORE)}
           </ActionButtonItem>
         </PanelSectionRow>
       </PanelSection>
 
-      <PanelSection title="Tools">
+      <PanelSection title={localizationManager.getString(L.TOOLS)}>
         <PanelSectionRow>
           <ButtonItem
             layout="below"
@@ -390,7 +407,7 @@ const Content: FC<{}> = ({ }) => {
               });
             }}
           >
-            Reset Network
+            {localizationManager.getString(L.RESET_NETWORK)}
           </ButtonItem>
         </PanelSectionRow>
       </PanelSection>
@@ -406,17 +423,17 @@ const DeckyPluginRouterTest: FC = () => {
       showTitle
       pages={[
         {
-          title: "Subscriptions",
+          title: localizationManager.getString(L.SUBSCRIPTIONS),
           content: <Subscriptions Subscriptions={subs} />,
           route: "/tomoon-config/subscriptions",
         },
         {
-          title: "About",
+          title: localizationManager.getString(L.ABOUT),
           content: <About />,
           route: "/tomoon-config/about",
         },
         {
-          title: "Debug",
+          title: localizationManager.getString(L.DEBUG),
           content: <Debug />,
           route: "/tomoon-config/debug",
         },
@@ -430,6 +447,7 @@ export default definePlugin(() => {
   (async function () {
     await backend.initBackend();
     await backend.PyBackend.init();
+    await localizationManager.init();
     usdplReady = true;
     backend.resolve(backend.getEnabled(), (v: boolean) => {
       enabledGlobal = v;
